@@ -1,0 +1,57 @@
+{
+  "expo": {
+    "name": "Sourdough Optimizer",
+    "slug": "sourdough-optimizer",
+    "version": "3.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "sourdough",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#FFF5ED",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.sourdough.optimizer",
+      "adaptiveIcon": {
+        "backgroundColor": "#FFF5ED",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#FFF5ED"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Sourdough Optimizer to use your location to detect local temperature and water hardness for accurate baking guidance. Your coordinates are sent to Open-Meteo (weather) and OpenStreetMap (geocoding)."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#C1784B"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}
