@@ -1,0 +1,94 @@
+=================================================================
+  Sourdough Recipe — 2026-06-18 10:43
+=================================================================
+
+  📍 Brentwood, United Kingdom  │  🌡 Ambient 21.2°C  │  💧 Tap ~16.5°C  │  🧪 Water moderately soft (120 mg/L)
+
+  📋 Inputs
+    Flour:             21 g (Italian Type 00 (118), 13.5% protein)
+    Hydration:          75%
+    Starter:            20% (hydration: 100%)
+    Salt:               2.0%
+    Ambient Temp:       21.2 °C
+    Flour Temp:         21.2 °C
+    Water Temp:         16.5 °C
+    Starter Temp:       21.2 °C
+    Target DDT:         26.0 °C
+    Water Hardness:     moderately soft (120 mg/L)
+
+  🌡  Temperatures
+    Final Dough (FDT):  20.0 °C
+    Offset from target: -6.0 °C
+
+  ⚖️  Ingredients
+    Fresh flour:        19.1 g
+    Water (added):      13.8 g
+    Starter (total):    4.2 g
+    Salt:               0.4 g
+    Total weight:       39.6 g
+
+  ⏱️  Fermentation
+    Bulk ferment:       ~7.0 hours
+
+=================================================================
+  Sourdough Recipe — 2026-06-18 10:43
+=================================================================
+
+  📍 Brentwood, United Kingdom  │  🌡 Ambient 21.2°C  │  💧 Tap ~16.5°C  │  🧪 Water moderately soft (120 mg/L)
+
+  📋 Inputs
+    Flour:             21 g (Italian Type 00 (118), 13.5% protein)
+    Hydration:          75%
+    Starter:            20% (hydration: 100%)
+    Salt:               2.0%
+    Ambient Temp:       21.2 °C
+    Flour Temp:         21.2 °C
+    Water Temp:         16.5 °C
+    Starter Temp:       21.2 °C
+    Target DDT:         26.0 °C
+    Water Hardness:     moderately soft (120 mg/L)
+
+  🌡  Temperatures
+    Final Dough (FDT):  20.0 °C
+    Offset from target: -6.0 °C
+
+  ⚖️  Ingredients
+    Fresh flour:        19.1 g
+    Water (added):      13.8 g
+    Starter (total):    4.2 g
+    Salt:               0.4 g
+    Total weight:       39.6 g
+
+  ⏱️  Fermentation
+    Bulk ferment:       ~7.0 hours
+
+=================================================================
+  Sourdough Recipe — 2026-06-18 11:34
+=================================================================
+
+  📍 Unknown, Unknown  │  🌡 Ambient 22.7°C  │  💧 Tap ~17.1°C  │  🧪 Water moderately soft (120 mg/L)
+
+  📋 Inputs
+    Flour:             500 g (No. 4 Organic White (105), 13.0% protein)
+    Hydration:          75%
+    Starter:            100 g (hydration: 100%)
+    Salt:               2.0%
+    Ambient Temp:       22.7 °C
+    Flour Temp:         22.7 °C
+    Water Temp:         17.1 °C
+    Starter Temp:       22.7 °C
+    Water Hardness:     moderately soft (120 mg/L)
+
+  🌡  Temperatures
+    Final Dough (FDT):  21.3 °C
+
+  ⚖️  Ingredients
+    Flour:              500.0 g
+    Water:              362.5 g
+    Starter:            100.0 g
+    Salt:               11.0 g
+    Total weight:       973.5 g
+
+  ⏱️  Fermentation
+    Bulk ferment:       ~6.5 hours
+

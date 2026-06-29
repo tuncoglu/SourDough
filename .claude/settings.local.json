@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 optimizer.py --help)",
+      "Bash(pip3 install *)",
+      "Bash(pip install *)",
+      "Bash(python3 -c \"import rich; print\\(rich.__version__\\)\")",
+      "Bash(python3 -m ensurepip --default-pip --user)",
+      "Bash(python3 -m pip install rich -q)",
+      "Bash(python3 *)",
+      "WebFetch(domain:www.shipton-mill.com)",
+      "WebSearch",
+      "WebFetch(domain:www.thefreshloaf.com)",
+      "Bash(npm audit *)",
+      "Bash(npm ls *)",
+      "WebFetch(domain:react-native-async-storage.github.io)",
+      "Bash(npm view *)",
+      "Bash(npm install *)",
+      "Bash(npx eas *)",
+      "Bash(git add *)",
+      "Bash(git rm *)",
+      "Bash(git commit *)",
+      "Bash(git config *)",
+      "Bash(npx tsc *)",
+      "Bash(eas build *)",
+      "Bash(npx eas-cli *)"
+    ]
+  }
+}
