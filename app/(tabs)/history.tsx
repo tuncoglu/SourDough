@@ -5,20 +5,22 @@ import {
   StyleSheet,
   Alert,
   RefreshControl,
+  Text,
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Spacing, FontSize } from '../../src/theme';
+import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { SavedRecipe } from '../../src/models/types';
 import { loadRecipes, deleteRecipe } from '../../src/store/recipeStore';
 import { RecipeCard } from '../../src/components/RecipeCard';
 import { EmptyState } from '../../src/components/EmptyState';
-import { Text } from 'react-native';
 
 export default function HistoryScreen() {
   const [recipes, setRecipes] = useState<SavedRecipe[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
+  const { isDesktop, isTablet } = useBreakpoint();
 
   const fetchRecipes = useCallback(async () => {
     const data = await loadRecipes();
@@ -63,6 +65,8 @@ export default function HistoryScreen() {
     } as any);
   };
 
+  const numColumns = isDesktop ? 2 : 1;
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <Text style={styles.header}>📖  Recipe History</Text>
@@ -75,10 +79,12 @@ export default function HistoryScreen() {
         />
       ) : (
         <FlatList
+          key={numColumns}
           data={recipes}
           keyExtractor={(item) => item.id}
+          numColumns={numColumns}
           renderItem={({ item }) => (
-            <View style={styles.cardWrapper}>
+            <View style={[styles.cardWrapper, numColumns > 1 && styles.cardWrapperGrid]}>
               <RecipeCard recipe={item} onPress={() => handlePress(item)} />
               <Text
                 style={styles.deleteBtn}
@@ -91,7 +97,11 @@ export default function HistoryScreen() {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent,
+            numColumns > 1 && styles.listContentGrid,
+          ]}
+          columnWrapperStyle={numColumns > 1 ? { gap: Spacing.md } : undefined}
           showsVerticalScrollIndicator={false}
         />
       )}
@@ -114,8 +124,14 @@ const styles = StyleSheet.create({
   listContent: {
     paddingBottom: 40,
   },
+  listContentGrid: {
+    paddingHorizontal: Spacing.lg,
+  },
   cardWrapper: {
     alignItems: 'flex-end',
+  },
+  cardWrapperGrid: {
+    flex: 1,
   },
   deleteBtn: {
     fontSize: FontSize.xs,

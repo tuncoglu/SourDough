@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,10 @@ import {
   TouchableOpacity,
   Modal,
   StyleSheet,
+  Pressable,
+  useWindowDimensions,
 } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
+import { Colors, Spacing, FontSize, BorderRadius, Breakpoints } from '../theme';
 import { SHIPTON_MILL_FLOURS, FLOURS_BY_CATEGORY } from '../data/flours';
 import { FlourEntry, FlourCategory } from '../models/types';
 
@@ -18,10 +20,14 @@ interface Props {
 }
 
 const CATEGORIES = Object.keys(FLOURS_BY_CATEGORY) as FlourCategory[];
+const DROPDOWN_MAX_HEIGHT = 360;
 
 export function FlourPicker({ value, onSelect }: Props) {
   const [visible, setVisible] = useState(false);
   const [search, setSearch] = useState('');
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= Breakpoints.desktop;
+  const triggerRef = useRef<View>(null);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return SHIPTON_MILL_FLOURS;
@@ -40,24 +46,92 @@ export function FlourPicker({ value, onSelect }: Props) {
     setSearch('');
   };
 
+  const handleClose = () => {
+    setVisible(false);
+    setSearch('');
+  };
+
+  const trigger = (
+    <TouchableOpacity
+      style={styles.trigger}
+      onPress={() => setVisible(!visible)}
+      activeOpacity={0.7}
+    >
+      <Text style={styles.triggerText} numberOfLines={1}>
+        {value || 'Select flour…'}
+      </Text>
+      <Text style={[styles.chevron, visible && styles.chevronOpen]}>▼</Text>
+    </TouchableOpacity>
+  );
+
+  // ── Desktop: popover dropdown ──────────────────────────────────────
+  if (isDesktop) {
+    return (
+      <View style={styles.desktopWrapper}>
+        <View ref={triggerRef}>{trigger}</View>
+
+        {visible && (
+          <>
+            {/* Backdrop to capture outside clicks */}
+            <Pressable style={styles.backdrop} onPress={handleClose} />
+            <View style={styles.dropdown}>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search by name, number, or category…"
+                placeholderTextColor={Colors.muted}
+                value={search}
+                onChangeText={setSearch}
+                autoFocus
+              />
+              <FlatList
+                data={filtered}
+                keyExtractor={(item) => item.label}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.item,
+                      value === item.label && styles.itemSelected,
+                    ]}
+                    onPress={() => handleSelect(item)}
+                  >
+                    <View style={styles.itemContent}>
+                      <Text style={styles.itemLabel} numberOfLines={1}>
+                        {item.label}
+                      </Text>
+                      <Text style={styles.itemMeta}>
+                        {item.category} · {item.protein.toFixed(1)}% protein
+                      </Text>
+                      {item.notes ? (
+                        <Text style={styles.itemNotes} numberOfLines={2}>
+                          {item.notes}
+                        </Text>
+                      ) : null}
+                    </View>
+                    {value === item.label && (
+                      <Text style={styles.check}>✓</Text>
+                    )}
+                  </TouchableOpacity>
+                )}
+                style={{ maxHeight: DROPDOWN_MAX_HEIGHT }}
+                keyboardShouldPersistTaps="handled"
+              />
+            </View>
+          </>
+        )}
+      </View>
+    );
+  }
+
+  // ── Mobile: full-screen modal ──────────────────────────────────────
   return (
     <>
-      <TouchableOpacity
-        style={styles.trigger}
-        onPress={() => setVisible(true)}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.triggerText} numberOfLines={1}>
-          {value || 'Select flour…'}
-        </Text>
-        <Text style={styles.chevron}>▼</Text>
-      </TouchableOpacity>
+      {trigger}
 
       <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
         <View style={styles.modal}>
           <View style={styles.header}>
             <Text style={styles.title}>Choose Flour</Text>
-            <TouchableOpacity onPress={() => setVisible(false)}>
+            <TouchableOpacity onPress={handleClose}>
               <Text style={styles.closeBtn}>Done</Text>
             </TouchableOpacity>
           </View>
@@ -90,11 +164,11 @@ export function FlourPicker({ value, onSelect }: Props) {
                   <Text style={styles.itemMeta}>
                     {item.category} · {item.protein.toFixed(1)}% protein
                   </Text>
-                  {item.notes && (
+                  {item.notes ? (
                     <Text style={styles.itemNotes} numberOfLines={1}>
                       {item.notes}
                     </Text>
-                  )}
+                  ) : null}
                 </View>
                 {value === item.label && (
                   <Text style={styles.check}>✓</Text>
@@ -115,6 +189,10 @@ export function FlourPicker({ value, onSelect }: Props) {
 }
 
 const styles = StyleSheet.create({
+  desktopWrapper: {
+    flex: 1,
+    position: 'relative',
+  },
   trigger: {
     flex: 1,
     flexDirection: 'row',
@@ -134,6 +212,34 @@ const styles = StyleSheet.create({
   chevron: {
     fontSize: FontSize.xs,
     color: Colors.muted,
+  },
+  chevronOpen: {
+    transform: [{ rotate: '180deg' }],
+  },
+  backdrop: {
+    position: 'fixed' as any,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 99,
+  },
+  dropdown: {
+    position: 'absolute' as any,
+    top: 40,
+    left: 0,
+    right: 0,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.md,
+    zIndex: 100,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    minWidth: 300,
   },
   modal: {
     flex: 1,
@@ -168,6 +274,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     fontSize: FontSize.md,
     color: Colors.espresso,
+    marginTop: Spacing.sm,
   },
   item: {
     flexDirection: 'row',

@@ -7,10 +7,12 @@ import {
   StyleSheet,
   Alert,
   TextInput,
+  ScrollView,
 } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Spacing, FontSize, BorderRadius } from '../../src/theme';
+import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import {
   StarterFeeding,
 } from '../../src/models/types';
@@ -42,6 +44,7 @@ export default function StarterScreen() {
   const [notes, setNotes] = useState('');
   const [showDetails, setShowDetails] = useState(false);
   const { hasPermission, request } = useNotifications();
+  const { isDesktop } = useBreakpoint();
 
   // Load data on focus
   useFocusEffect(
@@ -136,98 +139,100 @@ export default function StarterScreen() {
     }
   };
 
-  return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <Text style={styles.header}>🫙  Starter Tracker</Text>
+  // ── Shared panels ──────────────────────────────────────────────────
 
-      {/* Status Card */}
-      <View style={styles.statusCard}>
-        {lastFed ? (
-          <>
-            <Text style={styles.statusLabel}>Last fed</Text>
-            <Text style={styles.statusValue}>{hoursSince}h ago</Text>
-            <Text style={styles.statusDate}>
-              {new Date(lastFed.timestamp).toLocaleString()}
-            </Text>
-          </>
-        ) : (
-          <>
-            <Text style={styles.statusLabel}>No feedings logged yet</Text>
-            <Text style={styles.statusHint}>Feed your starter and log it below!</Text>
-          </>
-        )}
-      </View>
-
-      {/* Quick Feed */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>FEED NOW</Text>
-
-        <Text style={styles.sectionLabel}>Ratio</Text>
-        <View style={styles.ratioRow}>
-          {RATIOS.map((r) => (
-            <TouchableOpacity
-              key={r}
-              style={[styles.ratioBtn, selectedRatio === r && styles.ratioBtnSelected]}
-              onPress={() => setSelectedRatio(r)}
-            >
-              <Text
-                style={[
-                  styles.ratioBtnText,
-                  selectedRatio === r && styles.ratioBtnTextSelected,
-                ]}
-              >
-                {r}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <TextInput
-          style={styles.notesInput}
-          placeholder="Notes (optional)"
-          placeholderTextColor={Colors.muted}
-          value={notes}
-          onChangeText={setNotes}
-        />
-
-        <TouchableOpacity style={styles.feedBtn} onPress={handleFeedNow} activeOpacity={0.8}>
-          <Text style={styles.feedBtnText}>🍞 Feed Starter</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Schedule */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>REMINDER SCHEDULE</Text>
-        <View style={styles.ratioRow}>
-          {[12, 24, 48].map((h) => (
-            <TouchableOpacity
-              key={h}
-              style={[styles.ratioBtn, intervalHours === h && styles.ratioBtnSelected]}
-              onPress={() => handleSetInterval(h)}
-            >
-              <Text
-                style={[
-                  styles.ratioBtnText,
-                  intervalHours === h && styles.ratioBtnTextSelected,
-                ]}
-              >
-                Every {h}h
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <TouchableOpacity
-          style={[styles.notifBtn, hasPermission && styles.notifBtnActive]}
-          onPress={handleToggleNotifications}
-        >
-          <Text style={styles.notifBtnText}>
-            {hasPermission ? '🔔 Notifications ON' : '🔕 Notifications OFF — Tap to Enable'}
+  const statusCard = (
+    <View style={styles.statusCard}>
+      {lastFed ? (
+        <>
+          <Text style={styles.statusLabel}>Last fed</Text>
+          <Text style={styles.statusValue}>{hoursSince}h ago</Text>
+          <Text style={styles.statusDate}>
+            {new Date(lastFed.timestamp).toLocaleString()}
           </Text>
-        </TouchableOpacity>
+        </>
+      ) : (
+        <>
+          <Text style={styles.statusLabel}>No feedings logged yet</Text>
+          <Text style={styles.statusHint}>Feed your starter and log it below!</Text>
+        </>
+      )}
+    </View>
+  );
+
+  const feedCard = (
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>FEED NOW</Text>
+
+      <Text style={styles.sectionLabel}>Ratio</Text>
+      <View style={styles.ratioRow}>
+        {RATIOS.map((r) => (
+          <TouchableOpacity
+            key={r}
+            style={[styles.ratioBtn, selectedRatio === r && styles.ratioBtnSelected]}
+            onPress={() => setSelectedRatio(r)}
+          >
+            <Text
+              style={[
+                styles.ratioBtnText,
+                selectedRatio === r && styles.ratioBtnTextSelected,
+              ]}
+            >
+              {r}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
-      {/* Feeding History */}
+      <TextInput
+        style={styles.notesInput}
+        placeholder="Notes (optional)"
+        placeholderTextColor={Colors.muted}
+        value={notes}
+        onChangeText={setNotes}
+      />
+
+      <TouchableOpacity style={styles.feedBtn} onPress={handleFeedNow} activeOpacity={0.8}>
+        <Text style={styles.feedBtnText}>🍞 Feed Starter</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const scheduleCard = (
+    <View style={styles.card}>
+      <Text style={styles.cardTitle}>REMINDER SCHEDULE</Text>
+      <View style={styles.ratioRow}>
+        {[12, 24, 48].map((h) => (
+          <TouchableOpacity
+            key={h}
+            style={[styles.ratioBtn, intervalHours === h && styles.ratioBtnSelected]}
+            onPress={() => handleSetInterval(h)}
+          >
+            <Text
+              style={[
+                styles.ratioBtnText,
+                intervalHours === h && styles.ratioBtnTextSelected,
+              ]}
+            >
+              Every {h}h
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <TouchableOpacity
+        style={[styles.notifBtn, hasPermission && styles.notifBtnActive]}
+        onPress={handleToggleNotifications}
+      >
+        <Text style={styles.notifBtnText}>
+          {hasPermission ? '🔔 Notifications ON' : '🔕 Notifications OFF — Tap to Enable'}
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const feedingHistory = (
+    <>
       {feedings.length === 0 ? (
         <EmptyState
           icon="🕰️"
@@ -270,6 +275,46 @@ export default function StarterScreen() {
           )}
         </>
       )}
+    </>
+  );
+
+  // ── Desktop Layout ───────────────────────────────────────────────────
+  if (isDesktop) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <Text style={styles.header}>🫙  Starter Tracker</Text>
+        <View style={desktopStyles.twoCol}>
+          <ScrollView
+            style={desktopStyles.leftCol}
+            contentContainerStyle={desktopStyles.colContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {statusCard}
+            {feedCard}
+          </ScrollView>
+          <ScrollView
+            style={desktopStyles.rightCol}
+            contentContainerStyle={desktopStyles.colContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {scheduleCard}
+            {feedingHistory}
+          </ScrollView>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // ── Mobile Layout ────────────────────────────────────────────────────
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <Text style={styles.header}>🫙  Starter Tracker</Text>
+        {statusCard}
+        {feedCard}
+        {scheduleCard}
+        {feedingHistory}
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -441,5 +486,24 @@ const styles = StyleSheet.create({
   deleteIcon: {
     fontSize: FontSize.md,
     padding: Spacing.sm,
+  },
+});
+
+const desktopStyles = StyleSheet.create({
+  twoCol: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.lg,
+  },
+  leftCol: {
+    flex: 1,
+  },
+  rightCol: {
+    flex: 1,
+  },
+  colContent: {
+    paddingBottom: 40,
   },
 });

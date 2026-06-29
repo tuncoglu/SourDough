@@ -59,3 +59,16 @@ export const BorderRadius = {
   lg: 14,
   xl: 20,
 } as const;
+
+/** Maximum content width for desktop layouts */
+export const MaxWidth = {
+  content: 1100,
+  form: 600,
+  sidebar: 220,
+} as const;
+
+/** Responsive breakpoint values (px) */
+export const Breakpoints = {
+  tablet: 768,
+  desktop: 1024,
+} as const;

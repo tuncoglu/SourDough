@@ -5,11 +5,11 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  TextInput,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Spacing, FontSize, BorderRadius } from '../../src/theme';
+import { Colors, Spacing, FontSize, BorderRadius, MaxWidth } from '../../src/theme';
+import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { UserSettings, DEFAULT_SETTINGS } from '../../src/models/types';
 import { loadSettings, saveSettings } from '../../src/store/settingsStore';
 import { NumberInput } from '../../src/components/NumberInput';
@@ -19,6 +19,7 @@ export default function SettingsScreen() {
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
   const [flourLabel, setFlourLabel] = useState(DEFAULT_SETTINGS.defaultFlourType);
   const [loading, setLoading] = useState(true);
+  const { isDesktop } = useBreakpoint();
 
   useEffect(() => {
     loadSettings().then((s) => {
@@ -55,98 +56,111 @@ export default function SettingsScreen() {
 
   if (loading) return null;
 
+  const content = (
+    <>
+      {/* Defaults */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>DEFAULT VALUES</Text>
+        <Text style={styles.description}>
+          These defaults are pre-filled when you open the calculator.
+        </Text>
+
+        <NumberInput
+          label="Flour weight"
+          value={String(settings.defaultFlourWeight)}
+          onChangeText={(v) => {
+            const n = parseFloat(v);
+            if (!isNaN(n)) setSettings({ ...settings, defaultFlourWeight: n });
+          }}
+          unit="g"
+        />
+
+        <View style={styles.flourRow}>
+          <Text style={styles.flourLabel}>Flour type</Text>
+          <FlourPicker
+            value={flourLabel}
+            onSelect={(f) => setFlourLabel(f.label)}
+          />
+        </View>
+
+        <NumberInput
+          label="Hydration"
+          value={String(settings.defaultHydration)}
+          onChangeText={(v) => {
+            const n = parseFloat(v);
+            if (!isNaN(n)) setSettings({ ...settings, defaultHydration: n });
+          }}
+          unit="%"
+        />
+
+        <NumberInput
+          label="Salt"
+          value={String(settings.defaultSaltPct)}
+          onChangeText={(v) => {
+            const n = parseFloat(v);
+            if (!isNaN(n)) setSettings({ ...settings, defaultSaltPct: n });
+          }}
+          unit="%"
+        />
+
+        <NumberInput
+          label="Starter hyd."
+          value={String(settings.defaultStarterHydration)}
+          onChangeText={(v) => {
+            const n = parseFloat(v);
+            if (!isNaN(n)) setSettings({ ...settings, defaultStarterHydration: n });
+          }}
+          unit="%"
+        />
+      </View>
+
+      {/* Actions */}
+      <TouchableOpacity style={styles.saveBtn} onPress={handleSave} activeOpacity={0.8}>
+        <Text style={styles.saveBtnText}>Save Defaults</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.resetBtn} onPress={handleReset} activeOpacity={0.7}>
+        <Text style={styles.resetBtnText}>Reset to Factory Defaults</Text>
+      </TouchableOpacity>
+
+      {/* About */}
+      <View style={[styles.card, styles.aboutCard]}>
+        <Text style={styles.cardTitle}>ABOUT</Text>
+        <Text style={styles.aboutText}>
+          🍞 Sourdough Optimizer v3.0
+        </Text>
+        <Text style={styles.aboutText}>
+          Auto-detects your location, local temperature, and water hardness
+          to calculate exact ingredient weights and predict fermentation time
+          dynamically based on the weather forecast.
+        </Text>
+        <Text style={[styles.aboutText, styles.aboutCredit]}>
+          Flour catalogue: Shipton Mill + generics.{'\n'}
+          Weather: Open-Meteo (free, no API key).{'\n'}
+          Geocoding: OpenStreetMap Nominatim.
+        </Text>
+      </View>
+    </>
+  );
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          isDesktop && styles.scrollContentDesktop,
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.header}>⚙️  Settings</Text>
-
-        {/* Defaults */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>DEFAULT VALUES</Text>
-          <Text style={styles.description}>
-            These defaults are pre-filled when you open the calculator.
-          </Text>
-
-          <NumberInput
-            label="Flour weight"
-            value={String(settings.defaultFlourWeight)}
-            onChangeText={(v) => {
-              const n = parseFloat(v);
-              if (!isNaN(n)) setSettings({ ...settings, defaultFlourWeight: n });
-            }}
-            unit="g"
-          />
-
-          <View style={styles.flourRow}>
-            <Text style={styles.flourLabel}>Flour type</Text>
-            <FlourPicker
-              value={flourLabel}
-              onSelect={(f) => setFlourLabel(f.label)}
-            />
+        {isDesktop ? (
+          <View style={{ maxWidth: MaxWidth.form, alignSelf: 'center', width: '100%' }}>
+            {content}
           </View>
-
-          <NumberInput
-            label="Hydration"
-            value={String(settings.defaultHydration)}
-            onChangeText={(v) => {
-              const n = parseFloat(v);
-              if (!isNaN(n)) setSettings({ ...settings, defaultHydration: n });
-            }}
-            unit="%"
-          />
-
-          <NumberInput
-            label="Salt"
-            value={String(settings.defaultSaltPct)}
-            onChangeText={(v) => {
-              const n = parseFloat(v);
-              if (!isNaN(n)) setSettings({ ...settings, defaultSaltPct: n });
-            }}
-            unit="%"
-          />
-
-          <NumberInput
-            label="Starter hyd."
-            value={String(settings.defaultStarterHydration)}
-            onChangeText={(v) => {
-              const n = parseFloat(v);
-              if (!isNaN(n)) setSettings({ ...settings, defaultStarterHydration: n });
-            }}
-            unit="%"
-          />
-        </View>
-
-        {/* Actions */}
-        <TouchableOpacity style={styles.saveBtn} onPress={handleSave} activeOpacity={0.8}>
-          <Text style={styles.saveBtnText}>Save Defaults</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.resetBtn} onPress={handleReset} activeOpacity={0.7}>
-          <Text style={styles.resetBtnText}>Reset to Factory Defaults</Text>
-        </TouchableOpacity>
-
-        {/* About */}
-        <View style={[styles.card, styles.aboutCard]}>
-          <Text style={styles.cardTitle}>ABOUT</Text>
-          <Text style={styles.aboutText}>
-            🍞 Sourdough Optimizer v3.0
-          </Text>
-          <Text style={styles.aboutText}>
-            Auto-detects your location, local temperature, and water hardness
-            to calculate exact ingredient weights and predict fermentation time
-            dynamically based on the weather forecast.
-          </Text>
-          <Text style={[styles.aboutText, styles.aboutCredit]}>
-            Flour catalogue: Shipton Mill + generics.{'\n'}
-            Weather: Open-Meteo (free, no API key).{'\n'}
-            Geocoding: OpenStreetMap Nominatim.
-          </Text>
-        </View>
-
+        ) : (
+          content
+        )}
         <View style={{ height: 60 }} />
       </ScrollView>
     </SafeAreaView>
@@ -160,6 +174,9 @@ const styles = StyleSheet.create({
   },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md },
+  scrollContentDesktop: {
+    alignItems: 'center',
+  },
   header: {
     fontSize: FontSize.xl,
     fontWeight: '800',
