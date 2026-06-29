@@ -64,16 +64,19 @@ export function FlourPicker({ value, onSelect }: Props) {
     </TouchableOpacity>
   );
 
-  // ── Desktop: popover dropdown ──────────────────────────────────────
+  // ── Desktop: transparent modal styled as a compact popover ─────────
   if (isDesktop) {
     return (
       <View style={styles.desktopWrapper}>
         <View ref={triggerRef}>{trigger}</View>
 
-        {visible && (
-          <>
-            {/* Backdrop to capture outside clicks */}
-            <Pressable style={styles.backdrop} onPress={handleClose} />
+        <Modal
+          visible={visible}
+          transparent
+          animationType="fade"
+          onRequestClose={handleClose}
+        >
+          <Pressable style={styles.backdrop} onPress={handleClose}>
             <View style={styles.dropdown}>
               <TextInput
                 style={styles.searchInput}
@@ -116,8 +119,8 @@ export function FlourPicker({ value, onSelect }: Props) {
                 keyboardShouldPersistTaps="handled"
               />
             </View>
-          </>
-        )}
+          </Pressable>
+        </Modal>
       </View>
     );
   }
@@ -222,13 +225,13 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.25)',
     zIndex: 99,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
   },
   dropdown: {
-    position: 'absolute' as any,
-    top: 40,
-    left: 0,
-    right: 0,
     backgroundColor: Colors.white,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -239,7 +242,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
     shadowRadius: 12,
-    minWidth: 300,
+    width: '100%' as any,
+    maxWidth: 480,
+    maxHeight: '80%' as any,
   },
   modal: {
     flex: 1,

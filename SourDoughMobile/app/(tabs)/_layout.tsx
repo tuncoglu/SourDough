@@ -110,7 +110,7 @@ const desktopStyles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    overflow: 'auto' as any,
+    overflow: 'visible' as any,
   },
   maxWidth: {
     maxWidth: MaxWidth.content,
