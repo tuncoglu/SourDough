@@ -72,6 +72,7 @@ export interface RecipeInputs {
   hydration: number;         // %
   starterWeight: number;     // g
   starterHydration: number;  // %
+  starterFlourType?: string; // flour label used to feed the starter (undefined on legacy recipes)
   saltPct: number;           // %
   ambientTemp: number;       // °C
   flourTemp: number;         // °C

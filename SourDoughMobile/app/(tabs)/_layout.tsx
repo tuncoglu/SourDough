@@ -35,7 +35,6 @@ export default function TabLayout() {
             >
               <Tabs.Screen name="index" options={{ title: 'Calculator' }} />
               <Tabs.Screen name="history" options={{ title: 'History' }} />
-              <Tabs.Screen name="starter" options={{ title: 'Starter' }} />
               <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
             </Tabs>
           </View>
@@ -67,19 +66,6 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <SymbolView
               name={{ ios: 'clock.arrow.circlepath', android: 'history', web: 'history' } as any}
-              tintColor={color as any}
-              size={26}
-            />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="starter"
-        options={{
-          title: 'Starter',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{ ios: 'flask.fill', android: 'science', web: 'science' } as any}
               tintColor={color as any}
               size={26}
             />

@@ -3,6 +3,7 @@ import { StarterFeeding } from '../models/types';
 
 const FEEDINGS_KEY = 'sourdough_feedings';
 const SCHEDULE_KEY = 'sourdough_feeding_schedule';
+const FLOUR_KEY = 'sourdough_starter_flour';
 
 /** Load all feedings, newest first */
 export async function loadFeedings(): Promise<StarterFeeding[]> {
@@ -57,4 +58,19 @@ export async function getFeedingInterval(): Promise<number> {
 
 export async function setFeedingInterval(hours: number): Promise<void> {
   await AsyncStorage.setItem(SCHEDULE_KEY, String(hours));
+}
+
+/** Get the persisted starter flour preference (defaults to Generic: Bread Flour) */
+export async function getStarterFlour(): Promise<string> {
+  try {
+    const raw = await AsyncStorage.getItem(FLOUR_KEY);
+    return raw ?? 'Generic: Bread Flour';
+  } catch {
+    return 'Generic: Bread Flour';
+  }
+}
+
+/** Persist the starter flour preference */
+export async function setStarterFlour(flourLabel: string): Promise<void> {
+  await AsyncStorage.setItem(FLOUR_KEY, flourLabel);
 }

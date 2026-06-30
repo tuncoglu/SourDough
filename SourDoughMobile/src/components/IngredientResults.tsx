@@ -7,9 +7,10 @@ interface Props {
   ingredients: IngredientResultsType;
   blend?: FlourBlendEntry[];
   totalFlourWeight?: number;
+  starterFlourType?: string;
 }
 
-export function IngredientResults({ ingredients, blend, totalFlourWeight }: Props) {
+export function IngredientResults({ ingredients, blend, totalFlourWeight, starterFlourType }: Props) {
   const showBlend = blend && blend.length > 1 && totalFlourWeight;
 
   return (
@@ -47,6 +48,17 @@ export function IngredientResults({ ingredients, blend, totalFlourWeight }: Prop
       {renderRow('Water', `${ingredients.addedWater.toFixed(1)} g`, null)}
       {renderRow('Starter', `${ingredients.starterTotal.toFixed(1)} g`,
         `(${ingredients.starterPct.toFixed(0)}% of total flour)`)}
+      <View style={styles.subRow}>
+        <Text style={styles.subLabel}>  └ flour in starter</Text>
+        <Text style={styles.subValue}>
+          {ingredients.flourFromStarter.toFixed(1)} g
+          {starterFlourType ? `  (${starterFlourType.replace(/\s*\([^)]*\)$/, '')})` : ''}
+        </Text>
+      </View>
+      <View style={styles.subRow}>
+        <Text style={styles.subLabel}>  └ water in starter</Text>
+        <Text style={styles.subValue}>{ingredients.waterFromStarter.toFixed(1)} g</Text>
+      </View>
       {renderRow('Salt', `${ingredients.salt.toFixed(1)} g`, null)}
 
       <View style={styles.divider} />

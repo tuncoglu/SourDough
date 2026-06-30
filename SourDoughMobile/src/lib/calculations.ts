@@ -72,6 +72,67 @@ export function getBlendProtein(blend: FlourBlendEntry[]): number {
   return Math.round(total * 10) / 10;
 }
 
+/**
+ * Merge the fresh flour blend with the flour contributed by the starter.
+ * The starter flour's category affects fermentation, so it must be included
+ * in the weighted-average ferment factor alongside the fresh flour blend.
+ */
+export function mergeBlendWithStarter(
+  blend: FlourBlendEntry[] | undefined,
+  starterFlourLabel: string | undefined,
+  freshFlourWeight: number,
+  flourFromStarter: number,
+): FlourBlendEntry[] {
+  const totalFlour = freshFlourWeight + flourFromStarter;
+  if (totalFlour <= 0) return blend ?? [];
+
+  const starterFlour = findFlour(starterFlourLabel ?? 'Generic: Bread Flour');
+
+  // Build a map keyed by (label) to merge duplicate flours
+  const merged: Record<string, { entry: FlourBlendEntry; grams: number }> = {};
+
+  // Add fresh flour components
+  if (blend && blend.length > 0) {
+    for (const entry of blend) {
+      const grams = freshFlourWeight * (entry.percentage / 100);
+      const key = entry.label;
+      if (merged[key]) {
+        merged[key].grams += grams;
+      } else {
+        merged[key] = { entry: { ...entry }, grams };
+      }
+    }
+  } else {
+    // No blend — single flour from legacy scalar
+    const grams = freshFlourWeight;
+    const key = starterFlour.label; // Actually for the fresh flour, we need another source
+    // This case is handled by the caller passing a synthesized blend
+  }
+
+  // Add starter flour component
+  const starterKey = starterFlour.label;
+  if (merged[starterKey]) {
+    merged[starterKey].grams += flourFromStarter;
+  } else {
+    merged[starterKey] = {
+      entry: {
+        label: starterFlour.label,
+        protein: starterFlour.protein,
+        productNumber: starterFlour.productNumber,
+        category: starterFlour.category,
+        percentage: 0,
+      },
+      grams: flourFromStarter,
+    };
+  }
+
+  // Convert back to FlourBlendEntry[] with recalculated percentages
+  return Object.values(merged).map(({ entry, grams }) => ({
+    ...entry,
+    percentage: (grams / totalFlour) * 100,
+  }));
+}
+
 /** Resolve a flour argument (string label or blend array) to a ferment factor. */
 function resolveFermentFactor(flour: string | FlourBlendEntry[]): number {
   if (typeof flour === 'string') {
@@ -422,17 +483,33 @@ export function runAllCalculations(
     inputs.starterHydration,
   );
 
-  // Normalize flour argument: use blend array if present, else legacy string
-  const flourArg: string | FlourBlendEntry[] =
+  // Build fresh flour blend (synthesize from legacy scalar if needed)
+  const freshBlend: FlourBlendEntry[] =
     inputs.flourBlend && inputs.flourBlend.length > 0
       ? inputs.flourBlend
-      : inputs.flourType;
+      : [
+          {
+            label: inputs.flourType,
+            protein: inputs.flourProtein,
+            productNumber: inputs.flourProductNo,
+            category: findFlour(inputs.flourType).category,
+            percentage: 100,
+          },
+        ];
+
+  // Merge starter flour into the total blend for accurate fermentation factor
+  const totalBlend = mergeBlendWithStarter(
+    freshBlend,
+    inputs.starterFlourType,
+    inputs.flourWeight,
+    ingredients.flourFromStarter,
+  );
 
   const staticFerment = estimateFermentation(
     fdt,
     ingredients.starterPct,
     inputs.hydration,
-    flourArg,
+    totalBlend,
   );
 
   let dynamicFerment: DynamicFermentation | null = null;
@@ -442,7 +519,7 @@ export function runAllCalculations(
       hourlyForecast,
       ingredients.starterPct,
       inputs.hydration,
-      flourArg,
+      totalBlend,
     );
   }
 
@@ -451,7 +528,7 @@ export function runAllCalculations(
     ingredients.starterPct,
     inputs.hydration,
     dynamicFerment?.totalHours,
-    flourArg,
+    totalBlend,
   );
 
   const ha = waterHardnessAdvice(hardness);

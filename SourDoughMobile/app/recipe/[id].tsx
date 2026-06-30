@@ -102,6 +102,12 @@ export default function RecipeDetailScreen() {
         <Text style={styles.label}>Starter</Text>
         <Text style={styles.value}>{recipe.inputs.starterWeight.toFixed(0)}g ({recipe.inputs.starterHydration.toFixed(0)}% hyd.)</Text>
       </View>
+      {recipe.inputs.starterFlourType && (
+        <View style={styles.row}>
+          <Text style={styles.label}>Starter flour</Text>
+          <Text style={styles.value}>{recipe.inputs.starterFlourType}</Text>
+        </View>
+      )}
       <View style={styles.row}>
         <Text style={styles.label}>Salt</Text>
         <Text style={styles.value}>{recipe.inputs.saltPct.toFixed(1)}%</Text>
@@ -153,6 +159,7 @@ export default function RecipeDetailScreen() {
         ingredients={recipe.results.ingredients}
         blend={blend}
         totalFlourWeight={recipe.inputs.flourWeight}
+        starterFlourType={recipe.inputs.starterFlourType}
       />
 
       {/* Advice */}
