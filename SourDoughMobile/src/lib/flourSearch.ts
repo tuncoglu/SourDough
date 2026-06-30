@@ -1,5 +1,5 @@
 import { SHIPTON_MILL_FLOURS, FLOUR_LABELS } from '../data/flours';
-import { FlourEntry } from '../models/types';
+import { FlourEntry, FlourBlendEntry, RecipeInputs } from '../models/types';
 
 /**
  * Fuzzy-match a user's flour query against the catalogue.
@@ -59,4 +59,65 @@ function getDefault(): FlourEntry {
       notes: 'Fallback.',
     }
   );
+}
+
+// ── Blend Utilities ─────────────────────────────────────────────────────
+
+/**
+ * Normalize a RecipeInputs into a FlourBlendEntry array.
+ * New recipes have flourBlend populated; legacy recipes with only scalar
+ * flourType/flourProtein/flourProductNo get a single-entry array synthesized.
+ */
+export function getBlend(inputs: RecipeInputs): FlourBlendEntry[] {
+  if (inputs.flourBlend && inputs.flourBlend.length > 0) {
+    return inputs.flourBlend;
+  }
+  // Legacy recipe — synthesize from scalar fields
+  const flour = findFlour(inputs.flourType);
+  return [
+    {
+      label: flour.label,
+      protein: flour.protein,
+      productNumber: flour.productNumber,
+      category: flour.category,
+      percentage: 100,
+    },
+  ];
+}
+
+/** Compact display label for a flour or blend. */
+export function getBlendDisplayLabel(inputs: RecipeInputs): string {
+  const blend = getBlend(inputs);
+  if (blend.length === 1) return blend[0].label;
+  return blend
+    .map((e) => `${e.percentage.toFixed(0)}% ${shortenLabel(e.label)}`)
+    .join(' + ');
+}
+
+/**
+ * Validate a flour blend. Returns null if valid, or an error message string.
+ * Percentages must sum to 100% within ±0.5 tolerance.
+ */
+export function validateBlend(blend: FlourBlendEntry[]): string | null {
+  if (!blend || blend.length === 0) return 'At least one flour is required.';
+  if (blend.length > 3) return 'Maximum 3 flours allowed.';
+
+  for (const entry of blend) {
+    if (entry.percentage <= 0 || isNaN(entry.percentage)) {
+      return `"${entry.label}" has an invalid percentage.`;
+    }
+  }
+
+  const sum = blend.reduce((s, e) => s + e.percentage, 0);
+  if (Math.abs(sum - 100) > 0.5) {
+    return `Flour percentages sum to ${sum.toFixed(1)}% — must total 100%.`;
+  }
+
+  return null;
+}
+
+/** Strip parenthetical product numbers from flour labels for compact display. */
+function shortenLabel(label: string): string {
+  // Remove " (NNN)" or " Organic (NNN)" suffixes
+  return label.replace(/\s*\([^)]*\)$/, '').replace(/\s*Organic$/, '');
 }

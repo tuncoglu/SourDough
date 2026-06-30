@@ -1,18 +1,49 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
-import { IngredientResults as IngredientResultsType } from '../models/types';
+import { IngredientResults as IngredientResultsType, FlourBlendEntry } from '../models/types';
 
 interface Props {
   ingredients: IngredientResultsType;
+  blend?: FlourBlendEntry[];
+  totalFlourWeight?: number;
 }
 
-export function IngredientResults({ ingredients }: Props) {
+export function IngredientResults({ ingredients, blend, totalFlourWeight }: Props) {
+  const showBlend = blend && blend.length > 1 && totalFlourWeight;
+
   return (
     <View style={styles.card}>
       <Text style={styles.title}>⚖️  Ingredients (put this in the bowl)</Text>
 
-      {renderRow('Flour', `${ingredients.freshFlour.toFixed(1)} g`, null)}
+      {showBlend ? (
+        // Multi-flour breakdown
+        <>
+          {blend!.map((entry) => {
+            const grams = totalFlourWeight! * entry.percentage / 100;
+            return (
+              <View style={styles.row} key={entry.label}>
+                <Text style={styles.label}>
+                  {entry.label.replace(/\s*\([^)]*\)$/, '')}
+                </Text>
+                <Text style={styles.value}>{grams.toFixed(1)} g</Text>
+                <Text style={styles.note}>{Math.round(entry.percentage)}%</Text>
+              </View>
+            );
+          })}
+          <View style={styles.subRow}>
+            <Text style={styles.subLabel}>
+              Total flour
+            </Text>
+            <Text style={styles.subValue}>
+              {ingredients.freshFlour.toFixed(1)} g
+            </Text>
+          </View>
+        </>
+      ) : (
+        renderRow('Flour', `${ingredients.freshFlour.toFixed(1)} g`, null)
+      )}
+
       {renderRow('Water', `${ingredients.addedWater.toFixed(1)} g`, null)}
       {renderRow('Starter', `${ingredients.starterTotal.toFixed(1)} g`,
         `(${ingredients.starterPct.toFixed(0)}% of total flour)`)}
@@ -95,6 +126,26 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: Colors.border,
     marginVertical: Spacing.sm,
+  },
+  subRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 2,
+    paddingLeft: Spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: Colors.border,
+    marginTop: 2,
+    paddingTop: Spacing.xs,
+  },
+  subLabel: {
+    flex: 1,
+    fontSize: FontSize.xs,
+    color: Colors.muted,
+  },
+  subValue: {
+    fontSize: FontSize.xs,
+    color: Colors.muted,
+    fontWeight: '500',
   },
   noteRow: {
     marginTop: Spacing.sm,

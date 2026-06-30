@@ -113,6 +113,7 @@ const desktopStyles = StyleSheet.create({
     overflow: 'visible' as any,
   },
   maxWidth: {
+    flex: 1,
     maxWidth: MaxWidth.content,
     width: '100%',
     alignSelf: 'center' as any,

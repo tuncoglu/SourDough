@@ -10,8 +10,11 @@ import {
   HourlyPoint,
   CalculationResults,
   WaterHardness,
+  FlourCategory,
+  FlourBlendEntry,
 } from '../models/types';
 import { getTempZone } from '../models/types';
+import { findFlour } from './flourSearch';
 
 // ── Physical Constants ──────────────────────────────────────────────────
 const BASE_FERMENTATION_TEMP = 26.0;
@@ -19,6 +22,63 @@ const BASE_FERMENTATION_HOURS = 4.0;
 const MIN_FERMENTATION_HOURS = 2.0;
 const ADD_TIME_PER_DEGREE_BELOW = 0.5;
 const SUB_TIME_PER_DEGREE_ABOVE = 0.25;
+
+// ── Flour Fermentation Factors ──────────────────────────────────────────
+/**
+ * Different flour categories ferment at different speeds.
+ * Wholemeal, rye, and spelt ferment faster than white flour due to higher
+ * mineral/ash content, more enzymes (amylase), and bran providing nucleation
+ * sites for yeast activity.
+ *
+ * Factor > 1.0 = faster ferment; < 1.0 = slower.
+ * Reference: Hammelman, "Bread"; Gisslen, "Professional Baking" 9th ed.
+ */
+const FLOUR_FERMENT_FACTORS: Record<FlourCategory, number> = {
+  'White Bread': 1.0,
+  'Cake & Pastry': 1.0,
+  'Brown, Malted & Seeded': 1.15,
+  'Wholemeal': 1.3,
+  'Spelt': 1.2,
+  'Ancient & Heritage': 1.2,
+  'Rye': 1.5,
+  'Other Grains': 1.0,
+  'Gluten-Free': 0.7,
+  'Malt & Brewing': 1.0,
+  'Generic': 1.0,
+};
+
+/** Look up the fermentation speed factor for a flour by its label. */
+export function getFlourFermentFactor(flourLabel: string): number {
+  const flour = findFlour(flourLabel);
+  return FLOUR_FERMENT_FACTORS[flour.category] ?? 1.0;
+}
+
+/** Weighted-average ferment factor for a multi-flour blend. */
+export function getBlendFermentFactor(blend: FlourBlendEntry[]): number {
+  let total = 0;
+  for (const entry of blend) {
+    const factor = FLOUR_FERMENT_FACTORS[entry.category] ?? 1.0;
+    total += factor * (entry.percentage / 100);
+  }
+  return total;
+}
+
+/** Weighted-average protein percentage for a multi-flour blend. */
+export function getBlendProtein(blend: FlourBlendEntry[]): number {
+  let total = 0;
+  for (const entry of blend) {
+    total += entry.protein * (entry.percentage / 100);
+  }
+  return Math.round(total * 10) / 10;
+}
+
+/** Resolve a flour argument (string label or blend array) to a ferment factor. */
+function resolveFermentFactor(flour: string | FlourBlendEntry[]): number {
+  if (typeof flour === 'string') {
+    return getFlourFermentFactor(flour);
+  }
+  return getBlendFermentFactor(flour);
+}
 
 // ── FDT Calculation ────────────────────────────────────────────────────
 export function calculateFDT(
@@ -77,12 +137,15 @@ export function estimateFermentation(
   fdt: number,
   inoculationPct: number = 20.0,
   hydrationPct: number = 70.0,
+  flour: string | FlourBlendEntry[] = 'Generic: Bread Flour',
 ): { hours: number; note: string } {
   // Inoculation factor: more starter = faster (time ∝ 1/√(inoc%))
   const inocRate = Math.sqrt(inoculationPct / 20.0);
   // Hydration factor: wetter dough = faster (rate ∝ (hyd% / 70)^0.6)
   const hydRate = Math.pow(hydrationPct / 70.0, 0.6);
-  const baseHours = BASE_FERMENTATION_HOURS / (inocRate * hydRate);
+  // Flour factor: wholemeal/rye/spelt ferment faster than white
+  const flourFactor = resolveFermentFactor(flour);
+  const baseHours = BASE_FERMENTATION_HOURS / (inocRate * hydRate * flourFactor);
 
   const delta = fdt - BASE_FERMENTATION_TEMP;
   let hours: number;
@@ -131,6 +194,7 @@ export function estimateDynamicFermentation(
   hourlyForecast: HourlyPoint[],
   inoculationPct: number = 20.0,
   hydrationPct: number = 70.0,
+  flour: string | FlourBlendEntry[] = 'Generic: Bread Flour',
 ): DynamicFermentation | null {
   const TAU = 1.5;      // hours — thermal time constant
   const Q10 = 2.5;      // rate multiplier per 10°C
@@ -138,10 +202,11 @@ export function estimateDynamicFermentation(
   const TARGET = 4.0;   // baseline hours at rate 1.0
   const DT = 0.25;      // integration step (15 min)
 
-  // Inoculation + hydration multipliers
+  // Inoculation + hydration + flour multipliers
   const inocRate = Math.sqrt(inoculationPct / 20.0);
   const hydRate = Math.pow(hydrationPct / 70.0, 0.6);
-  const baseRate = inocRate * hydRate;
+  const flourFactor = resolveFermentFactor(flour);
+  const baseRate = inocRate * hydRate * flourFactor;
 
   if (hourlyForecast.length < 2) return null;
 
@@ -223,6 +288,7 @@ export function fermentAdvice(
   inoculationPct: number = 20.0,
   hydrationPct: number = 70.0,
   dynamicHours?: number,
+  flour: string | FlourBlendEntry[] = 'Generic: Bread Flour',
 ): string[] {
   const advice: string[] = [];
   const effectiveHours = dynamicHours;
@@ -259,6 +325,31 @@ export function fermentAdvice(
     drivers.push(`high hydration (${hydrationPct.toFixed(0)}% — wet dough moves faster)`);
   } else if (hydrationPct <= 60) {
     drivers.push(`low hydration (${hydrationPct.toFixed(0)}% — stiff dough moves slower)`);
+  }
+
+  // Flour type driver
+  const isBlend = Array.isArray(flour);
+  const flourFactor = resolveFermentFactor(flour);
+  if (isBlend && (flour as FlourBlendEntry[]).length > 1) {
+    // For blends, describe the overall weighted effect
+    if (flourFactor >= 1.4) {
+      drivers.push(`flour blend (weighted rate ${flourFactor.toFixed(2)}× — very active)`);
+    } else if (flourFactor >= 1.15) {
+      drivers.push(`flour blend (weighted rate ${flourFactor.toFixed(2)}× — elevated activity)`);
+    } else if (flourFactor <= 0.8) {
+      drivers.push(`flour blend (weighted rate ${flourFactor.toFixed(2)}× — slow ferment)`);
+    }
+  } else {
+    // Single flour
+    const flourLabel = typeof flour === 'string' ? flour : flour[0].label;
+    const flourData = findFlour(flourLabel);
+    if (flourFactor >= 1.4) {
+      drivers.push(`${flourData.category.toLowerCase()} flour (high enzyme/mineral content — rapid ferment)`);
+    } else if (flourFactor >= 1.15) {
+      drivers.push(`${flourData.category.toLowerCase()} flour (elevated enzyme activity — faster than white)`);
+    } else if (flourFactor <= 0.8) {
+      drivers.push(`gluten-free flour (no gluten matrix — different fermentation dynamic)`);
+    }
   }
 
   if (fdt > 27) {
@@ -331,10 +422,17 @@ export function runAllCalculations(
     inputs.starterHydration,
   );
 
+  // Normalize flour argument: use blend array if present, else legacy string
+  const flourArg: string | FlourBlendEntry[] =
+    inputs.flourBlend && inputs.flourBlend.length > 0
+      ? inputs.flourBlend
+      : inputs.flourType;
+
   const staticFerment = estimateFermentation(
     fdt,
     ingredients.starterPct,
     inputs.hydration,
+    flourArg,
   );
 
   let dynamicFerment: DynamicFermentation | null = null;
@@ -344,6 +442,7 @@ export function runAllCalculations(
       hourlyForecast,
       ingredients.starterPct,
       inputs.hydration,
+      flourArg,
     );
   }
 
@@ -352,6 +451,7 @@ export function runAllCalculations(
     ingredients.starterPct,
     inputs.hydration,
     dynamicFerment?.totalHours,
+    flourArg,
   );
 
   const ha = waterHardnessAdvice(hardness);

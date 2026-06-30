@@ -10,9 +10,10 @@ import { useLocalSearchParams, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Spacing, FontSize, BorderRadius } from '../../src/theme';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
-import { SavedRecipe } from '../../src/models/types';
+import { SavedRecipe, FlourBlendEntry } from '../../src/models/types';
 import { getRecipe } from '../../src/store/recipeStore';
 import { getTempZoneInfo } from '../../src/models/types';
+import { getBlend } from '../../src/lib/flourSearch';
 import { IngredientResults } from '../../src/components/IngredientResults';
 import { FermentationTimeline } from '../../src/components/FermentationTimeline';
 import { AdviceCards } from '../../src/components/FermentAdvice';
@@ -51,17 +52,48 @@ export default function RecipeDetailScreen() {
   const date = new Date(recipe.createdAt);
 
   // ── Inputs card ──────────────────────────────────────────────────────
+  const blend = getBlend(recipe.inputs);
+  const showBlendDetail = blend.length > 1;
+
   const inputsCard = (
     <View style={styles.card}>
       <Text style={styles.cardTitle}>📋  INPUTS</Text>
-      <View style={styles.row}>
-        <Text style={styles.label}>Flour</Text>
-        <Text style={styles.value}>{recipe.inputs.flourWeight.toFixed(0)}g — {recipe.inputs.flourType}</Text>
-      </View>
-      <View style={styles.row}>
-        <Text style={styles.label}>Protein</Text>
-        <Text style={styles.value}>{recipe.inputs.flourProtein.toFixed(1)}%</Text>
-      </View>
+
+      {showBlendDetail ? (
+        // Multi-flour breakdown
+        <>
+          <Text style={styles.sectionLabel}>Flour mix ({recipe.inputs.flourWeight.toFixed(0)}g total)</Text>
+          {blend.map((entry: FlourBlendEntry) => {
+            const grams = recipe.inputs.flourWeight * entry.percentage / 100;
+            return (
+              <View style={styles.row} key={entry.label}>
+                <Text style={styles.label}>
+                  {entry.label.replace(/\s*\([^)]*\)$/, '')}
+                </Text>
+                <Text style={styles.value}>
+                  {grams.toFixed(0)}g ({Math.round(entry.percentage)}%)
+                </Text>
+              </View>
+            );
+          })}
+          <View style={styles.row}>
+            <Text style={styles.label}>Protein (wtd.)</Text>
+            <Text style={styles.value}>{recipe.inputs.flourProtein.toFixed(1)}%</Text>
+          </View>
+        </>
+      ) : (
+        <>
+          <View style={styles.row}>
+            <Text style={styles.label}>Flour</Text>
+            <Text style={styles.value}>{recipe.inputs.flourWeight.toFixed(0)}g — {recipe.inputs.flourType}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>Protein</Text>
+            <Text style={styles.value}>{recipe.inputs.flourProtein.toFixed(1)}%</Text>
+          </View>
+        </>
+      )}
+
       <View style={styles.row}>
         <Text style={styles.label}>Hydration</Text>
         <Text style={styles.value}>{recipe.inputs.hydration.toFixed(0)}%</Text>
@@ -117,7 +149,11 @@ export default function RecipeDetailScreen() {
       />
 
       {/* Ingredients */}
-      <IngredientResults ingredients={recipe.results.ingredients} />
+      <IngredientResults
+        ingredients={recipe.results.ingredients}
+        blend={blend}
+        totalFlourWeight={recipe.inputs.flourWeight}
+      />
 
       {/* Advice */}
       <AdviceCards
@@ -236,6 +272,13 @@ const styles = StyleSheet.create({
     color: Colors.muted,
     letterSpacing: 0.5,
     marginBottom: Spacing.sm,
+  },
+  sectionLabel: {
+    fontSize: FontSize.sm,
+    fontWeight: '600',
+    color: Colors.espresso,
+    marginBottom: Spacing.xs,
+    marginTop: Spacing.xs,
   },
   row: {
     flexDirection: 'row',

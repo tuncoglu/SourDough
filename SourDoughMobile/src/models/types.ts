@@ -11,6 +11,15 @@ export interface FlourEntry {
   category: FlourCategory;
 }
 
+/** A single flour component within a multi-flour blend. */
+export interface FlourBlendEntry {
+  label: string;
+  protein: number;
+  productNumber: string;
+  category: FlourCategory;
+  percentage: number; // 0–100
+}
+
 export type FlourCategory =
   | 'White Bread'
   | 'Wholemeal'
@@ -56,9 +65,10 @@ export interface HourlyPoint {
 // ── Recipe Inputs ──────────────────────────────────────────────────────
 export interface RecipeInputs {
   flourWeight: number;       // g — fresh flour scooped into bowl
-  flourType: string;         // display label of selected flour
-  flourProtein: number;      // %
-  flourProductNo: string;
+  flourType: string;         // display label of selected flour (or composite for blends)
+  flourProtein: number;      // % (weighted average for blends)
+  flourProductNo: string;    // first flour's product no (or composite for blends)
+  flourBlend?: FlourBlendEntry[]; // detailed blend breakdown (undefined on legacy recipes)
   hydration: number;         // %
   starterWeight: number;     // g
   starterHydration: number;  // %

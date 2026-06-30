@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
 import { SavedRecipe } from '../models/types';
 import { getTempZoneInfo } from '../models/types';
+import { getBlendDisplayLabel } from '../lib/flourSearch';
 
 interface Props {
   recipe: SavedRecipe;
@@ -31,7 +32,7 @@ export function RecipeCard({ recipe, onPress }: Props) {
       </View>
       <View style={styles.body}>
         <Text style={styles.flour} numberOfLines={1}>
-          {recipe.inputs.flourType}
+          {getBlendDisplayLabel(recipe.inputs)}
         </Text>
         <Text style={styles.meta}>
           {recipe.inputs.hydration.toFixed(0)}% hydration ·{' '}

@@ -13,7 +13,6 @@ import { Colors, Spacing, FontSize, BorderRadius } from '../../src/theme';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { useLocation } from '../../src/hooks/useLocation';
 import { getAutoTemps } from '../../src/lib/location';
-import { findFlour } from '../../src/lib/flourSearch';
 import { runAllCalculations } from '../../src/lib/calculations';
 import { saveRecipe, generateRecipeId } from '../../src/store/recipeStore';
 import { loadSettings } from '../../src/store/settingsStore';
@@ -23,8 +22,9 @@ import {
   UserSettings,
   DEFAULT_SETTINGS,
   getTempZoneInfo,
+  FlourBlendEntry,
 } from '../../src/models/types';
-import type { WaterHardness } from '../../src/models/types';
+import type { WaterHardness, FlourEntry } from '../../src/models/types';
 
 import { LocationBar } from '../../src/components/LocationBar';
 import { NumberInput } from '../../src/components/NumberInput';
@@ -33,6 +33,8 @@ import { TempRow } from '../../src/components/TempRow';
 import { IngredientResults } from '../../src/components/IngredientResults';
 import { FermentationTimeline } from '../../src/components/FermentationTimeline';
 import { AdviceCards } from '../../src/components/FermentAdvice';
+import { validateBlend, findFlour } from '../../src/lib/flourSearch';
+import { getBlendProtein } from '../../src/lib/calculations';
 
 const fallbackHardness: WaterHardness = {
   mgL: 120,
@@ -41,12 +43,25 @@ const fallbackHardness: WaterHardness = {
   key: 'fallback',
 };
 
+interface MixRow {
+  key: string;
+  flour: FlourEntry;
+  percentage: string;
+}
+
+let _mixKeyCounter = 0;
+function nextMixKey(): string {
+  return `flour_${_mixKeyCounter++}`;
+}
+
 export default function CalculatorScreen() {
   const { data: locationData, loading: locLoading, error: locError, detect } = useLocation();
   const { isDesktop } = useBreakpoint();
 
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
-  const [flourLabel, setFlourLabel] = useState(DEFAULT_SETTINGS.defaultFlourType);
+  const [mixRows, setMixRows] = useState<MixRow[]>([
+    { key: nextMixKey(), flour: findFlour(DEFAULT_SETTINGS.defaultFlourType), percentage: '100' },
+  ]);
   const [flourWeight, setFlourWeight] = useState(String(DEFAULT_SETTINGS.defaultFlourWeight));
   const [hydration, setHydration] = useState(String(DEFAULT_SETTINGS.defaultHydration));
   const [starterWeight, setStarterWeight] = useState('100');
@@ -64,11 +79,49 @@ export default function CalculatorScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const rightScrollRef = useRef<ScrollView>(null);
 
+  // ── Flour mix handlers ───────────────────────────────────────────────
+  const handleAddFlour = useCallback(() => {
+    setMixRows((prev) => {
+      if (prev.length >= 3) return prev;
+      const count = prev.length + 1;
+      const pct = (100 / count).toFixed(1);
+      return [
+        ...prev.map((r) => ({ ...r, percentage: pct })),
+        {
+          key: nextMixKey(),
+          flour: findFlour('Generic: Bread Flour'),
+          percentage: pct,
+        },
+      ];
+    });
+  }, []);
+
+  const handleRemoveFlour = useCallback((key: string) => {
+    setMixRows((prev) => {
+      if (prev.length <= 1) return prev;
+      const next = prev.filter((r) => r.key !== key);
+      const pct = (100 / next.length).toFixed(1);
+      return next.map((r) => ({ ...r, percentage: pct }));
+    });
+  }, []);
+
+  const handleUpdateFlour = useCallback((key: string, flour: FlourEntry) => {
+    setMixRows((prev) =>
+      prev.map((r) => (r.key === key ? { ...r, flour } : r)),
+    );
+  }, []);
+
+  const handleUpdatePercentage = useCallback((key: string, pct: string) => {
+    setMixRows((prev) =>
+      prev.map((r) => (r.key === key ? { ...r, percentage: pct } : r)),
+    );
+  }, []);
+
   // Load settings
   useEffect(() => {
     loadSettings().then((s) => {
       setSettings(s);
-      setFlourLabel(s.defaultFlourType);
+      setMixRows([{ key: nextMixKey(), flour: findFlour(s.defaultFlourType), percentage: '100' }]);
       setFlourWeight(String(s.defaultFlourWeight));
       setHydration(String(s.defaultHydration));
       setSaltPct(String(s.defaultSaltPct));
@@ -103,21 +156,47 @@ export default function CalculatorScreen() {
       return;
     }
 
+    // Build blend from mix rows
+    const blend: FlourBlendEntry[] = mixRows.map((row) => ({
+      label: row.flour.label,
+      protein: row.flour.protein,
+      productNumber: row.flour.productNumber,
+      category: row.flour.category,
+      percentage: parseFloat(row.percentage),
+    }));
+
+    const blendError = validateBlend(blend);
+    if (blendError) {
+      Alert.alert('Invalid flour mix', blendError);
+      return;
+    }
+
     setCalculating(true);
 
-    const flour = findFlour(flourLabel);
+    const flour = findFlour(mixRows[0].flour.label);
     const hardness = locationData?.hardness ?? fallbackHardness;
 
     const warnings: string[] = [];
     if (wat <= 0) warnings.push('Water is near freezing. Dough will be very cold.');
     if (wat >= 65) warnings.push('Water is very hot. Risk of damaging starter.');
 
+    // Build display label for the flour/blend
+    const flourType =
+      blend.length === 1
+        ? blend[0].label
+        : blend
+            .map((e) => `${Math.round(e.percentage)}% ${e.label.replace(/\s*\([^)]*\)$/, '')}`)
+            .join(' + ');
+    const flourProtein = blend.length > 1 ? getBlendProtein(blend) : flour.protein;
+
+    // Build inputs with both blend array and legacy scalar fields
     const res = runAllCalculations(
       {
         flourWeight: fw,
-        flourType: flour.label,
-        flourProtein: flour.protein,
+        flourType,
+        flourProtein,
         flourProductNo: flour.productNumber,
+        flourBlend: blend,
         hydration: hyd,
         starterWeight: sw,
         starterHydration: sh,
@@ -144,22 +223,39 @@ export default function CalculatorScreen() {
   }, [
     flourWeight, hydration, starterWeight, saltPct, starterHyd,
     ambientTemp, flourTemp, waterTemp, starterTemp,
-    flourLabel, locationData, isDesktop,
+    mixRows, locationData, isDesktop,
   ]);
 
   const handleSave = useCallback(async () => {
     if (!results) return;
     setSaving(true);
 
-    const flour = findFlour(flourLabel);
+    const fw = parseFloat(flourWeight);
+    const blend: FlourBlendEntry[] = mixRows.map((row) => ({
+      label: row.flour.label,
+      protein: row.flour.protein,
+      productNumber: row.flour.productNumber,
+      category: row.flour.category,
+      percentage: parseFloat(row.percentage),
+    }));
+
+    const flourType =
+      blend.length === 1
+        ? blend[0].label
+        : blend
+            .map((e) => `${Math.round(e.percentage)}% ${e.label.replace(/\s*\([^)]*\)$/, '')}`)
+            .join(' + ');
+    const flourProtein = blend.length > 1 ? getBlendProtein(blend) : blend[0].protein;
+
     const recipe: SavedRecipe = {
       id: generateRecipeId(),
       createdAt: new Date().toISOString(),
       inputs: {
-        flourWeight: parseFloat(flourWeight),
-        flourType: flour.label,
-        flourProtein: flour.protein,
-        flourProductNo: flour.productNumber,
+        flourWeight: fw,
+        flourType,
+        flourProtein,
+        flourProductNo: blend[0].productNumber,
+        flourBlend: blend,
         hydration: parseFloat(hydration),
         starterWeight: parseFloat(starterWeight),
         starterHydration: parseFloat(starterHyd),
@@ -181,7 +277,7 @@ export default function CalculatorScreen() {
     } finally {
       setSaving(false);
     }
-  }, [results, flourLabel, flourWeight, hydration, starterWeight, saltPct,
+  }, [results, mixRows, flourWeight, hydration, starterWeight, saltPct,
       starterHyd, ambientTemp, flourTemp, waterTemp, starterTemp, locationData]);
 
   const zoneInfo = results ? getTempZoneInfo(results.tempZone) : null;
@@ -203,13 +299,50 @@ export default function CalculatorScreen() {
           />
         </View>
 
-        <View style={styles.inputRow}>
-          <Text style={styles.inputLabel}>Type</Text>
-          <FlourPicker
-            value={flourLabel}
-            onSelect={(f) => setFlourLabel(f.label)}
-          />
-        </View>
+        {/* Flour mix rows */}
+        {mixRows.map((row, i) => {
+          const computedWeight =
+            (parseFloat(row.percentage) / 100) * parseFloat(flourWeight || '0');
+          return (
+            <View key={row.key} style={mixStyles.mixRow}>
+              <View style={mixStyles.pickerWrap}>
+                <FlourPicker
+                  value={row.flour.label}
+                  onSelect={(f) => handleUpdateFlour(row.key, f)}
+                />
+              </View>
+              <NumberInput
+                label=""
+                value={row.percentage}
+                onChangeText={(t) => handleUpdatePercentage(row.key, t)}
+                unit="%"
+              />
+              <Text style={mixStyles.computedWeight}>
+                = {isNaN(computedWeight) ? '0.0' : computedWeight.toFixed(1)}g
+              </Text>
+              {mixRows.length > 1 && i > 0 && (
+                <TouchableOpacity
+                  style={mixStyles.removeBtn}
+                  onPress={() => handleRemoveFlour(row.key)}
+                  activeOpacity={0.6}
+                >
+                  <Text style={mixStyles.removeBtnText}>×</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          );
+        })}
+
+        {/* Add flour button */}
+        {mixRows.length < 3 && (
+          <TouchableOpacity
+            style={mixStyles.addBtn}
+            onPress={handleAddFlour}
+            activeOpacity={0.6}
+          >
+            <Text style={mixStyles.addBtnText}>+ Add Flour</Text>
+          </TouchableOpacity>
+        )}
 
         <NumberInput label="Hydration" value={hydration} onChangeText={setHydration} unit="%" />
         <NumberInput label="Starter" value={starterWeight} onChangeText={setStarterWeight} unit="g" />
@@ -283,7 +416,17 @@ export default function CalculatorScreen() {
       />
 
       {/* Ingredients */}
-      <IngredientResults ingredients={results.ingredients} />
+      <IngredientResults
+        ingredients={results.ingredients}
+        blend={mixRows.map((r) => ({
+          label: r.flour.label,
+          protein: r.flour.protein,
+          productNumber: r.flour.productNumber,
+          category: r.flour.category,
+          percentage: parseFloat(r.percentage),
+        }))}
+        totalFlourWeight={parseFloat(flourWeight)}
+      />
 
       {/* Advice */}
       <AdviceCards
@@ -496,6 +639,49 @@ const styles = StyleSheet.create({
     color: Colors.muted,
     textAlign: 'center',
     lineHeight: 22,
+  },
+});
+
+const mixStyles = StyleSheet.create({
+  mixRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.xs,
+    gap: Spacing.xs,
+  },
+  pickerWrap: {
+    flex: 1,
+  },
+  computedWeight: {
+    fontSize: FontSize.xs,
+    color: Colors.muted,
+    width: 70,
+    textAlign: 'right',
+  },
+  removeBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeBtnText: {
+    fontSize: FontSize.lg,
+    color: Colors.error,
+    fontWeight: '700',
+    lineHeight: FontSize.lg + 2,
+  },
+  addBtn: {
+    alignSelf: 'flex-end',
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  addBtnText: {
+    fontSize: FontSize.sm,
+    color: Colors.terracotta,
+    fontWeight: '600',
   },
 });
 
