@@ -1165,7 +1165,7 @@ def run_gui() -> None:
              fg=TEXT, bg=BG).pack(pady=(14, 2))
 
     # ── Status + postcode ────────────────────────────────────────────────
-    status_label = tk.Label(root, text="Detecting your location…",
+    status_label = tk.Label(root, text="Detecting your location… enter postcode for precision",
                             font=("Helvetica", 9), fg=MUTED, bg=BG)
     status_label.pack(pady=(0, 6))
 
@@ -1200,8 +1200,8 @@ def run_gui() -> None:
 
     refine_btn = _button(pc_frame, " ↺ ", refine_location)
     refine_btn.pack(side="left", padx=3)
-    tk.Label(pc_frame, text="optional", font=("Helvetica", 8, "italic"),
-             fg=MUTED, bg=BG).pack(side="left", padx=4)
+    tk.Label(pc_frame, text="for precision", font=("Helvetica", 8, "italic"),
+             fg=GREEN, bg=BG).pack(side="left", padx=4)
 
     # ── Main content frame (no canvas — direct packing) ──────────────────
     content = tk.Frame(root, bg=BG)
@@ -1337,11 +1337,18 @@ def run_cli() -> None:
         info(f"Water hardness: {hardness['classification']} "
              f"({hardness['mg_l']} mg/L CaCO₃) — {hardness['note']}")
 
-    # Offer postcode refinement
+    # Ask for postcode to refine — IP geolocation is approximate
     console.print()
-    postcode = Prompt.ask(
-        "Postcode/ZIP for better accuracy (or Enter to keep detected location)",
-        default="")
+    if loc:
+        postcode = Prompt.ask(
+            f"📍 Detected [bold]{loc['city']}, {loc['region']}[/bold] — "
+            f"enter your [bold cyan]postcode[/bold cyan] for precise local conditions "
+            f"(or press Enter to use what was detected)",
+            default="")
+    else:
+        postcode = Prompt.ask(
+            "Enter your [bold cyan]postcode/ZIP[/bold cyan] for accurate local conditions",
+            default="")
     if postcode.strip():
         console.print("[dim]Geocoding postcode and refining…[/dim]")
         det2 = detect_all(postcode)
