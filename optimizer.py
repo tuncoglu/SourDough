@@ -957,9 +957,18 @@ def run_gui() -> None:
                      f"🌡 {r['ambient']}°C  │  💧 Tap ~{r['water_temp']}°C  │  "
                      f"🧪 {r['hardness']['classification']} ({r['hardness']['mg_l']} mg/L)",
                 foreground="#2e7d32")
+            # Prompt for postcode — IP geolocation is approximate
+            pc_prompt.config(
+                text=f"📍 Enter your postcode for precise local weather:",
+                fg=ACCENT)
+            pc_entry.focus_set()
         else:
             status_label.config(text="⚠ Could not detect location — enter temps manually",
                                 foreground="#e65100")
+            pc_prompt.config(
+                text="⚠ No location detected — enter postcode manually:",
+                fg=RED)
+            pc_entry.focus_set()
         detection["loc_summary"] = loc_text
         detection["hardness"] = r["hardness"]
         detection["hourly_forecast"] = r.get("hourly_forecast")
@@ -1165,14 +1174,20 @@ def run_gui() -> None:
              fg=TEXT, bg=BG).pack(pady=(14, 2))
 
     # ── Status + postcode ────────────────────────────────────────────────
-    status_label = tk.Label(root, text="Detecting your location… enter postcode for precision",
+    status_label = tk.Label(root, text="Detecting your location…",
                             font=("Helvetica", 9), fg=MUTED, bg=BG)
-    status_label.pack(pady=(0, 6))
+    status_label.pack(pady=(0, 4))
+
+    # Postcode prompt — becomes visible after detection
+    pc_prompt = tk.Label(root, text="", font=("Helvetica", 10, "bold"),
+                         fg=ACCENT, bg=BG)
+    pc_prompt.pack(pady=(0, 2))
 
     pc_frame = tk.Frame(root, bg=BG)
     pc_frame.pack(pady=(0, 8))
     postcode_var = tk.StringVar()
-    _entry(pc_frame, postcode_var, width=14).pack(side="left")
+    pc_entry = _entry(pc_frame, postcode_var, width=14)
+    pc_entry.pack(side="left")
     tk.Label(pc_frame, text=" postcode ", font=("Helvetica", 9),
              fg=MUTED, bg=BG).pack(side="left")
 
@@ -1181,6 +1196,7 @@ def run_gui() -> None:
         if not pc:
             return
         refine_btn.config(text="…", state="disabled")
+        pc_prompt.config(text="Geocoding…")
         def _run():
             result = detect_all(pc)
             root.after(0, lambda: _apply_refine(result))
@@ -1194,14 +1210,14 @@ def run_gui() -> None:
             status_label.config(
                 text=f"📍 {r['loc']['city']}, {r['loc']['region']} — via postcode",
                 fg=GREEN)
+            pc_prompt.config(text="✅ Location refined!", fg=GREEN)
         else:
             status_label.config(text="⚠  Couldn't geocode", fg=RED)
+            pc_prompt.config(text="❌ Postcode not found — try again", fg=RED)
         refine_btn.config(text="↺", state="normal")
 
     refine_btn = _button(pc_frame, " ↺ ", refine_location)
     refine_btn.pack(side="left", padx=3)
-    tk.Label(pc_frame, text="for precision", font=("Helvetica", 8, "italic"),
-             fg=GREEN, bg=BG).pack(side="left", padx=4)
 
     # ── Main content frame (no canvas — direct packing) ──────────────────
     content = tk.Frame(root, bg=BG)
