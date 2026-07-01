@@ -18,6 +18,7 @@ const WATER_HARDNESS_TABLE: Record<string, [number, string, string]> = {
   'gb-england-nw':    [120, 'moderately soft', 'Mixed geology'],
   'gb-scotland':      [30,  'very soft',       'Granite & peat — perfect for bread'],
   'gb-wales':         [60,  'soft',            'Upland catchments'],
+  'gb':               [180, 'moderately hard', 'UK fallback — varies by region'],
   'de': [160, 'moderately hard', 'Mixed — harder in south (limestone)'],
   'fr': [180, 'moderately hard', 'Harder in the Paris basin'],
   'it': [200, 'hard',            'Carbonate aquifers — harder in centre/south'],
@@ -75,11 +76,15 @@ const REGION_MAP: Record<string, Record<string, string>> = {
     saskatchewan: 'ca-prairies', manitoba: 'ca-prairies',
   },
   gb: {
-    'england-south': 'gb-england-se', london: 'gb-england-se',
+    'greater london': 'gb-england-se', london: 'gb-england-se',
     'south east': 'gb-england-se', 'south west': 'gb-england-se',
-    'england-north': 'gb-england-nw', 'north west': 'gb-england-nw',
+    'england-south': 'gb-england-se',
+    'north west': 'gb-england-nw', 'england-north': 'gb-england-nw',
     yorkshire: 'gb-england-nw', midlands: 'gb-england-se',
-    scotland: 'gb-scotland', wales: 'gb-wales',
+    // Broad fallbacks — catch "England", "Scotland", "Wales" as state names
+    england: 'gb-england-se',
+    scotland: 'gb-scotland',
+    wales: 'gb-wales',
   },
   au: {
     queensland: 'au-east', 'new south wales': 'au-east',
