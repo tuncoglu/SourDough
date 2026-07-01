@@ -1341,9 +1341,9 @@ def run_cli() -> None:
     console.print()
     if loc:
         postcode = Prompt.ask(
-            f"📍 Detected [bold]{loc['city']}, {loc['region']}[/bold] — "
-            f"enter your [bold cyan]postcode[/bold cyan] for precise local conditions "
-            f"(or press Enter to use what was detected)",
+            f"📍 Detected [bold]{loc['city']}, {loc['region']}[/bold]\n"
+            f"   Enter [bold cyan]postcode[/bold cyan] for precise local weather "
+            f"([dim]or Enter to keep[/dim])",
             default="")
     else:
         postcode = Prompt.ask(
