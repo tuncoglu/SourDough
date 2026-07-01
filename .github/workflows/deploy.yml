@@ -1,4 +1,4 @@
-name: Deploy Worker
+name: Deploy
 
 on:
   push:
@@ -9,6 +9,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: SourDoughMobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: SourDoughMobile
+
+      - name: Build web export
+        run: npx expo export --platform web
+        working-directory: SourDoughMobile
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: sourdough
+          directory: SourDoughMobile/dist
+          branch: main
 
       - name: Deploy Worker (sourdough proxy)
         uses: cloudflare/wrangler-action@v3
