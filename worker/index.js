@@ -8,6 +8,29 @@ export default {
     url.pathname = url.pathname.replace(/^\/sourdough/, "") || "/";
 
     const modifiedRequest = new Request(url, request);
-    return fetch(modifiedRequest);
+    const upstreamResponse = await fetch(modifiedRequest);
+
+    // Clone the response so we can add security headers
+    const response = new Response(upstreamResponse.body, upstreamResponse);
+
+    // Security headers
+    response.headers.set("X-Content-Type-Options", "nosniff");
+    response.headers.set("X-Frame-Options", "DENY");
+    response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+    response.headers.set("Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains; preload");
+    response.headers.set("Permissions-Policy", "geolocation=self, notifications=self");
+
+    // Cache static assets at the edge (1 hour for HTML, 1 year for hashed assets)
+    const pathname = url.pathname;
+    if (/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|eot)$/i.test(pathname)) {
+      response.headers.set("Cache-Control",
+        "public, max-age=31536000, immutable");
+    } else {
+      response.headers.set("Cache-Control",
+        "public, max-age=3600, must-revalidate");
+    }
+
+    return response;
   },
 };

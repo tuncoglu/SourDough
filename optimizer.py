@@ -24,15 +24,25 @@ def _ensure_package(import_name: str, pip_name: str) -> None:
     try:
         __import__(import_name)
     except ImportError:
-        print(f"📦 Installing `{pip_name}`...")
+        print(f"📦 The '{pip_name}' package is required but not installed.")
+        print(f"   Run: pip install {pip_name}")
+        print(f"   Or press Enter to install it now (Ctrl+C to cancel).")
+        try:
+            input("   > ")
+        except (KeyboardInterrupt, EOFError):
+            print("❌ Installation cancelled. Exiting.")
+            sys.exit(1)
+
+        # Try multiple install methods
         methods = [
-            [sys.executable, "-m", "pip", "install", pip_name, "-q"],
-            [sys.executable, "-m", "pip", "install", "--user", pip_name, "-q"],
-            ["pip3", "install", pip_name, "-q"],
+            [sys.executable, "-m", "pip", "install", pip_name],
+            [sys.executable, "-m", "pip", "install", "--user", pip_name],
+            ["pip3", "install", pip_name],
         ]
         for method in methods:
             try:
                 subprocess.check_call(method)
+                print(f"✅ Installed '{pip_name}' successfully.")
                 return
             except (subprocess.CalledProcessError, FileNotFoundError):
                 continue
@@ -358,14 +368,7 @@ def _http_get(url: str, timeout: int = 8) -> Optional[dict]:
         return None
 
 def detect_location() -> Optional[dict]:
-    data = _http_get("http://ip-api.com/json/?fields=status,message,country,"
-                     "countryCode,regionName,city,lat,lon")
-    if data and data.get("status") == "success":
-        return {"lat": data["lat"], "lon": data["lon"],
-                "city": data.get("city", "Unknown"),
-                "region": data.get("regionName", ""),
-                "country": data.get("country", "Unknown"),
-                "country_code": data.get("countryCode", "").lower()}
+    """HTTPS-only IP geolocation via ipapi.co (free, no API key required)."""
     data = _http_get("https://ipapi.co/json/")
     if data and "latitude" in data:
         return {"lat": data["latitude"], "lon": data["longitude"],

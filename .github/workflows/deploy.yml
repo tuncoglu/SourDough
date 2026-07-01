@@ -24,6 +24,9 @@ jobs:
         run: npx expo export --platform web
         working-directory: SourDoughMobile
 
+      - name: Ensure Cloudflare _headers is present
+        run: cp -f SourDoughMobile/public/_headers SourDoughMobile/dist/_headers 2>/dev/null || true
+
       - name: Deploy to Cloudflare Pages
         run: npx wrangler pages deploy SourDoughMobile/dist --project-name=sourdough --branch=main
         env:
