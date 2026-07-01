@@ -609,6 +609,35 @@ def geocode_postcode(postcode: str, country_code: str = "") -> Optional[dict]:
     return None
 
 
+def reverse_geocode(lat: float, lon: float) -> Optional[dict]:
+    """
+    Reverse-geocode coordinates to a precise location name using Nominatim.
+    Returns dict with lat, lon, city, region, country, country_code, or None.
+    This gives neighbourhood-level precision (e.g. 'Surbiton' vs 'Greater London').
+    """
+    url = (f"https://nominatim.openstreetmap.org/reverse"
+           f"?lat={lat}&lon={lon}&format=json&zoom=18")
+    try:
+        r = requests.get(url, timeout=8, headers={
+            "User-Agent": "SourDoughOptimizer/2.0"})
+        if r.status_code == 200:
+            data = r.json()
+            addr = data.get("address", {})
+            if addr:
+                return {
+                    "lat": lat,
+                    "lon": lon,
+                    "city": (addr.get("suburb") or addr.get("village") or
+                             addr.get("town") or addr.get("city") or "Unknown"),
+                    "region": addr.get("state") or addr.get("county") or "",
+                    "country": addr.get("country", "Unknown"),
+                    "country_code": addr.get("country_code", "").lower(),
+                }
+    except Exception:
+        pass
+    return None
+
+
 def detect_all(postcode: str = "") -> dict:
     """
     Run all auto-detection. If postcode provided, geocode it for
@@ -627,6 +656,13 @@ def detect_all(postcode: str = "") -> dict:
     # Fall back to IP geolocation
     if not loc:
         loc = detect_location()
+        # IP geolocation gives coarse city names (e.g. "Greater London").
+        # Reverse-geocode the coordinates through Nominatim for neighbourhood
+        # precision (e.g. "Surbiton, Long Ditton").
+        if loc:
+            refined = reverse_geocode(loc["lat"], loc["lon"])
+            if refined:
+                loc = refined
     if loc:
         ambient = get_ambient_temp(loc["lat"], loc["lon"])
         est_water_temp = estimate_water_temp(loc["lat"], loc["lon"])
