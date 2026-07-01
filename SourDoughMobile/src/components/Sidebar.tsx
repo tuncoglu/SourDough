@@ -60,6 +60,7 @@ export function Sidebar() {
       {/* Footer */}
       <View style={styles.footer}>
         <Text style={styles.footerText}>v3.0</Text>
+        <Text style={styles.footerText}>MIT License</Text>
       </View>
     </View>
   );

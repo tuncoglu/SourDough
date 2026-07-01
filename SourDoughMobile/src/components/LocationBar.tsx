@@ -23,22 +23,36 @@ export function LocationBar({ summary, loading, error, onRefresh, showFallbackWa
         </View>
       )}
       {!loading && error && (
-        <View style={styles.inner}>
-          <Text style={styles.error} numberOfLines={2}>{error}</Text>
-          <TouchableOpacity onPress={onRefresh} style={styles.retryBtn}>
-            <Text style={styles.retryText}>Retry</Text>
-          </TouchableOpacity>
+        <View>
+          <View style={styles.inner}>
+            <Text style={styles.error} numberOfLines={2}>{error}</Text>
+            <TouchableOpacity onPress={onRefresh} style={styles.retryBtn}>
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+          {showFallbackWarning && (
+            <TouchableOpacity
+              style={[styles.inner, styles.fallbackBanner]}
+              onPress={onTapFallback}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.fallbackIcon}>🧪</Text>
+              <Text style={styles.fallbackText} numberOfLines={2}>
+                Assuming moderately soft water (120 mg/L). Tap to set manually.
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
-      {!loading && summary && (
+      {!loading && !error && summary && (
         <TouchableOpacity onPress={onRefresh} style={styles.inner}>
           <Text style={styles.text} numberOfLines={2}>{summary}</Text>
           <Text style={styles.retryText}>↺</Text>
         </TouchableOpacity>
       )}
-      {!loading && !summary && showFallbackWarning && (
+      {!loading && !error && !summary && showFallbackWarning && (
         <TouchableOpacity
-          style={[styles.inner, styles.fallbackInner]}
+          style={[styles.inner, styles.fallbackBanner]}
           onPress={onTapFallback}
           activeOpacity={0.7}
         >
@@ -87,13 +101,14 @@ const styles = StyleSheet.create({
     color: Colors.terracotta,
     fontWeight: '600',
   },
-  fallbackInner: {
+  fallbackBanner: {
     backgroundColor: '#FFF8F0',
     borderRadius: BorderRadius.sm,
     paddingVertical: Spacing.xs + 2,
     paddingHorizontal: Spacing.sm,
     borderLeftWidth: 3,
     borderLeftColor: Colors.warm,
+    marginTop: Spacing.xs,
   },
   fallbackIcon: {
     fontSize: 14,
