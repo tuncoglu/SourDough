@@ -656,13 +656,26 @@ def detect_all(postcode: str = "") -> dict:
     # Fall back to IP geolocation
     if not loc:
         loc = detect_location()
-        # IP geolocation gives coarse city names (e.g. "Greater London").
-        # Reverse-geocode the coordinates through Nominatim for neighbourhood
-        # precision (e.g. "Surbiton, Long Ditton").
+        # IP geolocation sometimes returns vague city names like "Greater London".
+        # When the city is a broad region or the coordinates are imprecise,
+        # reverse-geocode through Nominatim for neighbourhood-level precision.
         if loc:
-            refined = reverse_geocode(loc["lat"], loc["lon"])
-            if refined:
-                loc = refined
+            city = loc.get("city", "")
+            # Vague city names that suggest a broad area rather than a specific town
+            vague_cities = {"greater london", "london", "greater manchester",
+                           "manchester", "west midlands", "west yorkshire",
+                           "south yorkshire", "merseyside", "tyne and wear",
+                           "birmingham", "glasgow", "edinburgh", "cardiff",
+                           "belfast", "bristol", "leeds", "sheffield",
+                           "nottingham", "liverpool", "unknown"}
+            if city.lower() in vague_cities:
+                refined = reverse_geocode(loc["lat"], loc["lon"])
+                if refined:
+                    # Keep the refined suburb/village but retain the IP country/region
+                    # if Nominatim returned something less useful
+                    rcity = refined.get("city", "")
+                    if rcity.lower() not in vague_cities and rcity != "unknown":
+                        loc = refined
     if loc:
         ambient = get_ambient_temp(loc["lat"], loc["lon"])
         est_water_temp = estimate_water_temp(loc["lat"], loc["lon"])
