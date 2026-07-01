@@ -182,7 +182,7 @@ function nextMixKey(): string {
 }
 
 export default function CalculatorScreen() {
-  const { data: locationData, loading: locLoading, error: locError, detect } = useLocation();
+  const { data: locationData, loading: locLoading, error: locError, detect, refineWithPostcode } = useLocation();
   const { isDesktop } = useBreakpoint();
 
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
@@ -789,6 +789,9 @@ export default function CalculatorScreen() {
           onTapFallback={() => {
             // Scroll to temperature section for manual entry
           }}
+          onPostcodeSubmit={(postcode) => {
+            refineWithPostcode(postcode);
+          }}
         />
         <View style={desktopStyles.twoCol}>
           {/* Left: Inputs */}
@@ -842,6 +845,9 @@ export default function CalculatorScreen() {
           showFallbackWarning={!locLoading && !locationData}
           onTapFallback={() => {
             // Scroll to temperature section for manual entry
+          }}
+          onPostcodeSubmit={(postcode) => {
+            refineWithPostcode(postcode);
           }}
         />
 

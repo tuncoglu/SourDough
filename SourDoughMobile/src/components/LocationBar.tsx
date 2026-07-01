@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput } from 'react-native';
 import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
 
 interface Props {
@@ -11,9 +11,23 @@ interface Props {
   showFallbackWarning?: boolean;
   /** Called when the user taps the fallback warning banner. */
   onTapFallback?: () => void;
+  /** Called when the user submits a postcode for precise location. */
+  onPostcodeSubmit?: (postcode: string) => void;
 }
 
-export function LocationBar({ summary, loading, error, onRefresh, showFallbackWarning, onTapFallback }: Props) {
+export function LocationBar({ summary, loading, error, onRefresh, showFallbackWarning, onTapFallback, onPostcodeSubmit }: Props) {
+  const [showPostcode, setShowPostcode] = useState(false);
+  const [postcode, setPostcode] = useState('');
+
+  const handlePostcodeSubmit = () => {
+    const trimmed = postcode.trim();
+    if (trimmed && onPostcodeSubmit) {
+      onPostcodeSubmit(trimmed);
+      setPostcode('');
+      setShowPostcode(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       {loading && (
@@ -42,25 +56,131 @@ export function LocationBar({ summary, loading, error, onRefresh, showFallbackWa
               </Text>
             </TouchableOpacity>
           )}
+          {onPostcodeSubmit && (
+            <TouchableOpacity
+              style={[styles.inner, styles.postcodeLink]}
+              onPress={() => setShowPostcode(!showPostcode)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.postcodeLinkText}>
+                📍 Enter postcode for precise location
+              </Text>
+            </TouchableOpacity>
+          )}
+          {showPostcode && (
+            <View style={styles.postcodeRow}>
+              <TextInput
+                style={styles.postcodeInput}
+                value={postcode}
+                onChangeText={setPostcode}
+                placeholder="e.g. SW1A 1AA"
+                placeholderTextColor={Colors.lightText}
+                onSubmitEditing={handlePostcodeSubmit}
+                returnKeyType="go"
+                autoCapitalize="characters"
+                autoCorrect={false}
+              />
+              <TouchableOpacity
+                style={styles.postcodeGoBtn}
+                onPress={handlePostcodeSubmit}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.postcodeGoText}>Go</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       )}
       {!loading && !error && summary && (
-        <TouchableOpacity onPress={onRefresh} style={styles.inner}>
-          <Text style={styles.text} numberOfLines={2}>{summary}</Text>
-          <Text style={styles.retryText}>↺</Text>
-        </TouchableOpacity>
+        <View>
+          <TouchableOpacity onPress={onRefresh} style={styles.inner}>
+            <Text style={styles.text} numberOfLines={2}>{summary}</Text>
+            <Text style={styles.retryText}>↺</Text>
+          </TouchableOpacity>
+          {onPostcodeSubmit && (
+            <View>
+              {!showPostcode ? (
+                <TouchableOpacity
+                  style={[styles.inner, styles.postcodeLink]}
+                  onPress={() => setShowPostcode(true)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.postcodeLinkText}>
+                    📍 Enter postcode for precise location
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.postcodeRow}>
+                  <TextInput
+                    style={styles.postcodeInput}
+                    value={postcode}
+                    onChangeText={setPostcode}
+                    placeholder="e.g. SW1A 1AA"
+                    placeholderTextColor={Colors.lightText}
+                    onSubmitEditing={handlePostcodeSubmit}
+                    returnKeyType="go"
+                    autoCapitalize="characters"
+                    autoCorrect={false}
+                  />
+                  <TouchableOpacity
+                    style={styles.postcodeGoBtn}
+                    onPress={handlePostcodeSubmit}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.postcodeGoText}>Go</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
       )}
       {!loading && !error && !summary && showFallbackWarning && (
-        <TouchableOpacity
-          style={[styles.inner, styles.fallbackBanner]}
-          onPress={onTapFallback}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.fallbackIcon}>📍</Text>
-          <Text style={styles.fallbackText} numberOfLines={3}>
-            Location unavailable. Assuming moderately soft water (120 mg/L). Tap to set manually.
-          </Text>
-        </TouchableOpacity>
+        <View>
+          <TouchableOpacity
+            style={[styles.inner, styles.fallbackBanner]}
+            onPress={onTapFallback}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.fallbackIcon}>📍</Text>
+            <Text style={styles.fallbackText} numberOfLines={3}>
+              Location unavailable. Assuming moderately soft water (120 mg/L). Tap to set manually.
+            </Text>
+          </TouchableOpacity>
+          {onPostcodeSubmit && (
+            <TouchableOpacity
+              style={[styles.inner, styles.postcodeLink]}
+              onPress={() => setShowPostcode(!showPostcode)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.postcodeLinkText}>
+                📍 Enter postcode for precise location
+              </Text>
+            </TouchableOpacity>
+          )}
+          {showPostcode && (
+            <View style={styles.postcodeRow}>
+              <TextInput
+                style={styles.postcodeInput}
+                value={postcode}
+                onChangeText={setPostcode}
+                placeholder="e.g. SW1A 1AA"
+                placeholderTextColor={Colors.lightText}
+                onSubmitEditing={handlePostcodeSubmit}
+                returnKeyType="go"
+                autoCapitalize="characters"
+                autoCorrect={false}
+              />
+              <TouchableOpacity
+                style={styles.postcodeGoBtn}
+                onPress={handlePostcodeSubmit}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.postcodeGoText}>Go</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
       )}
     </View>
   );
@@ -119,5 +239,42 @@ const styles = StyleSheet.create({
     color: '#B85C2E',
     lineHeight: 18,
     fontWeight: '500',
+  },
+  postcodeLink: {
+    marginTop: Spacing.xs + 2,
+    paddingVertical: Spacing.xs,
+  },
+  postcodeLinkText: {
+    fontSize: FontSize.xs,
+    color: Colors.terracotta,
+    fontWeight: '600',
+  },
+  postcodeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: Spacing.sm,
+    gap: Spacing.xs,
+  },
+  postcodeInput: {
+    flex: 1,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.terracotta,
+    borderRadius: BorderRadius.sm,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs + 2,
+    fontSize: FontSize.sm,
+    color: Colors.espresso,
+  },
+  postcodeGoBtn: {
+    backgroundColor: Colors.terracotta,
+    borderRadius: BorderRadius.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs + 2,
+  },
+  postcodeGoText: {
+    color: Colors.white,
+    fontSize: FontSize.sm,
+    fontWeight: '700',
   },
 });
