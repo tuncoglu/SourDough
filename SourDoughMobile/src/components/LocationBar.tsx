@@ -7,9 +7,13 @@ interface Props {
   loading: boolean;
   error: string | null;
   onRefresh: () => void;
+  /** Show a warning banner when location is unavailable and defaults are assumed. */
+  showFallbackWarning?: boolean;
+  /** Called when the user taps the fallback warning banner. */
+  onTapFallback?: () => void;
 }
 
-export function LocationBar({ summary, loading, error, onRefresh }: Props) {
+export function LocationBar({ summary, loading, error, onRefresh, showFallbackWarning, onTapFallback }: Props) {
   return (
     <View style={styles.container}>
       {loading && (
@@ -30,6 +34,18 @@ export function LocationBar({ summary, loading, error, onRefresh }: Props) {
         <TouchableOpacity onPress={onRefresh} style={styles.inner}>
           <Text style={styles.text} numberOfLines={2}>{summary}</Text>
           <Text style={styles.retryText}>↺</Text>
+        </TouchableOpacity>
+      )}
+      {!loading && !summary && showFallbackWarning && (
+        <TouchableOpacity
+          style={[styles.inner, styles.fallbackInner]}
+          onPress={onTapFallback}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.fallbackIcon}>📍</Text>
+          <Text style={styles.fallbackText} numberOfLines={3}>
+            Location unavailable. Assuming moderately soft water (120 mg/L). Tap to set manually.
+          </Text>
         </TouchableOpacity>
       )}
     </View>
@@ -70,5 +86,23 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.terracotta,
     fontWeight: '600',
+  },
+  fallbackInner: {
+    backgroundColor: '#FFF8F0',
+    borderRadius: BorderRadius.sm,
+    paddingVertical: Spacing.xs + 2,
+    paddingHorizontal: Spacing.sm,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.warm,
+  },
+  fallbackIcon: {
+    fontSize: 14,
+  },
+  fallbackText: {
+    flex: 1,
+    fontSize: FontSize.xs,
+    color: '#B85C2E',
+    lineHeight: 18,
+    fontWeight: '500',
   },
 });

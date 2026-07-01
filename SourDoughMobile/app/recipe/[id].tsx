@@ -5,6 +5,8 @@ import {
   Text,
   StyleSheet,
   ActivityIndicator,
+  Share,
+  TouchableOpacity,
 } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,6 +19,57 @@ import { getBlend } from '../../src/lib/flourSearch';
 import { IngredientResults } from '../../src/components/IngredientResults';
 import { FermentationTimeline } from '../../src/components/FermentationTimeline';
 import { AdviceCards } from '../../src/components/FermentAdvice';
+
+/** Generate a plain-text recipe summary for sharing. */
+function generateShareText(recipe: SavedRecipe): string {
+  const { inputs, results, locationSummary } = recipe;
+  const lines: string[] = [
+    '🥖 Sourdough Recipe — Sourdough Optimizer',
+    '',
+    `📍 ${locationSummary}`,
+    '',
+    '📋 Ingredients',
+  ];
+
+  if (inputs.flourBlend && inputs.flourBlend.length > 1) {
+    for (const entry of inputs.flourBlend) {
+      const grams = inputs.flourWeight * entry.percentage / 100;
+      const shortName = entry.label.replace(/\s*\([^)]*\)$/, '');
+      lines.push(`  ${shortName}: ${grams.toFixed(0)}g (${Math.round(entry.percentage)}%)`);
+    }
+  } else {
+    lines.push(`  Flour: ${inputs.flourWeight.toFixed(0)}g ${inputs.flourType.replace(/\s*\([^)]*\)$/, '')}`);
+  }
+  lines.push(`  Hydration: ${inputs.hydration.toFixed(0)}%`);
+  lines.push(`  Starter: ${inputs.starterWeight.toFixed(0)}g (${inputs.starterHydration.toFixed(0)}% hydration)`);
+  lines.push(`  Salt: ${inputs.saltPct.toFixed(1)}%`);
+
+  lines.push('');
+  lines.push('⚖️  Weights');
+  lines.push(`  Water: ${results.ingredients.addedWater.toFixed(1)}g`);
+  lines.push(`  Starter: ${results.ingredients.starterTotal.toFixed(1)}g`);
+  lines.push(`  Salt: ${results.ingredients.salt.toFixed(1)}g`);
+  lines.push(`  Total dough: ${results.ingredients.totalDoughWeight.toFixed(1)}g`);
+
+  lines.push('');
+  lines.push('🌡  Temperatures');
+  lines.push(`  FDT: ${results.fdt.toFixed(1)}°C (${results.tempZone})`);
+  lines.push(`  Ambient: ${inputs.ambientTemp.toFixed(1)}°C`);
+  lines.push(`  Water: ${inputs.waterTemp.toFixed(1)}°C`);
+
+  lines.push('');
+  lines.push('⏱️  Fermentation');
+  lines.push(`  Bulk ferment: ~${results.staticFermentHours.toFixed(1)} hours`);
+  if (results.dynamicFerment) {
+    lines.push(`  Dynamic estimate: ~${results.dynamicFerment.totalHours.toFixed(1)} hours`);
+  }
+
+  lines.push('');
+  lines.push('Made with Sourdough Optimizer 🍞');
+  lines.push('https://github.com/tuncoglu/SourDough');
+
+  return lines.join('\n');
+}
 
 export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -50,6 +103,16 @@ export default function RecipeDetailScreen() {
 
   const zoneInfo = getTempZoneInfo(recipe.results.tempZone);
   const date = new Date(recipe.createdAt);
+
+  const handleShare = async () => {
+    if (!recipe) return;
+    const text = generateShareText(recipe);
+    try {
+      await Share.share({ message: text });
+    } catch {
+      // User cancelled — no-op
+    }
+  };
 
   // ── Inputs card ──────────────────────────────────────────────────────
   const blend = getBlend(recipe.inputs);
@@ -202,6 +265,13 @@ export default function RecipeDetailScreen() {
             showsVerticalScrollIndicator={false}
           >
             {resultsSection}
+            <TouchableOpacity
+              style={styles.shareBtn}
+              onPress={handleShare}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.shareBtnText}>📤  Share Recipe</Text>
+            </TouchableOpacity>
           </ScrollView>
         </View>
       </SafeAreaView>
@@ -231,6 +301,14 @@ export default function RecipeDetailScreen() {
 
         {inputsCard}
         {resultsSection}
+
+        <TouchableOpacity
+          style={styles.shareBtn}
+          onPress={handleShare}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.shareBtnText}>📤  Share Recipe</Text>
+        </TouchableOpacity>
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -332,6 +410,18 @@ const styles = StyleSheet.create({
   fdtZone: {
     fontSize: FontSize.md,
     fontWeight: '500',
+  },
+  shareBtn: {
+    backgroundColor: Colors.olive,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  shareBtnText: {
+    color: Colors.white,
+    fontSize: FontSize.md,
+    fontWeight: '700',
   },
 });
 

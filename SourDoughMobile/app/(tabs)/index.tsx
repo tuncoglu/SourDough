@@ -7,14 +7,17 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as StoreReview from 'expo-store-review';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, Spacing, FontSize, BorderRadius } from '../../src/theme';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { useLocation } from '../../src/hooks/useLocation';
 import { getAutoTemps } from '../../src/lib/location';
 import { runAllCalculations } from '../../src/lib/calculations';
-import { saveRecipe, generateRecipeId } from '../../src/store/recipeStore';
+import { saveRecipe, generateRecipeId, loadRecipes } from '../../src/store/recipeStore';
 import { loadSettings } from '../../src/store/settingsStore';
 import {
   getStarterFlour,
@@ -45,12 +48,127 @@ import { AdviceCards } from '../../src/components/FermentAdvice';
 import { validateBlend, findFlour } from '../../src/lib/flourSearch';
 import { getBlendProtein } from '../../src/lib/calculations';
 
+const SAVE_COUNT_KEY = 'sourdough_save_count';
+const REVIEW_REQUESTED_KEY = 'sourdough_review_requested';
+
 const fallbackHardness: WaterHardness = {
   mgL: 120,
   classification: 'moderately soft',
   note: 'Unknown — assuming moderate',
   key: 'fallback',
 };
+
+/** Generate a plain-text recipe summary for sharing. */
+function generateShareText(recipe: SavedRecipe): string {
+  const { inputs, results, locationSummary } = recipe;
+  const lines: string[] = [
+    '🥖 Sourdough Recipe — Sourdough Optimizer',
+    '',
+    `📍 ${locationSummary}`,
+    '',
+    '📋 Ingredients',
+  ];
+
+  // Flour
+  if (inputs.flourBlend && inputs.flourBlend.length > 1) {
+    for (const entry of inputs.flourBlend) {
+      const grams = inputs.flourWeight * entry.percentage / 100;
+      const shortName = entry.label.replace(/\s*\([^)]*\)$/, '');
+      lines.push(`  ${shortName}: ${grams.toFixed(0)}g (${Math.round(entry.percentage)}%)`);
+    }
+  } else {
+    lines.push(`  Flour: ${inputs.flourWeight.toFixed(0)}g ${inputs.flourType.replace(/\s*\([^)]*\)$/, '')}`);
+  }
+  lines.push(`  Hydration: ${inputs.hydration.toFixed(0)}%`);
+  lines.push(`  Starter: ${inputs.starterWeight.toFixed(0)}g (${inputs.starterHydration.toFixed(0)}% hydration)`);
+  lines.push(`  Salt: ${inputs.saltPct.toFixed(1)}%`);
+
+  lines.push('');
+  lines.push('⚖️  Weights');
+  lines.push(`  Water: ${results.ingredients.addedWater.toFixed(1)}g`);
+  lines.push(`  Starter: ${results.ingredients.starterTotal.toFixed(1)}g`);
+  lines.push(`  Salt: ${results.ingredients.salt.toFixed(1)}g`);
+  lines.push(`  Total dough: ${results.ingredients.totalDoughWeight.toFixed(1)}g`);
+
+  lines.push('');
+  lines.push('🌡  Temperatures');
+  lines.push(`  FDT: ${results.fdt.toFixed(1)}°C (${results.tempZone})`);
+  lines.push(`  Ambient: ${inputs.ambientTemp.toFixed(1)}°C`);
+  lines.push(`  Water: ${inputs.waterTemp.toFixed(1)}°C`);
+
+  lines.push('');
+  lines.push('⏱️  Fermentation');
+  lines.push(`  Bulk ferment: ~${results.staticFermentHours.toFixed(1)} hours`);
+  if (results.dynamicFerment) {
+    lines.push(`  Dynamic estimate: ~${results.dynamicFerment.totalHours.toFixed(1)} hours`);
+  }
+
+  lines.push('');
+  lines.push('Made with Sourdough Optimizer 🍞');
+  lines.push('https://github.com/tuncoglu/SourDough');
+
+  return lines.join('\n');
+}
+
+/** Generate share text from the current input state (before saving). */
+function generateShareTextFromState(
+  blend: FlourBlendEntry[],
+  totalFlourWeight: number,
+  hydration: string,
+  starterWeight: string,
+  saltPct: string,
+  ambientTemp: string,
+  waterTemp: string,
+  results: CalculationResults,
+  locationSummary: string,
+): string {
+  const lines: string[] = [
+    '🥖 Sourdough Recipe — Sourdough Optimizer',
+    '',
+    `📍 ${locationSummary}`,
+    '',
+    '📋 Ingredients',
+  ];
+
+  if (blend.length > 1) {
+    for (const entry of blend) {
+      const grams = totalFlourWeight * entry.percentage / 100;
+      const shortName = entry.label.replace(/\s*\([^)]*\)$/, '');
+      lines.push(`  ${shortName}: ${grams.toFixed(0)}g (${Math.round(entry.percentage)}%)`);
+    }
+  } else if (blend.length === 1) {
+    lines.push(`  Flour: ${totalFlourWeight.toFixed(0)}g ${blend[0].label.replace(/\s*\([^)]*\)$/, '')}`);
+  }
+  lines.push(`  Hydration: ${parseFloat(hydration).toFixed(0)}%`);
+  lines.push(`  Starter: ${parseFloat(starterWeight).toFixed(0)}g`);
+  lines.push(`  Salt: ${parseFloat(saltPct).toFixed(1)}%`);
+
+  lines.push('');
+  lines.push('⚖️  Weights');
+  lines.push(`  Water: ${results.ingredients.addedWater.toFixed(1)}g`);
+  lines.push(`  Starter: ${results.ingredients.starterTotal.toFixed(1)}g`);
+  lines.push(`  Salt: ${results.ingredients.salt.toFixed(1)}g`);
+  lines.push(`  Total dough: ${results.ingredients.totalDoughWeight.toFixed(1)}g`);
+
+  lines.push('');
+  lines.push('🌡  Temperatures');
+  lines.push(`  FDT: ${results.fdt.toFixed(1)}°C (${results.tempZone})`);
+  lines.push(`  Ambient: ${parseFloat(ambientTemp).toFixed(1)}°C`);
+  lines.push(`  Water: ${parseFloat(waterTemp).toFixed(1)}°C`);
+
+  lines.push('');
+  lines.push('⏱️  Fermentation');
+  lines.push(`  Bulk ferment: ~${results.staticFermentHours.toFixed(1)} hours`);
+  if (results.dynamicFerment) {
+    lines.push(`  Dynamic estimate: ~${results.dynamicFerment.totalHours.toFixed(1)} hours`);
+  }
+
+  lines.push('');
+  lines.push('Made with Sourdough Optimizer 🍞');
+  lines.push('https://github.com/tuncoglu/SourDough');
+
+  return lines.join('\n');
+}
 
 interface MixRow {
   key: string;
@@ -319,6 +437,26 @@ export default function CalculatorScreen() {
 
     try {
       await saveRecipe(recipe);
+
+      // ── Track save count for review prompt ──────────────────────────
+      try {
+        const raw = await AsyncStorage.getItem(SAVE_COUNT_KEY);
+        const count = (raw ? parseInt(raw, 10) : 0) + 1;
+        await AsyncStorage.setItem(SAVE_COUNT_KEY, String(count));
+
+        // After 3 saves, gently ask for a review (once)
+        const alreadyRequested = await AsyncStorage.getItem(REVIEW_REQUESTED_KEY);
+        if (count >= 3 && !alreadyRequested) {
+          const available = await StoreReview.isAvailableAsync();
+          if (available) {
+            await AsyncStorage.setItem(REVIEW_REQUESTED_KEY, 'true');
+            await StoreReview.requestReview();
+          }
+        }
+      } catch {
+        // Silently ignore review tracking failures
+      }
+
       Alert.alert('Saved', 'Recipe saved to your history.');
     } catch (e) {
       Alert.alert('Error', 'Could not save recipe.');
@@ -586,7 +724,7 @@ export default function CalculatorScreen() {
         warnings={results.warnings}
       />
 
-      {/* Save */}
+      {/* Save + Share */}
       <TouchableOpacity
         style={styles.saveBtn}
         onPress={handleSave}
@@ -598,6 +736,41 @@ export default function CalculatorScreen() {
         ) : (
           <Text style={styles.saveBtnText}>💾  Save Recipe</Text>
         )}
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.shareBtn}
+        onPress={async () => {
+          const blend: FlourBlendEntry[] = mixRows.map((row) => {
+            const grams = parseFloat(row.grams) || 0;
+            return {
+              label: row.flour.label,
+              protein: row.flour.protein,
+              productNumber: row.flour.productNumber,
+              category: row.flour.category,
+              percentage: totalFlourWeight > 0 ? (grams / totalFlourWeight) * 100 : 0,
+            };
+          });
+          const text = generateShareTextFromState(
+            blend,
+            totalFlourWeight,
+            hydration,
+            starterWeight,
+            saltPct,
+            ambientTemp,
+            waterTemp,
+            results,
+            locationData?.summary ?? '📍 Unknown location',
+          );
+          try {
+            await Share.share({ message: text });
+          } catch {
+            // User cancelled — no-op
+          }
+        }}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.shareBtnText}>📤  Share Recipe</Text>
       </TouchableOpacity>
     </>
   );
@@ -612,6 +785,10 @@ export default function CalculatorScreen() {
           loading={locLoading}
           error={locError}
           onRefresh={detect}
+          showFallbackWarning={!locLoading && !locationData}
+          onTapFallback={() => {
+            // Scroll to temperature section for manual entry
+          }}
         />
         <View style={desktopStyles.twoCol}>
           {/* Left: Inputs */}
@@ -662,6 +839,10 @@ export default function CalculatorScreen() {
           loading={locLoading}
           error={locError}
           onRefresh={detect}
+          showFallbackWarning={!locLoading && !locationData}
+          onTapFallback={() => {
+            // Scroll to temperature section for manual entry
+          }}
         />
 
         {inputPanels}
@@ -764,10 +945,22 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     paddingVertical: Spacing.md,
     alignItems: 'center',
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.sm,
   },
   saveBtnText: {
     color: Colors.terracotta,
+    fontSize: FontSize.md,
+    fontWeight: '700',
+  },
+  shareBtn: {
+    backgroundColor: Colors.olive,
+    borderRadius: BorderRadius.md,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  shareBtnText: {
+    color: Colors.white,
     fontSize: FontSize.md,
     fontWeight: '700',
   },
