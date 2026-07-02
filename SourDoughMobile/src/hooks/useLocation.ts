@@ -7,6 +7,8 @@ export function useLocation() {
   const [data, setData] = useState<LocationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [postcode, setPostcode] = useState<string>('');
+  const [manualHardness, setManualHardness] = useState<number | null>(null);
 
   const detect = useCallback(async () => {
     setLoading(true);
@@ -26,6 +28,8 @@ export function useLocation() {
       const result = await detectAll(
         pos.coords.latitude,
         pos.coords.longitude,
+        postcode || undefined,
+        manualHardness,
       );
 
       if (result) {
@@ -38,20 +42,21 @@ export function useLocation() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [postcode, manualHardness]);
 
-  const refineWithPostcode = useCallback(async (postcode: string, countryCode: string = '') => {
+  const refineWithPostcode = useCallback(async (pc: string, countryCode: string = '') => {
     setLoading(true);
     setError(null);
+    setPostcode(pc);
     try {
-      const loc = await geocodePostcode(postcode, countryCode);
+      const loc = await geocodePostcode(pc, countryCode);
       if (!loc) {
         setError('Could not geocode that postcode.');
         setLoading(false);
         return;
       }
 
-      const result = await detectAll(loc.lat, loc.lon);
+      const result = await detectAll(loc.lat, loc.lon, pc, manualHardness);
       if (result) {
         setData(result);
       } else {
@@ -62,11 +67,15 @@ export function useLocation() {
     } finally {
       setLoading(false);
     }
+  }, [manualHardness]);
+
+  const setHardnessOverride = useCallback((value: number | null) => {
+    setManualHardness(value);
   }, []);
 
   useEffect(() => {
     detect();
   }, [detect]);
 
-  return { data, loading, error, detect, refineWithPostcode };
+  return { data, loading, error, detect, refineWithPostcode, postcode, setHardnessOverride, manualHardness };
 }

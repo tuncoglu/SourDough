@@ -15,9 +15,20 @@ import sys
 import subprocess
 import json
 import math
+import os
 import threading
 from datetime import datetime, timedelta, timezone
 from typing import Tuple, Optional, Dict, List
+
+# Import UK postcode-level water hardness data
+try:
+    from data.uk_water_hardness import (
+        lookup_uk_postcode_hardness,
+        classify_hardness,
+    )
+    _UK_HARDNESS_AVAILABLE = True
+except ImportError:
+    _UK_HARDNESS_AVAILABLE = False
 
 # ── Auto-install missing packages ─────────────────────────────────────────────
 def _ensure_package(import_name: str, pip_name: str) -> None:
@@ -526,7 +537,34 @@ def estimate_dynamic_fermentation(fdt: float, hourly_forecast: list,
     }
 
 
-def lookup_water_hardness(country_code: str, region: str) -> dict:
+def lookup_water_hardness(country_code: str, region: str,
+                          postcode: str = "",
+                          manual_override: Optional[float] = None) -> dict:
+    """
+    Look up water hardness by country/region, with UK postcode refinement.
+
+    Resolution priority:
+      1. manual_override (mg/L) — user provided value
+      2. UK postcode district lookup (e.g. "PO6" → Portsmouth zone data)
+      3. UK postcode area lookup (e.g. "PO" → Portsmouth Water average)
+      4. Region keyword match (existing coarse table)
+      5. Country-level fallback
+      6. Global default (120 mg/L)
+    """
+    # Allow manual override to short-circuit everything
+    if manual_override is not None and manual_override > 0:
+        cls = classify_hardness(manual_override) if _UK_HARDNESS_AVAILABLE else "user-set"
+        return {"mg_l": manual_override, "classification": cls,
+                "note": "Manual override — user-supplied value", "key": "manual"}
+
+    # ── UK postcode-level lookup ─────────────────────────────────────────
+    if _UK_HARDNESS_AVAILABLE and country_code and country_code.upper() == "GB":
+        if postcode and postcode.strip():
+            mg_l, cls, note = lookup_uk_postcode_hardness(postcode)
+            return {"mg_l": mg_l, "classification": cls, "note": note,
+                    "key": f"uk-postcode:{postcode.strip().upper()[:3]}x"}
+
+    # ── Existing region/country lookup ───────────────────────────────────
     country = country_code.lower()
     region_map = {
         "us": {"northeast": "us-northeast", "new england": "us-northeast",
@@ -638,7 +676,7 @@ def reverse_geocode(lat: float, lon: float) -> Optional[dict]:
     return None
 
 
-def detect_all(postcode: str = "") -> dict:
+def detect_all(postcode: str = "", manual_hardness: Optional[float] = None) -> dict:
     """
     Run all auto-detection. If postcode provided, geocode it for
     better accuracy. Returns dict with loc, ambient, water_temp,
@@ -679,12 +717,16 @@ def detect_all(postcode: str = "") -> dict:
     if loc:
         ambient = get_ambient_temp(loc["lat"], loc["lon"])
         est_water_temp = estimate_water_temp(loc["lat"], loc["lon"])
-        hardness = lookup_water_hardness(loc["country_code"], loc["region"])
+        hardness = lookup_water_hardness(
+            loc["country_code"], loc["region"],
+            postcode=postcode, manual_override=manual_hardness)
     else:
         ambient = None
         est_water_temp = None
-        hardness = {"mg_l": 120, "classification": "unknown",
-                    "note": "Could not detect location", "key": "fallback"}
+        hardness = lookup_water_hardness(
+            "", "", postcode=postcode, manual_override=manual_hardness)
+        if hardness["key"] == "fallback":
+            hardness["note"] = "Could not detect location"
     auto = {
         "ambient_temp": ambient if ambient is not None else 22.0,
         "flour_temp": ambient if ambient is not None else 22.0,
@@ -934,7 +976,7 @@ def run_gui() -> None:
 
     def run_detection():
         """Run auto-detection in background, then update UI."""
-        result = detect_all()
+        result = detect_all(manual_hardness=get_hardness_override())
         detection["result"] = result
         detection["done"] = True
         root.after(0, on_detection_complete)
@@ -992,10 +1034,16 @@ def run_gui() -> None:
         ft = flour_type_var.get()
         flour_type, protein, flour_pno, flour_notes = find_flour(ft)
 
-        # Get hardness from detection or fallback
-        hw = detection.get("hardness") or {
-            "mg_l": 120, "classification": "unknown",
-            "note": "Not available", "key": "fallback"}
+        # Get hardness from manual override (priority), then detection, then fallback
+        manual_hw = get_hardness_override()
+        if manual_hw is not None:
+            cls = classify_hardness(manual_hw) if _UK_HARDNESS_AVAILABLE else "user-set"
+            hw = {"mg_l": manual_hw, "classification": cls,
+                  "note": "Manual override — user-supplied value", "key": "manual"}
+        else:
+            hw = detection.get("hardness") or {
+                "mg_l": 120, "classification": "unknown",
+                "note": "Not available", "key": "fallback"}
         loc_s = detection.get("loc_summary") or "📍 Unknown"
 
         fdt = calculate_fdt(flr, wat, amb, sta)
@@ -1198,7 +1246,7 @@ def run_gui() -> None:
         refine_btn.config(text="…", state="disabled")
         pc_prompt.config(text="Geocoding…")
         def _run():
-            result = detect_all(pc)
+            result = detect_all(pc, manual_hardness=get_hardness_override())
             root.after(0, lambda: _apply_refine(result))
         threading.Thread(target=_run, daemon=True).start()
 
@@ -1255,6 +1303,23 @@ def run_gui() -> None:
     _row(temp_inner, "Water", water_var, "°C", auto=True)
     starter_var = tk.StringVar(value="22")
     _row(temp_inner, "Starter", starter_var, "°C")
+
+    # ── Water hardness override card ──────────────────────────────────────
+    _, hw_inner = _card(content, "Water Hardness Override (optional)")
+    tk.Label(hw_inner, text="Leave empty for auto-detect. Enter mg/L CaCO₃ if known.",
+             font=("Helvetica", 8), fg=MUTED, bg=CARD).pack(anchor="w", pady=(0, 4))
+    hardness_override_var = tk.StringVar(value="")
+    hw_entry = _row(hw_inner, "Hardness", hardness_override_var, "mg/L", width=10)
+
+    def get_hardness_override() -> Optional[float]:
+        """Return the manual hardness override value, or None."""
+        raw = hardness_override_var.get().strip()
+        if not raw:
+            return None
+        try:
+            return float(raw)
+        except ValueError:
+            return None
 
     # ── Calculate button ─────────────────────────────────────────────────
     btn_outer = tk.Frame(content, bg=BG)
@@ -1386,6 +1451,30 @@ def run_cli() -> None:
                  f"({hardness['mg_l']} mg/L)")
         else:
             warn("Couldn't geocode that postcode — keeping IP location.")
+
+    # Manual water hardness override
+    console.print()
+    info("Water hardness can be overridden if you know your local value\n"
+         "    (check your water company's website, or use a test kit).\n"
+         "    Leave blank to use the auto-detected value.")
+    hw_input = Prompt.ask(
+        "Water hardness override ([bold cyan]mg/L CaCO₃[/bold cyan], Enter to skip)",
+        default="")
+    manual_hardness = None
+    if hw_input.strip():
+        try:
+            manual_hardness = float(hw_input)
+            if manual_hardness <= 0:
+                warn("Hardness must be positive — ignoring override.")
+                manual_hardness = None
+            else:
+                cls = classify_hardness(manual_hardness) if _UK_HARDNESS_AVAILABLE else "user-set"
+                hardness = {"mg_l": manual_hardness, "classification": cls,
+                          "note": "Manual override — user-supplied value", "key": "manual"}
+                info(f"Using manual hardness: {hardness['classification']} "
+                     f"({hardness['mg_l']} mg/L)")
+        except ValueError:
+            warn("Invalid number — using auto-detected hardness.")
     console.print()
 
     # Inputs

@@ -1,8 +1,16 @@
 import { WaterHardness } from '../models/types';
+import { lookupUkPostcodeHardness, classifyHardness } from './ukWaterHardness';
 
 /**
  * Water hardness by country/region (mg/L CaCO₃ → classification).
  * Ported from optimizer.py WATER_HARDNESS_TABLE.
+ *
+ * Resolution priority:
+ *   1. UK postcode district lookup (e.g. "PO6" → Portsmouth zone data)
+ *   2. UK postcode area lookup (e.g. "PO" → Portsmouth Water average)
+ *   3. Region keyword match (coarse table)
+ *   4. Country-level fallback
+ *   5. Global default (120 mg/L)
  */
 const WATER_HARDNESS_TABLE: Record<string, [number, string, string]> = {
   'us-northeast':     [45,  'soft',            'Granite/glacial aquifers'],
@@ -100,7 +108,28 @@ const FALLBACK_HARDNESS: WaterHardness = {
   key: 'fallback',
 };
 
-export function lookupWaterHardness(countryCode: string, region: string): WaterHardness {
+export function lookupWaterHardness(
+  countryCode: string,
+  region: string,
+  postcode?: string,
+  manualOverride?: number | null,
+): WaterHardness {
+  // Manual override takes absolute priority
+  if (manualOverride != null && manualOverride > 0) {
+    return {
+      mgL: manualOverride,
+      classification: classifyHardness(manualOverride),
+      note: 'Manual override — user-supplied value',
+      key: 'manual',
+    };
+  }
+
+  // UK postcode-level lookup
+  if (countryCode.toUpperCase() === 'GB' && postcode && postcode.trim()) {
+    const [mgL, cls, note] = lookupUkPostcodeHardness(postcode);
+    return { mgL, classification: cls, note, key: `uk-postcode:${postcode.trim().toUpperCase().substring(0, 3)}x` };
+  }
+
   const country = countryCode.toLowerCase();
   const regionLower = region.toLowerCase();
 

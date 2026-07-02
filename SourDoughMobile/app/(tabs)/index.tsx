@@ -182,7 +182,7 @@ function nextMixKey(): string {
 }
 
 export default function CalculatorScreen() {
-  const { data: locationData, loading: locLoading, error: locError, detect, refineWithPostcode } = useLocation();
+  const { data: locationData, loading: locLoading, error: locError, detect, refineWithPostcode, setHardnessOverride } = useLocation();
   const { isDesktop } = useBreakpoint();
 
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
@@ -197,6 +197,7 @@ export default function CalculatorScreen() {
   const [flourTemp, setFlourTemp] = useState('22');
   const [waterTemp, setWaterTemp] = useState('18');
   const [starterTemp, setStarterTemp] = useState('22');
+  const [hardnessOverride, setHardnessOverrideLocal] = useState('');
 
   // Derived: total fresh flour weight from sum of mix row grams
   const totalFlourWeight = mixRows.reduce((sum, r) => sum + (parseFloat(r.grams) || 0), 0);
@@ -335,7 +336,11 @@ export default function CalculatorScreen() {
     setCalculating(true);
 
     const flour = findFlour(mixRows[0].flour.label);
-    const hardness = locationData?.hardness ?? fallbackHardness;
+    // Use manual hardness override if provided, otherwise use detected
+    const manualHw = parseFloat(hardnessOverride);
+    const hardness: WaterHardness = (!isNaN(manualHw) && manualHw > 0)
+      ? { mgL: manualHw, classification: manualHw < 30 ? 'very soft' : manualHw < 60 ? 'soft' : manualHw < 120 ? 'moderately soft' : manualHw < 200 ? 'moderately hard' : manualHw < 300 ? 'hard' : 'very hard', note: 'Manual override — user-supplied value', key: 'manual' }
+      : (locationData?.hardness ?? fallbackHardness);
 
     const warnings: string[] = [];
     if (wat <= 0) warnings.push('Water is near freezing. Dough will be very cold.');
@@ -386,6 +391,7 @@ export default function CalculatorScreen() {
     totalFlourWeight, hydration, starterWeight, saltPct,
     ambientTemp, flourTemp, waterTemp, starterTemp,
     mixRows, starterFlourLabel, locationData, isDesktop,
+    hardnessOverride,
   ]);
 
   const handleSave = useCallback(async () => {
@@ -662,6 +668,25 @@ export default function CalculatorScreen() {
         />
       </View>
 
+      {/* ── Water Hardness Override (optional) ───────────────── */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>WATER HARDNESS OVERRIDE (OPTIONAL)</Text>
+        <Text style={styles.cardHint}>
+          Leave empty for auto-detect. Enter mg/L CaCO₃ if known{'\n'}
+          (check your water company's website or use a test kit).
+        </Text>
+        <TempRow
+          label="Hardness"
+          value={hardnessOverride}
+          onChangeText={(t) => {
+            setHardnessOverrideLocal(t);
+            const val = parseFloat(t);
+            setHardnessOverride(isNaN(val) || val <= 0 ? null : val);
+          }}
+          unit="mg/L"
+        />
+      </View>
+
       {/* ── Calculate ───────────────────────────────────────── */}
       <TouchableOpacity
         style={styles.calcBtn}
@@ -895,6 +920,12 @@ const styles = StyleSheet.create({
     color: Colors.muted,
     letterSpacing: 0.5,
     marginBottom: Spacing.sm,
+  },
+  cardHint: {
+    fontSize: FontSize.xs,
+    color: Colors.muted,
+    marginBottom: Spacing.sm,
+    lineHeight: 16,
   },
   inputRow: {
     flexDirection: 'row',

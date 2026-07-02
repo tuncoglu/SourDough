@@ -20,10 +20,17 @@ export interface LocationData {
 /**
  * Full auto-detection pipeline — GPS → reverse geocode → weather → hardness.
  * Returns a LocationData object or null if GPS fails.
+ *
+ * @param lat Latitude
+ * @param lon Longitude
+ * @param postcode Optional UK postcode for refined hardness lookup
+ * @param manualHardness Optional manual hardness override in mg/L CaCO₃
  */
 export async function detectAll(
   lat: number,
   lon: number,
+  postcode?: string,
+  manualHardness?: number | null,
 ): Promise<LocationData | null> {
   const loc = await reverseGeocode(lat, lon);
   if (!loc) return null;
@@ -34,7 +41,8 @@ export async function detectAll(
     estimateWaterTemp(lat, lon),
   ]);
 
-  const hardness = lookupWaterHardness(loc.countryCode, loc.region);
+  const hardness = lookupWaterHardness(
+    loc.countryCode, loc.region, postcode, manualHardness);
 
   const summary = buildSummary(loc, ambient, waterTemp, hardness);
 
