@@ -108,7 +108,6 @@ Cloudflare Pages.
 | Directory | What it is |
 |---|---|
 | `SourDoughMobile/` | React Native (Expo) app — iOS, Android, and web |
-| `worker/` | Cloudflare Worker — routes custom domain to Pages deployment |
 
 > **Note:** The original Python CLI/GUI (`optimizer.py`) has been retired.
 > The mobile/web app is the canonical SourDough experience. The baking science
