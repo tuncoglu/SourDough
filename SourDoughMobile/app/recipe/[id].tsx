@@ -267,58 +267,16 @@ export default function RecipeDetailScreen() {
     </>
   );
 
-  // ── Desktop Layout ───────────────────────────────────────────────────
-  if (isDesktop) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <Stack.Screen options={{ title: 'Recipe Detail' }} />
-        <Text style={styles.date}>
-          {preset ? `${preset.emoji} ${preset.name} — ` : ''}
-          {date.toLocaleDateString(undefined, {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
-        </Text>
-        <Text style={styles.location}>{recipe.locationSummary}</Text>
-
-        <View style={desktopStyles.twoCol}>
-          <ScrollView
-            style={desktopStyles.leftCol}
-            contentContainerStyle={desktopStyles.colContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {inputsCard}
-          </ScrollView>
-          <ScrollView
-            style={desktopStyles.rightCol}
-            contentContainerStyle={desktopStyles.colContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {resultsSection}
-            <TouchableOpacity
-              style={styles.shareBtn}
-              onPress={handleShare}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.shareBtnText}>📤  Share Recipe</Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // ── Mobile Layout ────────────────────────────────────────────────────
+  // ── Layout (responsive; single component tree — no remount on resize) ──
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <Stack.Screen options={{ title: 'Recipe Detail' }} />
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          isDesktop && desktopStyles.scrollContentDesktop,
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.date}>
@@ -334,16 +292,21 @@ export default function RecipeDetailScreen() {
         </Text>
         <Text style={styles.location}>{recipe.locationSummary}</Text>
 
-        {inputsCard}
-        {resultsSection}
-
-        <TouchableOpacity
-          style={styles.shareBtn}
-          onPress={handleShare}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.shareBtnText}>📤  Share Recipe</Text>
-        </TouchableOpacity>
+        <View style={isDesktop && desktopStyles.twoCol}>
+          <View style={isDesktop && desktopStyles.leftCol}>
+            {inputsCard}
+          </View>
+          <View style={isDesktop && desktopStyles.rightCol}>
+            {resultsSection}
+            <TouchableOpacity
+              style={styles.shareBtn}
+              onPress={handleShare}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.shareBtnText}>📤  Share Recipe</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -461,20 +424,18 @@ const styles = StyleSheet.create({
 });
 
 const desktopStyles = StyleSheet.create({
-  twoCol: {
-    flex: 1,
-    flexDirection: 'row',
-    gap: Spacing.lg,
+  scrollContentDesktop: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.lg,
+  },
+  twoCol: {
+    flexDirection: 'row',
+    gap: Spacing.lg,
   },
   leftCol: {
     flex: 0.8,
   },
   rightCol: {
     flex: 1.2,
-  },
-  colContent: {
-    paddingBottom: 40,
   },
 });
