@@ -429,7 +429,7 @@ export const RECIPE_PRESETS: RecipePreset[] = [
       steamRequired: true,
       bakingVessel: 'Dutch oven',
       bakeTimeMinutes: 40,
-      notes: 'Spelt over-proofs quickly — watch the dough, not the clock. It's ready to bake when it just passes the finger-dent test.',
+      notes: 'Spelt over-proofs quickly — watch the dough, not the clock. It\'s ready to bake when it just passes the finger-dent test.',
     },
     tips: [
       'Do not over-knead or over-fold spelt — the gluten tears easily. Two gentle folds are enough.',
