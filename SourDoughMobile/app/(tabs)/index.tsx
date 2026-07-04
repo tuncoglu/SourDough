@@ -35,6 +35,8 @@ import {
   getTempZoneInfo,
   FlourBlendEntry,
   StarterFeeding,
+  RecipePreset,
+  BreadType,
 } from '../../src/models/types';
 import type { WaterHardness, FlourEntry } from '../../src/models/types';
 
@@ -45,8 +47,11 @@ import { TempRow } from '../../src/components/TempRow';
 import { IngredientResults } from '../../src/components/IngredientResults';
 import { FermentationTimeline } from '../../src/components/FermentationTimeline';
 import { AdviceCards } from '../../src/components/FermentAdvice';
+import { RecipeTypePicker } from '../../src/components/RecipeTypePicker';
+import { MethodTimeline } from '../../src/components/MethodTimeline';
 import { validateBlend, findFlour } from '../../src/lib/flourSearch';
 import { getBlendProtein } from '../../src/lib/calculations';
+import { RECIPE_PRESETS, getPreset } from '../../src/data/recipePresets';
 
 const SAVE_COUNT_KEY = 'sourdough_save_count';
 const REVIEW_REQUESTED_KEY = 'sourdough_review_requested';
@@ -82,6 +87,12 @@ function generateShareText(recipe: SavedRecipe): string {
   lines.push(`  Hydration: ${inputs.hydration.toFixed(0)}%`);
   lines.push(`  Starter: ${inputs.starterWeight.toFixed(0)}g (${inputs.starterHydration.toFixed(0)}% hydration)`);
   lines.push(`  Salt: ${inputs.saltPct.toFixed(1)}%`);
+  if (inputs.oilPct && inputs.oilPct > 0) {
+    lines.push(`  Oil/Fat: ${inputs.oilPct.toFixed(1)}%`);
+  }
+  if (inputs.preferment) {
+    lines.push(`  Pre-ferment: ${inputs.preferment.type} (${inputs.preferment.flourPct.toFixed(0)}% of flour)`);
+  }
 
   lines.push('');
   lines.push('⚖️  Weights');
@@ -103,6 +114,12 @@ function generateShareText(recipe: SavedRecipe): string {
     lines.push(`  Dynamic estimate: ~${results.dynamicFerment.totalHours.toFixed(1)} hours`);
   }
 
+  if (results.hardness) {
+    lines.push('');
+    lines.push('🧪 Water');
+    lines.push(`  Hardness: ${results.hardness.classification} (${results.hardness.mgL} mg/L)`);
+  }
+
   lines.push('');
   lines.push('Made with Sourdough Optimizer 🍞');
   lines.push('https://github.com/tuncoglu/SourDough');
@@ -121,6 +138,11 @@ function generateShareTextFromState(
   waterTemp: string,
   results: CalculationResults,
   locationSummary: string,
+  breadType?: string,
+  oilPct?: string,
+  prefermentEnabled?: boolean,
+  prefermentFlourPct?: string,
+  bakeInfo?: string,
 ): string {
   const lines: string[] = [
     '🥖 Sourdough Recipe — Sourdough Optimizer',
@@ -142,11 +164,20 @@ function generateShareTextFromState(
   lines.push(`  Hydration: ${parseFloat(hydration).toFixed(0)}%`);
   lines.push(`  Starter: ${parseFloat(starterWeight).toFixed(0)}g`);
   lines.push(`  Salt: ${parseFloat(saltPct).toFixed(1)}%`);
+  if (oilPct && parseFloat(oilPct) > 0) {
+    lines.push(`  Oil/Fat: ${parseFloat(oilPct).toFixed(1)}%`);
+  }
+  if (prefermentEnabled && prefermentFlourPct) {
+    lines.push(`  Pre-ferment: poolish (${parseFloat(prefermentFlourPct).toFixed(0)}% of flour)`);
+  }
 
   lines.push('');
   lines.push('⚖️  Weights');
   lines.push(`  Water: ${results.ingredients.addedWater.toFixed(1)}g`);
   lines.push(`  Starter: ${results.ingredients.starterTotal.toFixed(1)}g`);
+  if (results.ingredients.oil > 0) {
+    lines.push(`  Oil: ${results.ingredients.oil.toFixed(1)}g`);
+  }
   lines.push(`  Salt: ${results.ingredients.salt.toFixed(1)}g`);
   lines.push(`  Total dough: ${results.ingredients.totalDoughWeight.toFixed(1)}g`);
 
@@ -161,6 +192,12 @@ function generateShareTextFromState(
   lines.push(`  Bulk ferment: ~${results.staticFermentHours.toFixed(1)} hours`);
   if (results.dynamicFerment) {
     lines.push(`  Dynamic estimate: ~${results.dynamicFerment.totalHours.toFixed(1)} hours`);
+  }
+
+  if (bakeInfo) {
+    lines.push('');
+    lines.push('🔥 Bake');
+    lines.push(`  ${bakeInfo}`);
   }
 
   lines.push('');
@@ -193,11 +230,23 @@ export default function CalculatorScreen() {
   const [starterWeight, setStarterWeight] = useState('100');
   const [saltPct, setSaltPct] = useState(String(DEFAULT_SETTINGS.defaultSaltPct));
   const [starterFlourLabel, setStarterFlourLabel] = useState('Generic: Bread Flour');
+  const [starterHydrationStr, setStarterHydrationStr] = useState('100');
   const [ambientTemp, setAmbientTemp] = useState('22');
   const [flourTemp, setFlourTemp] = useState('22');
   const [waterTemp, setWaterTemp] = useState('18');
   const [starterTemp, setStarterTemp] = useState('22');
   const [hardnessOverride, setHardnessOverrideLocal] = useState('');
+
+  // Recipe preset state
+  const [breadType, setBreadType] = useState<BreadType>('custom');
+  const [selectedPreset, setSelectedPreset] = useState<RecipePreset | null>(null);
+  const [oilPct, setOilPct] = useState('0');
+  const [prefermentEnabled, setPrefermentEnabled] = useState(false);
+  const [prefermentFlourPct, setPrefermentFlourPct] = useState('30');
+
+  // Starter feeding state
+  const [feedFlourGrams, setFeedFlourGrams] = useState('50');
+  const [feedWaterGrams, setFeedWaterGrams] = useState('50');
 
   // Derived: total fresh flour weight from sum of mix row grams
   const totalFlourWeight = mixRows.reduce((sum, r) => sum + (parseFloat(r.grams) || 0), 0);
@@ -212,7 +261,6 @@ export default function CalculatorScreen() {
 
   // Starter section state
   const [starterExpanded, setStarterExpanded] = useState(false);
-  const [starterRatio, setStarterRatio] = useState('1:1:1');
   const [lastFed, setLastFed] = useState<StarterFeeding | null>(null);
   const [hoursSince, setHoursSince] = useState<string>('');
   const [recentFeedings, setRecentFeedings] = useState<StarterFeeding[]>([]);
@@ -270,6 +318,7 @@ export default function CalculatorScreen() {
       setMixRows([{ key: nextMixKey(), flour: findFlour(s.defaultFlourType), grams: String(s.defaultFlourWeight) }]);
       setHydration(String(s.defaultHydration));
       setSaltPct(String(s.defaultSaltPct));
+      setStarterHydrationStr(String(s.defaultStarterHydration));
     });
     getStarterFlour().then(setStarterFlourLabel);
     refreshStarterData();
@@ -297,6 +346,46 @@ export default function CalculatorScreen() {
     }
   }, [locationData]);
 
+  // ── Preset selection ───────────────────────────────────────────────────
+  const handlePresetSelect = useCallback((preset: RecipePreset) => {
+    setBreadType(preset.id);
+    if (preset.id === 'custom') {
+      setSelectedPreset(null);
+      setOilPct('0');
+      setPrefermentEnabled(false);
+      return;
+    }
+    setSelectedPreset(preset);
+
+    // Pre-fill hydration
+    setHydration(String(preset.dough.typicalHydration));
+    // Pre-fill starter weight based on inoculation % and current flour weight
+    const starterG = Math.round(totalFlourWeight * preset.dough.typicalInoculation / 100);
+    setStarterWeight(String(starterG));
+    // Pre-fill salt
+    setSaltPct(String(preset.dough.typicalSalt));
+    // Pre-fill oil if applicable
+    if (preset.dough.oilPct && preset.dough.oilPct > 0) {
+      setOilPct(String(preset.dough.oilPct));
+    } else {
+      setOilPct('0');
+    }
+    // Pre-fill pre-ferment if applicable
+    if (preset.dough.preferment && preset.dough.preferment.type !== 'none') {
+      setPrefermentEnabled(true);
+      setPrefermentFlourPct(String(preset.dough.preferment.flourPct));
+    } else {
+      setPrefermentEnabled(false);
+    }
+    // Pre-fill flour type if suggested
+    if (preset.dough.typicalFlourType) {
+      const suggested = findFlour(preset.dough.typicalFlourType);
+      setMixRows((prev) =>
+        prev.map((r, i) => (i === 0 ? { ...r, flour: suggested } : r)),
+      );
+    }
+  }, [totalFlourWeight]);
+
   const doCalculate = useCallback(() => {
     const fw = totalFlourWeight;
     const hyd = parseFloat(hydration);
@@ -306,12 +395,14 @@ export default function CalculatorScreen() {
     const flr = parseFloat(flourTemp);
     const wat = parseFloat(waterTemp);
     const sta = parseFloat(starterTemp);
+    const shyd = parseFloat(starterHydrationStr);
+    const oil = parseFloat(oilPct) || 0;
 
     if (fw <= 0) {
       Alert.alert('Invalid input', 'Total flour weight must be greater than 0. Enter grams for each flour.');
       return;
     }
-    if ([hyd, sw, slt, amb, flr, wat, sta].some(isNaN)) {
+    if ([hyd, sw, slt, amb, flr, wat, sta, shyd].some(isNaN)) {
       Alert.alert('Invalid input', 'All fields must be numbers.');
       return;
     }
@@ -355,6 +446,15 @@ export default function CalculatorScreen() {
             .join(' + ');
     const flourProtein = blend.length > 1 ? getBlendProtein(blend) : flour.protein;
 
+    // Build preferment config if enabled
+    const prefConfig = prefermentEnabled
+      ? {
+          type: 'poolish' as const,
+          flourPct: parseFloat(prefermentFlourPct) || 30,
+          hydration: 100,
+        }
+      : undefined;
+
     // Build inputs with both blend array and legacy scalar fields
     const res = runAllCalculations(
       {
@@ -365,13 +465,16 @@ export default function CalculatorScreen() {
         flourBlend: blend,
         hydration: hyd,
         starterWeight: sw,
-        starterHydration: 100,
+        starterHydration: shyd,
         starterFlourType: starterFlourLabel,
         saltPct: slt,
+        oilPct: oil,
         ambientTemp: amb,
         flourTemp: flr,
         waterTemp: wat,
         starterTemp: sta,
+        breadType: breadType !== 'custom' ? breadType : undefined,
+        preferment: prefConfig,
       },
       locationData?.hourlyForecast ?? null,
       hardness,
@@ -389,9 +492,10 @@ export default function CalculatorScreen() {
     }
   }, [
     totalFlourWeight, hydration, starterWeight, saltPct,
-    ambientTemp, flourTemp, waterTemp, starterTemp,
+    ambientTemp, flourTemp, waterTemp, starterTemp, starterHydrationStr,
+    oilPct, prefermentEnabled, prefermentFlourPct,
     mixRows, starterFlourLabel, locationData, isDesktop,
-    hardnessOverride,
+    hardnessOverride, breadType,
   ]);
 
   const handleSave = useCallback(async () => {
@@ -418,6 +522,16 @@ export default function CalculatorScreen() {
             .join(' + ');
     const flourProtein = blend.length > 1 ? getBlendProtein(blend) : blend[0].protein;
 
+    const shyd = parseFloat(starterHydrationStr);
+    const oil = parseFloat(oilPct) || 0;
+    const prefConfig = prefermentEnabled
+      ? {
+          type: 'poolish' as const,
+          flourPct: parseFloat(prefermentFlourPct) || 30,
+          hydration: 100,
+        }
+      : undefined;
+
     const recipe: SavedRecipe = {
       id: generateRecipeId(),
       createdAt: new Date().toISOString(),
@@ -429,16 +543,20 @@ export default function CalculatorScreen() {
         flourBlend: blend,
         hydration: parseFloat(hydration),
         starterWeight: parseFloat(starterWeight),
-        starterHydration: 100,
+        starterHydration: shyd,
         starterFlourType: starterFlourLabel,
         saltPct: parseFloat(saltPct),
+        oilPct: oil,
         ambientTemp: parseFloat(ambientTemp),
         flourTemp: parseFloat(flourTemp),
         waterTemp: parseFloat(waterTemp),
         starterTemp: parseFloat(starterTemp),
+        breadType: breadType !== 'custom' ? breadType : undefined,
+        preferment: prefConfig,
       },
       results,
       locationSummary: locationData?.summary ?? '📍 Unknown location',
+      breadType: breadType !== 'custom' ? breadType : undefined,
     };
 
     try {
@@ -470,26 +588,46 @@ export default function CalculatorScreen() {
       setSaving(false);
     }
   }, [results, mixRows, totalFlourWeight, hydration, starterWeight, saltPct,
-      starterFlourLabel, ambientTemp, flourTemp, waterTemp, starterTemp, locationData]);
+      starterFlourLabel, ambientTemp, flourTemp, waterTemp, starterTemp,
+      starterHydrationStr, oilPct, prefermentEnabled, prefermentFlourPct,
+      breadType, locationData]);
 
   const zoneInfo = results ? getTempZoneInfo(results.tempZone) : null;
 
   const handleFeedNow = useCallback(async () => {
+    const flourG = parseFloat(feedFlourGrams) || 0;
+    const waterG = parseFloat(feedWaterGrams) || 0;
+    if (flourG <= 0 || waterG <= 0) {
+      Alert.alert('Invalid input', 'Enter grams of flour and water used to feed.');
+      return;
+    }
     const feeding: StarterFeeding = {
       id: generateFeedingId(),
       timestamp: new Date().toISOString(),
       flourUsed: starterFlourLabel,
-      ratio: starterRatio,
+      flourGrams: flourG,
+      waterGrams: waterG,
     };
     await logFeeding(feeding);
     setLastFed(feeding);
     setHoursSince('0.0');
     setRecentFeedings((prev) => [feeding, ...prev].slice(0, 3));
-  }, [starterFlourLabel, starterRatio]);
+  }, [starterFlourLabel, feedFlourGrams, feedWaterGrams]);
 
   // ── Shared input sections ────────────────────────────────────────────
   const inputPanels = (
     <>
+      {/* ── Recipe Type ──────────────────────────────────────── */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>RECIPE TYPE</Text>
+        <RecipeTypePicker selected={breadType} onSelect={handlePresetSelect} />
+        {selectedPreset && (
+          <Text style={styles.cardHint}>
+            {selectedPreset.emoji} {selectedPreset.description}
+          </Text>
+        )}
+      </View>
+
       {/* ── Starter (compact) ────────────────────────────────── */}
       <TouchableOpacity
         style={starterStyles.card}
@@ -500,19 +638,9 @@ export default function CalculatorScreen() {
           <Text style={starterStyles.icon}>🫙</Text>
           <Text style={starterStyles.summary} numberOfLines={1}>
             {lastFed
-              ? `${starterFlourLabel.replace(/\s*\([^)]*\)$/, '')} · fed ${hoursSince}h ago`
+              ? `${lastFed.flourGrams ?? '?'}g flour + ${lastFed.waterGrams ?? '?'}g water · ${hoursSince}h ago`
               : 'Tap to set up your starter'}
           </Text>
-          <TouchableOpacity
-            style={starterStyles.feedBtn}
-            onPress={(e) => {
-              e.stopPropagation?.();
-              handleFeedNow();
-            }}
-            activeOpacity={0.7}
-          >
-            <Text style={starterStyles.feedBtnText}>Feed</Text>
-          </TouchableOpacity>
           <Text style={starterStyles.chevron}>{starterExpanded ? '▲' : '▼'}</Text>
         </View>
 
@@ -530,28 +658,37 @@ export default function CalculatorScreen() {
                 />
               </View>
             </View>
-            <View style={starterStyles.ratioRow}>
-              <Text style={starterStyles.expandedLabel}>Ratio</Text>
-              {['1:1:1', '1:2:2', '1:5:5'].map((r) => (
-                <TouchableOpacity
-                  key={r}
-                  style={[
-                    starterStyles.ratioBtn,
-                    starterRatio === r && starterStyles.ratioBtnSelected,
-                  ]}
-                  onPress={() => setStarterRatio(r)}
-                >
-                  <Text
-                    style={[
-                      starterStyles.ratioBtnText,
-                      starterRatio === r && starterStyles.ratioBtnTextSelected,
-                    ]}
-                  >
-                    {r}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+
+            {/* Starter hydration */}
+            <NumberInput
+              label="Starter Hydration"
+              value={starterHydrationStr}
+              onChangeText={setStarterHydrationStr}
+              unit="%"
+            />
+
+            {/* Feeding grams inputs */}
+            <Text style={starterStyles.sectionTitle}>Log a Feed</Text>
+            <NumberInput
+              label="Flour used"
+              value={feedFlourGrams}
+              onChangeText={setFeedFlourGrams}
+              unit="g"
+            />
+            <NumberInput
+              label="Water used"
+              value={feedWaterGrams}
+              onChangeText={setFeedWaterGrams}
+              unit="g"
+            />
+            <TouchableOpacity
+              style={starterStyles.feedBtn}
+              onPress={handleFeedNow}
+              activeOpacity={0.7}
+            >
+              <Text style={starterStyles.feedBtnText}>Log Feeding</Text>
+            </TouchableOpacity>
+
             {lastFed && (
               <Text style={starterStyles.lastFedText}>
                 Last fed: {new Date(lastFed.timestamp).toLocaleString()}
@@ -568,7 +705,7 @@ export default function CalculatorScreen() {
                       minute: '2-digit',
                     })}
                     {' · '}
-                    {f.ratio} · {f.flourUsed.replace(/\s*\([^)]*\)$/, '')}
+                    {f.flourGrams != null ? `${f.flourGrams}g` : '?'} flour + {f.waterGrams != null ? `${f.waterGrams}g` : '?'} water · {f.flourUsed.replace(/\s*\([^)]*\)$/, '')}
                   </Text>
                 ))}
               </View>
@@ -639,7 +776,39 @@ export default function CalculatorScreen() {
         <NumberInput label="Hydration" value={hydration} onChangeText={setHydration} unit="%" />
         <NumberInput label="Starter" value={starterWeight} onChangeText={setStarterWeight} unit="g" />
         <NumberInput label="Salt" value={saltPct} onChangeText={setSaltPct} unit="%" />
+
+        {/* Oil / Fat (shown when preset has oil or user has set it) */}
+        {(selectedPreset?.dough.oilPct !== undefined && selectedPreset.dough.oilPct > 0) || parseFloat(oilPct) > 0 ? (
+          <NumberInput label="Oil / Fat" value={oilPct} onChangeText={setOilPct} unit="%" />
+        ) : null}
       </View>
+
+      {/* ── Pre-ferment (conditional) ────────────────────────── */}
+      {prefermentEnabled && (
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>PRE-FERMENT</Text>
+          <Text style={styles.cardHint}>
+            Pre-ferment flour is subtracted from the bowl flour. Its water is accounted for in total hydration.
+          </Text>
+          <NumberInput
+            label="Flour in pre-ferment"
+            value={prefermentFlourPct}
+            onChangeText={setPrefermentFlourPct}
+            unit="% of total flour"
+          />
+          <Text style={styles.cardHint}>
+            Poolish: 100% hydration · Mix equal weights flour and water{'\n'}
+            Pre-ferment ripeness: look for a domed surface that just begins to sink in the centre.
+          </Text>
+          <TouchableOpacity
+            style={prefStyles.removeBtn}
+            onPress={() => setPrefermentEnabled(false)}
+            activeOpacity={0.6}
+          >
+            <Text style={prefStyles.removeBtnText}>Remove Pre-ferment</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* ── Temperatures ────────────────────────────────────── */}
       <View style={styles.card}>
@@ -740,6 +909,7 @@ export default function CalculatorScreen() {
         })}
         totalFlourWeight={totalFlourWeight}
         starterFlourType={starterFlourLabel}
+        prefermentType={prefermentEnabled ? 'poolish' : undefined}
       />
 
       {/* Advice */}
@@ -748,6 +918,14 @@ export default function CalculatorScreen() {
         waterHardnessAdvice={results.waterHardnessAdvice}
         warnings={results.warnings}
       />
+
+      {/* Method Timeline (only when a preset is selected) */}
+      {selectedPreset && (
+        <MethodTimeline
+          preset={selectedPreset}
+          staticFermentHours={results.staticFermentHours}
+        />
+      )}
 
       {/* Save + Share */}
       <TouchableOpacity
@@ -786,6 +964,13 @@ export default function CalculatorScreen() {
             waterTemp,
             results,
             locationData?.summary ?? '📍 Unknown location',
+            breadType !== 'custom' ? breadType : undefined,
+            oilPct,
+            prefermentEnabled,
+            prefermentFlourPct,
+            selectedPreset
+              ? `Bake at ${selectedPreset.bake.ovenTempC}°C${selectedPreset.bake.steamRequired ? ' with steam' : ''} in ${selectedPreset.bake.bakingVessel} for ${selectedPreset.bake.bakeTimeMinutes} min`
+              : undefined,
           );
           try {
             await Share.share({ message: text });
@@ -1094,30 +1279,28 @@ const starterStyles = StyleSheet.create({
     color: Colors.muted,
     paddingVertical: 1,
   },
-  ratioRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  ratioBtn: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.sm,
-    backgroundColor: '#F0EBE5',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  ratioBtnSelected: {
-    backgroundColor: Colors.terracotta,
-    borderColor: Colors.terracotta,
-  },
-  ratioBtnText: {
+  sectionTitle: {
     fontSize: FontSize.xs,
-    color: Colors.espresso,
-    fontWeight: '500',
+    fontWeight: '700',
+    color: Colors.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.xs,
   },
-  ratioBtnTextSelected: {
-    color: Colors.white,
+});
+
+const prefStyles = StyleSheet.create({
+  removeBtn: {
+    alignSelf: 'flex-end',
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    marginTop: Spacing.xs,
+  },
+  removeBtnText: {
+    fontSize: FontSize.xs,
+    color: Colors.error,
+    fontWeight: '600',
   },
 });
 

@@ -8,9 +8,10 @@ interface Props {
   blend?: FlourBlendEntry[];
   totalFlourWeight?: number;
   starterFlourType?: string;
+  prefermentType?: string;
 }
 
-export function IngredientResults({ ingredients, blend, totalFlourWeight, starterFlourType }: Props) {
+export function IngredientResults({ ingredients, blend, totalFlourWeight, starterFlourType, prefermentType }: Props) {
   const showBlend = blend && blend.length > 1 && totalFlourWeight;
 
   return (
@@ -59,6 +60,30 @@ export function IngredientResults({ ingredients, blend, totalFlourWeight, starte
         <Text style={styles.subLabel}>  └ water in starter</Text>
         <Text style={styles.subValue}>{ingredients.waterFromStarter.toFixed(1)} g</Text>
       </View>
+
+      {/* Pre-ferment breakdown */}
+      {ingredients.prefermentTotal > 0 && (
+        <>
+          {renderRow(
+            `Pre-ferment (${prefermentType ?? 'poolish'})`,
+            `${ingredients.prefermentTotal.toFixed(1)} g`,
+            `${(ingredients.prefermentFlour / ingredients.totalFlour * 100).toFixed(0)}% of total flour`,
+          )}
+          <View style={styles.subRow}>
+            <Text style={styles.subLabel}>  └ flour in pre-ferment</Text>
+            <Text style={styles.subValue}>{ingredients.prefermentFlour.toFixed(1)} g</Text>
+          </View>
+          <View style={styles.subRow}>
+            <Text style={styles.subLabel}>  └ water in pre-ferment</Text>
+            <Text style={styles.subValue}>{ingredients.prefermentWater.toFixed(1)} g</Text>
+          </View>
+        </>
+      )}
+
+      {/* Oil */}
+      {ingredients.oil > 0 &&
+        renderRow('Oil / Fat', `${ingredients.oil.toFixed(1)} g`, null)}
+
       {renderRow('Salt', `${ingredients.salt.toFixed(1)} g`, null)}
 
       <View style={styles.divider} />
@@ -70,7 +95,7 @@ export function IngredientResults({ ingredients, blend, totalFlourWeight, starte
       <View style={styles.noteRow}>
         <Text style={styles.note}>
           Based on {ingredients.totalFlour.toFixed(0)}g total flour
-          (incl. {ingredients.flourFromStarter.toFixed(1)}g from starter)
+          (incl. {ingredients.flourFromStarter.toFixed(1)}g from starter{ingredients.prefermentFlour > 0 ? ` + ${ingredients.prefermentFlour.toFixed(1)}g in pre-ferment` : ''})
         </Text>
       </View>
     </View>

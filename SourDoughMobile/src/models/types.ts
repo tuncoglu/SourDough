@@ -74,10 +74,17 @@ export interface RecipeInputs {
   starterHydration: number;  // %
   starterFlourType?: string; // flour label used to feed the starter (undefined on legacy recipes)
   saltPct: number;           // %
+  oilPct?: number;           // % — oil/fat as percentage of total flour (0 if unset)
   ambientTemp: number;       // °C
   flourTemp: number;         // °C
   waterTemp: number;         // °C
   starterTemp: number;       // °C
+  breadType?: string;        // recipe preset id (undefined on legacy recipes)
+  preferment?: {             // pre-ferment config (undefined if not used)
+    type: 'poolish' | 'biga';
+    flourPct: number;        // % of total flour allocated to pre-ferment
+    hydration: number;       // poolish=100, biga=50–60
+  };
 }
 
 // ── Ingredient Results ─────────────────────────────────────────────────
@@ -90,9 +97,13 @@ export interface IngredientResults {
   totalWater: number;
   starterTotal: number;
   salt: number;
+  oil: number;               // g — oil/fat weight (0 if no oil)
   totalDoughWeight: number;
   hydrationPct: number;
   starterPct: number;
+  prefermentFlour: number;   // g — flour contributed by pre-ferment (0 if none)
+  prefermentWater: number;   // g — water contributed by pre-ferment (0 if none)
+  prefermentTotal: number;   // g — total pre-ferment weight (0 if none)
 }
 
 // ── Fermentation Profile ───────────────────────────────────────────────
@@ -135,6 +146,7 @@ export interface SavedRecipe {
   inputs: RecipeInputs;
   results: CalculationResults;
   locationSummary: string;
+  breadType?: string;         // recipe preset id (undefined on legacy recipes)
 }
 
 // ── Starter Feeding ────────────────────────────────────────────────────
@@ -142,8 +154,8 @@ export interface StarterFeeding {
   id: string;
   timestamp: string;          // ISO
   flourUsed: string;          // flour label
-  ratio: string;              // "1:1:1", "1:2:2", "1:5:5", "custom"
-  customRatio?: { starter: number; flour: number; water: number };
+  flourGrams: number;         // g of flour used to feed
+  waterGrams: number;         // g of water used to feed
   notes?: string;
 }
 
@@ -152,7 +164,7 @@ export interface UserSettings {
   defaultFlourType: string;
   defaultFlourWeight: number;
   defaultHydration: number;
-  defaultStarterHydration: number;
+  defaultStarterHydration: number; // starter hydration % (default 100)
   defaultSaltPct: number;
   starterFeedingIntervalHours: number;
   notificationsEnabled: boolean;
@@ -185,4 +197,70 @@ export function getTempZoneInfo(zone: TempZone): { icon: string; label: string; 
     case 'warm': return { icon: '🌡️', label: 'warm — watch closely', color: '#E8A040' };
     case 'hot': return { icon: '🔥', label: 'hot — check early!', color: '#C44536' };
   }
+}
+
+// ── Recipe Presets ─────────────────────────────────────────────────────
+
+export type BreadType =
+  | 'classic-boule'
+  | 'focaccia'
+  | 'baguette'
+  | 'ciabatta'
+  | 'pizza'
+  | 'franco-manca-pizza'
+  | 'pita-naan'
+  | 'flatbread'
+  | '100-rye'
+  | 'spelt-loaf'
+  | 'pan-de-cristal'
+  | 'challah'
+  | 'brioche'
+  | 'crackers-grissini'
+  | 'custom';
+
+export type PreFermentType = 'none' | 'poolish' | 'biga';
+
+export interface DoughProfile {
+  hydrationMin: number;
+  hydrationMax: number;
+  typicalHydration: number;
+  inoculationMin: number;
+  inoculationMax: number;
+  typicalInoculation: number;
+  saltMin: number;
+  saltMax: number;
+  typicalSalt: number;
+  oilPct?: number;
+  preferment?: { type: PreFermentType; flourPct: number; hydration: number };
+  typicalFlourType?: string;
+}
+
+export interface ProcessProfile {
+  autolyseMinutes: number;
+  folds: number;
+  foldIntervalMinutes: number;
+  benchRestMinutes: number;
+  shapingMethod: string;
+  proofingVessel: string;
+  scoringPattern: string;
+}
+
+export interface BakeProfile {
+  ovenTempC: number;
+  steamRequired: boolean;
+  bakingVessel: string;
+  bakeTimeMinutes: number;
+  notes?: string;
+}
+
+export interface RecipePreset {
+  id: BreadType;
+  name: string;
+  emoji: string;
+  description: string;
+  difficulty: 'easy' | 'medium' | 'advanced';
+  dough: DoughProfile;
+  process: ProcessProfile;
+  bake: BakeProfile;
+  tips?: string[];
 }

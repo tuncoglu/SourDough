@@ -19,6 +19,8 @@ import { getBlend } from '../../src/lib/flourSearch';
 import { IngredientResults } from '../../src/components/IngredientResults';
 import { FermentationTimeline } from '../../src/components/FermentationTimeline';
 import { AdviceCards } from '../../src/components/FermentAdvice';
+import { MethodTimeline } from '../../src/components/MethodTimeline';
+import { getPreset } from '../../src/data/recipePresets';
 
 /** Generate a plain-text recipe summary for sharing. */
 function generateShareText(recipe: SavedRecipe): string {
@@ -43,11 +45,20 @@ function generateShareText(recipe: SavedRecipe): string {
   lines.push(`  Hydration: ${inputs.hydration.toFixed(0)}%`);
   lines.push(`  Starter: ${inputs.starterWeight.toFixed(0)}g (${inputs.starterHydration.toFixed(0)}% hydration)`);
   lines.push(`  Salt: ${inputs.saltPct.toFixed(1)}%`);
+  if (inputs.oilPct && inputs.oilPct > 0) {
+    lines.push(`  Oil/Fat: ${inputs.oilPct.toFixed(1)}%`);
+  }
+  if (inputs.preferment) {
+    lines.push(`  Pre-ferment: ${inputs.preferment.type} (${inputs.preferment.flourPct.toFixed(0)}% of flour)`);
+  }
 
   lines.push('');
   lines.push('⚖️  Weights');
   lines.push(`  Water: ${results.ingredients.addedWater.toFixed(1)}g`);
   lines.push(`  Starter: ${results.ingredients.starterTotal.toFixed(1)}g`);
+  if (results.ingredients.oil > 0) {
+    lines.push(`  Oil: ${results.ingredients.oil.toFixed(1)}g`);
+  }
   lines.push(`  Salt: ${results.ingredients.salt.toFixed(1)}g`);
   lines.push(`  Total dough: ${results.ingredients.totalDoughWeight.toFixed(1)}g`);
 
@@ -103,6 +114,7 @@ export default function RecipeDetailScreen() {
 
   const zoneInfo = getTempZoneInfo(recipe.results.tempZone);
   const date = new Date(recipe.createdAt);
+  const preset = recipe.breadType ? getPreset(recipe.breadType) : undefined;
 
   const handleShare = async () => {
     if (!recipe) return;
@@ -175,6 +187,18 @@ export default function RecipeDetailScreen() {
         <Text style={styles.label}>Salt</Text>
         <Text style={styles.value}>{recipe.inputs.saltPct.toFixed(1)}%</Text>
       </View>
+      {recipe.inputs.oilPct && recipe.inputs.oilPct > 0 ? (
+        <View style={styles.row}>
+          <Text style={styles.label}>Oil / Fat</Text>
+          <Text style={styles.value}>{recipe.inputs.oilPct.toFixed(1)}%</Text>
+        </View>
+      ) : null}
+      {recipe.inputs.preferment ? (
+        <View style={styles.row}>
+          <Text style={styles.label}>Pre-ferment</Text>
+          <Text style={styles.value}>{recipe.inputs.preferment.type} — {recipe.inputs.preferment.flourPct.toFixed(0)}% of flour</Text>
+        </View>
+      ) : null}
       <View style={styles.divider} />
       <View style={styles.row}>
         <Text style={styles.label}>Ambient</Text>
@@ -223,6 +247,7 @@ export default function RecipeDetailScreen() {
         blend={blend}
         totalFlourWeight={recipe.inputs.flourWeight}
         starterFlourType={recipe.inputs.starterFlourType}
+        prefermentType={recipe.inputs.preferment?.type}
       />
 
       {/* Advice */}
@@ -231,6 +256,14 @@ export default function RecipeDetailScreen() {
         waterHardnessAdvice={recipe.results.waterHardnessAdvice}
         warnings={recipe.results.warnings}
       />
+
+      {/* Method Timeline */}
+      {preset && (
+        <MethodTimeline
+          preset={preset}
+          staticFermentHours={recipe.results.staticFermentHours}
+        />
+      )}
     </>
   );
 
@@ -240,6 +273,7 @@ export default function RecipeDetailScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <Stack.Screen options={{ title: 'Recipe Detail' }} />
         <Text style={styles.date}>
+          {preset ? `${preset.emoji} ${preset.name} — ` : ''}
           {date.toLocaleDateString(undefined, {
             weekday: 'long',
             year: 'numeric',
@@ -288,6 +322,7 @@ export default function RecipeDetailScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.date}>
+          {preset ? `${preset.emoji} ${preset.name} — ` : ''}
           {date.toLocaleDateString(undefined, {
             weekday: 'long',
             year: 'numeric',

@@ -155,6 +155,10 @@ export function calculateFDT(
 /**
  * Compute exact gram weights. Hydration and salt percentages apply to the
  * TRUE total flour (fresh flour + flour contributed by the starter).
+ *
+ * Pre-ferment (poolish or biga) is decomposed identically to starter:
+ * its flour is subtracted from the bowl flour, its water from the added water.
+ * Oil is added after and included in total dough weight.
  */
 export function calculateIngredients(
   freshFlour: number,
@@ -162,6 +166,8 @@ export function calculateIngredients(
   starterWeight: number,
   saltPct: number,
   starterHydration: number,
+  oilPct?: number,
+  preferment?: { type: 'poolish' | 'biga'; flourPct: number; hydration: number },
 ): IngredientResults {
   // Split starter into flour and water components
   const starterFlourPct = 100.0 / (100.0 + starterHydration);
@@ -172,10 +178,28 @@ export function calculateIngredients(
   // True total flour = what's in the bowl + what's in the starter
   const totalFlour = freshFlour + starterFlour;
 
+  // ═══ Pre-ferment decomposition (same logic as starter) ═══
+  let prefermentFlour = 0;
+  let prefermentWater = 0;
+  let prefermentTotal = 0;
+  if (preferment && preferment.flourPct > 0) {
+    prefermentFlour = totalFlour * (preferment.flourPct / 100);
+    prefermentWater = prefermentFlour * (preferment.hydration / 100);
+    prefermentTotal = prefermentFlour + prefermentWater;
+  }
+
+  // Bowl flour: fresh flour minus what's in the pre-ferment
+  const bowlFlour = freshFlour - prefermentFlour;
+
   const waterTotal = (hydrationPct / 100.0) * totalFlour;
-  const addedWater = waterTotal - starterWater;
+  // Added water = total water – water in starter – water in pre-ferment
+  const addedWater = waterTotal - starterWater - prefermentWater;
   const salt = (saltPct / 100.0) * totalFlour;
-  const totalDough = freshFlour + addedWater + starterWeight + salt;
+
+  // ═══ Oil ═══
+  const oil = (oilPct ?? 0) > 0 ? ((oilPct ?? 0) / 100.0) * totalFlour : 0;
+
+  const totalDough = bowlFlour + addedWater + starterWeight + salt + oil + prefermentTotal;
   const starterPctDisplay = (starterWeight / totalFlour) * 100.0;
 
   return {
@@ -187,9 +211,13 @@ export function calculateIngredients(
     totalWater: round1(waterTotal),
     starterTotal: round1(starterWeight),
     salt: round1(salt),
+    oil: round1(oil),
     totalDoughWeight: round1(totalDough),
     hydrationPct,
     starterPct: round1(starterPctDisplay),
+    prefermentFlour: round1(prefermentFlour),
+    prefermentWater: round1(prefermentWater),
+    prefermentTotal: round1(prefermentTotal),
   };
 }
 
@@ -350,6 +378,7 @@ export function fermentAdvice(
   hydrationPct: number = 70.0,
   dynamicHours?: number,
   flour: string | FlourBlendEntry[] = 'Generic: Bread Flour',
+  oilPct?: number,
 ): string[] {
   const advice: string[] = [];
   const effectiveHours = dynamicHours;
@@ -419,6 +448,12 @@ export function fermentAdvice(
     drivers.push(`cold dough (${fdt.toFixed(1)}°C)`);
   }
 
+  if ((oilPct ?? 0) >= 10) {
+    drivers.push(`high fat content (${(oilPct ?? 0).toFixed(0)}% — fat slows yeast activity)`);
+  } else if ((oilPct ?? 0) >= 5) {
+    drivers.push(`moderate fat content (${(oilPct ?? 0).toFixed(0)}% — slight slowdown)`);
+  }
+
   if (drivers.length > 0) {
     advice.push('   ⚙  What\'s driving this: ' + drivers.join('; ') + '.');
   }
@@ -431,6 +466,11 @@ export function fermentAdvice(
   }
   if (fdt < 21 && inoculationPct < 30) {
     advice.push('   💡 Your dough starts cool but will warm with the room. The dynamic estimate above accounts for this.');
+  }
+  if ((oilPct ?? 0) >= 10) {
+    advice.push('   💡 High fat content (butter, oil, eggs) coats gluten strands and slows yeast. Expect a noticeably longer ferment than the model predicts. Cold-proofing overnight is ideal for enriched doughs.');
+  } else if ((oilPct ?? 0) >= 5) {
+    advice.push('   💡 Moderate fat content — fermentation will be slightly slower than a lean dough at the same temperature.');
   }
 
   return advice;
@@ -481,6 +521,8 @@ export function runAllCalculations(
     inputs.starterWeight,
     inputs.saltPct,
     inputs.starterHydration,
+    inputs.oilPct,
+    inputs.preferment,
   );
 
   // Build fresh flour blend (synthesize from legacy scalar if needed)
@@ -529,6 +571,7 @@ export function runAllCalculations(
     inputs.hydration,
     dynamicFerment?.totalHours,
     totalBlend,
+    inputs.oilPct,
   );
 
   const ha = waterHardnessAdvice(hardness);
