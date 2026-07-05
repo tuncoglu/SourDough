@@ -43,7 +43,7 @@ export async function scheduleFoldReminders(
 
     const id = await Notifications.scheduleNotificationAsync({
       content: {
-        title: `🍞 ${label}`,
+        title: `🥖 ${label}`,
         body: `Fold #${i + 1} of ${count} — time to stretch and fold!`,
         sound: 'default',
       },

@@ -78,7 +78,7 @@ export function RecipeTypePicker({ selected, onSelect }: Props) {
         activeOpacity={0.7}
       >
         <Text style={desktopStyles.triggerEmoji}>
-          {selectedPreset?.emoji ?? '🍞'}
+          {selectedPreset?.emoji ?? '🥖'}
         </Text>
         <Text style={desktopStyles.triggerText} numberOfLines={1}>
           {selectedPreset?.name ?? 'Select recipe type…'}

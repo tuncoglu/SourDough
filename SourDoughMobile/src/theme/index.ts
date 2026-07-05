@@ -1,5 +1,5 @@
 /**
- * Sourdough Optimizer — warm bakery color palette
+ * Just Dough It — warm bakery color palette
  */
 
 export const Colors = {

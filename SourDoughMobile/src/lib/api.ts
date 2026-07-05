@@ -8,7 +8,7 @@ import { HourlyPoint } from '../models/types';
 const OPEN_METEO_BASE = 'https://api.open-meteo.com/v1';
 const OPEN_METEO_ARCHIVE = 'https://archive-api.open-meteo.com/v1/archive';
 const NOMINATIM_BASE = 'https://nominatim.openstreetmap.org';
-const USER_AGENT = 'SourDoughOptimizer/3.0';
+const USER_AGENT = 'JustDoughIt/3.0';
 
 async function httpGet(url: string, timeoutMs = 8000): Promise<any> {
   const controller = new AbortController();

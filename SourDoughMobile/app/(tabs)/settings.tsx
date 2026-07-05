@@ -127,7 +127,7 @@ export default function SettingsScreen() {
       <View style={[styles.card, styles.aboutCard]}>
         <Text style={styles.cardTitle}>ABOUT</Text>
         <Text style={styles.aboutText}>
-          🍞 Sourdough Optimizer v3.0
+          🥖 Just Dough It v3.0
         </Text>
         <Text style={styles.aboutText}>
           Auto-detects your location, local temperature, and water hardness

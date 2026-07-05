@@ -32,9 +32,9 @@ export function Sidebar() {
         onPress={() => router.push('/')}
         activeOpacity={0.7}
       >
-        <Text style={styles.brandIcon}>🍞</Text>
-        <Text style={styles.brandName}>SourDough</Text>
-        <Text style={styles.brandSub}>Optimizer</Text>
+        <Text style={styles.brandIcon}>🥖</Text>
+        <Text style={styles.brandName}>Just Dough It</Text>
+        <Text style={styles.brandSub}>Perfect bread, less guesswork</Text>
       </TouchableOpacity>
 
       {/* Nav links */}

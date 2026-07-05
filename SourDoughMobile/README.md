@@ -1,10 +1,10 @@
-# 🥖 Sourdough Optimizer — Mobile App
+# 🥖 Just Dough It — Mobile App
 
 The mobile companion to [SourDough](https://github.com/tuncoglu/SourDough) —
 a location-aware sourdough baking calculator for iOS, Android, and web.
 
 <p align="center">
-  <img src="./assets/images/icon.png" width="120" alt="Sourdough Optimizer icon" />
+  <img src="./assets/images/icon.png" width="120" alt="Just Dough It icon" />
 </p>
 
 ---
@@ -12,7 +12,7 @@ a location-aware sourdough baking calculator for iOS, Android, and web.
 ## Why This App?
 
 Most sourdough recipes tell you "ferment for 4 hours." But in a cold kitchen,
-that could be 7 hours. In a warm one, it could be 3. Sourdough Optimizer uses
+that could be 7 hours. In a warm one, it could be 3. Just Dough It uses
 your **real location** to detect ambient temperature and water hardness, then
 adjusts fermentation timelines and hydration targets accordingly.
 

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Sourdough Optimizer",
+    "name": "Just Dough It",
     "slug": "sourdough-optimizer",
     "version": "3.0.0",
     "orientation": "portrait",
@@ -40,7 +40,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow Sourdough Optimizer to use your location to detect local temperature and water hardness for accurate baking guidance. Your coordinates are sent to Open-Meteo (weather) and OpenStreetMap (geocoding)."
+          "locationWhenInUsePermission": "Allow Just Dough It to use your location to detect local temperature and water hardness for accurate baking guidance. Your coordinates are sent to Open-Meteo (weather) and OpenStreetMap (geocoding)."
         }
       ],
       [

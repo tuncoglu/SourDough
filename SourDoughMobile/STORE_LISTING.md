@@ -1,14 +1,14 @@
-# Google Play Store Listing — Sourdough Optimizer
+# Google Play Store Listing — Just Dough It
 
 ## Short description (80 chars max)
 > Sourdough starter tracker & recipe calculator. Auto-detects temperature for perfect fermentation.
 
 ## Full description (4000 chars max)
 
-Sourdough Optimizer takes the guesswork out of sourdough baking. Whether you're maintaining a starter, building a levain, or scaling a recipe, the app does the math — and adapts it to your actual environment.
+Just Dough It takes the guesswork out of sourdough baking. Whether you're maintaining a starter, building a levain, or scaling a recipe, the app does the math — and adapts it to your actual environment.
 
 ### Why your kitchen, not a textbook
-Most recipes assume a fixed temperature and water profile. Sourdough Optimizer uses your real location to detect ambient temperature and water hardness, then adjusts fermentation timelines and hydration targets accordingly. Cool kitchen? It lengthens the bulk. Soft water? It nudges you toward a stiffer dough.
+Most recipes assume a fixed temperature and water profile. Just Dough It uses your real location to detect ambient temperature and water hardness, then adjusts fermentation timelines and hydration targets accordingly. Cool kitchen? It lengthens the bulk. Soft water? It nudges you toward a stiffer dough.
 
 ### What it does
 - **Starter tracker** — Log feedings (flour, water, ratio). See your starter's history and get reminders when it's time to feed again.
@@ -32,7 +32,7 @@ Download and make your next loaf your best one.
 
 ## Feature graphic (1024 × 500 px)
 Placeholder — create one showing:
-- App icon + "Sourdough Optimizer" title
+- App icon + "Just Dough It" title
 - Tagline: "Science-driven sourdough, adjusted to your kitchen"
 - Warm, bakery-inspired background (#FFF5ED)
 

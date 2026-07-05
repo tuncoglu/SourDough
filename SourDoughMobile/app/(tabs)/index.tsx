@@ -67,7 +67,7 @@ const fallbackHardness: WaterHardness = {
 function generateShareText(recipe: SavedRecipe): string {
   const { inputs, results, locationSummary } = recipe;
   const lines: string[] = [
-    '🥖 Sourdough Recipe — Sourdough Optimizer',
+    '🥖 Just Dough It Recipe — Just Dough It',
     '',
     `📍 ${locationSummary}`,
     '',
@@ -121,7 +121,7 @@ function generateShareText(recipe: SavedRecipe): string {
   }
 
   lines.push('');
-  lines.push('Made with Sourdough Optimizer 🍞');
+  lines.push('Made with Just Dough It 🥖');
   lines.push('https://github.com/tuncoglu/SourDough');
 
   return lines.join('\n');
@@ -145,7 +145,7 @@ function generateShareTextFromState(
   bakeInfo?: string,
 ): string {
   const lines: string[] = [
-    '🥖 Sourdough Recipe — Sourdough Optimizer',
+    '🥖 Just Dough It Recipe — Just Dough It',
     '',
     `📍 ${locationSummary}`,
     '',
@@ -201,7 +201,7 @@ function generateShareTextFromState(
   }
 
   lines.push('');
-  lines.push('Made with Sourdough Optimizer 🍞');
+  lines.push('Made with Just Dough It 🥖');
   lines.push('https://github.com/tuncoglu/SourDough');
 
   return lines.join('\n');
@@ -988,7 +988,7 @@ export default function CalculatorScreen() {
   // ── Layout (responsive; single component tree — no remount on resize) ──
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {isDesktop && <Text style={styles.header}>🍞  Sourdough Optimizer</Text>}
+      {isDesktop && <Text style={styles.header}>🥖  Just Dough It</Text>}
 
       {isDesktop && (
         <LocationBar
@@ -1011,7 +1011,7 @@ export default function CalculatorScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {!isDesktop && <Text style={styles.header}>🍞  Sourdough Optimizer</Text>}
+          {!isDesktop && <Text style={styles.header}>🥖  Just Dough It</Text>}
 
           {!isDesktop && (
             <LocationBar

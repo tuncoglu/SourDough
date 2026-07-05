@@ -73,7 +73,7 @@ export default function HistoryScreen() {
 
       {recipes.length === 0 ? (
         <EmptyState
-          icon="🍞"
+          icon="🥖"
           title="No recipes yet"
           subtitle="Your saved sourdough recipes will appear here. Calculate and save one to get started!"
         />

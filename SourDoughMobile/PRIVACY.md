@@ -1,8 +1,8 @@
-# Privacy Policy for Sourdough Optimizer
+# Privacy Policy for Just Dough It
 
 **Last updated:** June 18, 2026
 
-Sourdough Optimizer ("the App") is a baking tool that helps you manage
+Just Dough It ("the App") is a baking tool that helps you manage
 sourdough starters and recipes. This policy explains what data the App
 handles and how it is used.
 

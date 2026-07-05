@@ -5,7 +5,7 @@ export const RECIPE_PRESETS: RecipePreset[] = [
   {
     id: 'classic-boule',
     name: 'Classic Sourdough Boule',
-    emoji: '🍞',
+    emoji: '🥖',
     description:
       'The everyday sourdough loaf. A versatile recipe that works with almost any flour and suits beginners and experienced bakers alike.',
     difficulty: 'easy',

@@ -1,5 +1,5 @@
 /**
- * Core type definitions for the Sourdough Optimizer
+ * Core type definitions for Just Dough It
  */
 
 // ── Flour ──────────────────────────────────────────────────────────────
