@@ -219,7 +219,7 @@ function nextMixKey(): string {
 }
 
 export default function CalculatorScreen() {
-  const { data: locationData, loading: locLoading, error: locError, detect, refineWithPostcode, setHardnessOverride } = useLocation();
+  const { data: locationData, loading: locLoading, error: locError, detect, refineWithPostcode } = useLocation();
   const { isDesktop } = useBreakpoint();
 
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
@@ -235,7 +235,7 @@ export default function CalculatorScreen() {
   const [flourTemp, setFlourTemp] = useState('22');
   const [waterTemp, setWaterTemp] = useState('18');
   const [starterTemp, setStarterTemp] = useState('22');
-  const [hardnessOverride, setHardnessOverrideLocal] = useState('');
+
 
   // Recipe preset state
   const [breadType, setBreadType] = useState<BreadType>('custom');
@@ -428,7 +428,7 @@ export default function CalculatorScreen() {
 
     const flour = findFlour(mixRows[0].flour.label);
     // Use manual hardness override if provided, otherwise use detected
-    const manualHw = parseFloat(hardnessOverride);
+    const manualHw = settings.waterHardnessOverride || 0;
     const hardness: WaterHardness = (!isNaN(manualHw) && manualHw > 0)
       ? { mgL: manualHw, classification: manualHw < 30 ? 'very soft' : manualHw < 60 ? 'soft' : manualHw < 120 ? 'moderately soft' : manualHw < 200 ? 'moderately hard' : manualHw < 300 ? 'hard' : 'very hard', note: 'Manual override — user-supplied value', key: 'manual' }
       : (locationData?.hardness ?? fallbackHardness);
@@ -495,7 +495,7 @@ export default function CalculatorScreen() {
     ambientTemp, flourTemp, waterTemp, starterTemp, starterHydrationStr,
     oilPct, prefermentEnabled, prefermentFlourPct,
     mixRows, starterFlourLabel, locationData, isDesktop,
-    hardnessOverride, breadType,
+    breadType,
   ]);
 
   const handleSave = useCallback(async () => {
@@ -834,25 +834,6 @@ export default function CalculatorScreen() {
           label="Starter"
           value={starterTemp}
           onChangeText={setStarterTemp}
-        />
-      </View>
-
-      {/* ── Water Hardness Override (optional) ───────────────── */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>WATER HARDNESS OVERRIDE (OPTIONAL)</Text>
-        <Text style={styles.cardHint}>
-          Leave empty for auto-detect. Enter mg/L CaCO₃ if known{'\n'}
-          (check your water company's website or use a test kit).
-        </Text>
-        <TempRow
-          label="Hardness"
-          value={hardnessOverride}
-          onChangeText={(t) => {
-            setHardnessOverrideLocal(t);
-            const val = parseFloat(t);
-            setHardnessOverride(isNaN(val) || val <= 0 ? null : val);
-          }}
-          unit="mg/L"
         />
       </View>
 

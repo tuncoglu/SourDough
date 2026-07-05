@@ -168,6 +168,7 @@ export interface UserSettings {
   defaultSaltPct: number;
   starterFeedingIntervalHours: number;
   notificationsEnabled: boolean;
+  waterHardnessOverride: number; // mg/L CaCO₃, 0 = auto-detect
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -178,6 +179,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   defaultSaltPct: 2.0,
   starterFeedingIntervalHours: 24,
   notificationsEnabled: false,
+  waterHardnessOverride: 0,
 };
 
 // ── FDT Temperature Zone ──────────────────────────────────────────────

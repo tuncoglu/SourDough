@@ -114,6 +114,25 @@ export default function SettingsScreen() {
         />
       </View>
 
+      {/* Water Hardness Override */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>WATER HARDNESS OVERRIDE (OPTIONAL)</Text>
+        <Text style={styles.description}>
+          Leave at 0 for auto-detect. Enter your local water hardness in mg/L CaCO₃{'\n'}
+          (check your water company's website or use a test kit).
+        </Text>
+
+        <NumberInput
+          label="Hardness"
+          value={String(settings.waterHardnessOverride || 0)}
+          onChangeText={(v) => {
+            const n = parseFloat(v);
+            if (!isNaN(n)) setSettings({ ...settings, waterHardnessOverride: n });
+          }}
+          unit="mg/L"
+        />
+      </View>
+
       {/* Actions */}
       <TouchableOpacity style={styles.saveBtn} onPress={handleSave} activeOpacity={0.8}>
         <Text style={styles.saveBtnText}>Save Defaults</Text>
