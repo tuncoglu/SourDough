@@ -247,6 +247,7 @@ export default function CalculatorScreen() {
   // Starter feeding state
   const [feedFlourGrams, setFeedFlourGrams] = useState('50');
   const [feedWaterGrams, setFeedWaterGrams] = useState('50');
+  const [feedLogging, setFeedLogging] = useState(false);
 
   // Derived: total fresh flour weight from sum of mix row grams
   const totalFlourWeight = mixRows.reduce((sum, r) => sum + (parseFloat(r.grams) || 0), 0);
@@ -601,17 +602,24 @@ export default function CalculatorScreen() {
       Alert.alert('Invalid input', 'Enter grams of flour and water used to feed.');
       return;
     }
-    const feeding: StarterFeeding = {
-      id: generateFeedingId(),
-      timestamp: new Date().toISOString(),
-      flourUsed: starterFlourLabel,
-      flourGrams: flourG,
-      waterGrams: waterG,
-    };
-    await logFeeding(feeding);
-    setLastFed(feeding);
-    setHoursSince('0.0');
-    setRecentFeedings((prev) => [feeding, ...prev].slice(0, 3));
+    setFeedLogging(true);
+    try {
+      const feeding: StarterFeeding = {
+        id: generateFeedingId(),
+        timestamp: new Date().toISOString(),
+        flourUsed: starterFlourLabel,
+        flourGrams: flourG,
+        waterGrams: waterG,
+      };
+      await logFeeding(feeding);
+      setLastFed(feeding);
+      setHoursSince('0.0');
+      setRecentFeedings((prev) => [feeding, ...prev].slice(0, 3));
+    } catch {
+      Alert.alert('Error', 'Could not save feeding. Please try again.');
+    } finally {
+      setFeedLogging(false);
+    }
   }, [starterFlourLabel, feedFlourGrams, feedWaterGrams]);
 
   // ── Shared input sections ────────────────────────────────────────────
@@ -629,20 +637,21 @@ export default function CalculatorScreen() {
       </View>
 
       {/* ── Starter (compact) ────────────────────────────────── */}
-      <TouchableOpacity
-        style={starterStyles.card}
-        onPress={() => setStarterExpanded(!starterExpanded)}
-        activeOpacity={0.8}
-      >
-        <View style={starterStyles.collapsedRow}>
-          <Text style={starterStyles.icon}>🫙</Text>
-          <Text style={starterStyles.summary} numberOfLines={1}>
-            {lastFed
-              ? `${lastFed.flourGrams ?? '?'}g flour + ${lastFed.waterGrams ?? '?'}g water · ${hoursSince}h ago`
-              : 'Tap to set up your starter'}
-          </Text>
-          <Text style={starterStyles.chevron}>{starterExpanded ? '▲' : '▼'}</Text>
-        </View>
+      <View style={starterStyles.card}>
+        <TouchableOpacity
+          onPress={() => setStarterExpanded(!starterExpanded)}
+          activeOpacity={0.8}
+        >
+          <View style={starterStyles.collapsedRow}>
+            <Text style={starterStyles.icon}>🫙</Text>
+            <Text style={starterStyles.summary} numberOfLines={1}>
+              {lastFed
+                ? `${lastFed.flourGrams ?? '?'}g flour + ${lastFed.waterGrams ?? '?'}g water · ${hoursSince}h ago`
+                : 'Tap to set up your starter'}
+            </Text>
+            <Text style={starterStyles.chevron}>{starterExpanded ? '▲' : '▼'}</Text>
+          </View>
+        </TouchableOpacity>
 
         {starterExpanded && (
           <View style={starterStyles.expanded}>
@@ -684,9 +693,12 @@ export default function CalculatorScreen() {
             <TouchableOpacity
               style={starterStyles.feedBtn}
               onPress={handleFeedNow}
+              disabled={feedLogging}
               activeOpacity={0.7}
             >
-              <Text style={starterStyles.feedBtnText}>Log Feeding</Text>
+              <Text style={starterStyles.feedBtnText}>
+                {feedLogging ? 'Saving...' : 'Log Feeding'}
+              </Text>
             </TouchableOpacity>
 
             {lastFed && (
@@ -712,7 +724,7 @@ export default function CalculatorScreen() {
             )}
           </View>
         )}
-      </TouchableOpacity>
+      </View>
 
       {/* ── Flour & Ingredients ─────────────────────────────── */}
       <View style={styles.card}>
@@ -1206,6 +1218,7 @@ const starterStyles = StyleSheet.create({
     borderRadius: BorderRadius.sm,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs + 2,
+    alignItems: 'center',
   },
   feedBtnText: {
     color: Colors.white,

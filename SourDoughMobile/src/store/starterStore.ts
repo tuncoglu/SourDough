@@ -21,9 +21,14 @@ export async function loadFeedings(): Promise<StarterFeeding[]> {
 
 /** Log a new feeding */
 export async function logFeeding(feeding: StarterFeeding): Promise<void> {
-  const feedings = await loadFeedings();
-  feedings.unshift(feeding);
-  await AsyncStorage.setItem(FEEDINGS_KEY, JSON.stringify(feedings.slice(0, 500)));
+  try {
+    const feedings = await loadFeedings();
+    feedings.unshift(feeding);
+    await AsyncStorage.setItem(FEEDINGS_KEY, JSON.stringify(feedings.slice(0, 500)));
+  } catch (err) {
+    console.error('logFeeding: failed to persist feeding', err);
+    throw err; // re-throw so callers can show feedback
+  }
 }
 
 /** Get the most recent feeding, or null */
