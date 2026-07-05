@@ -1002,7 +1002,7 @@ export default function CalculatorScreen() {
         />
       )}
 
-      <View style={isDesktop ? desktopStyles.twoCol : undefined}>
+      <View style={isDesktop ? desktopStyles.twoCol : styles.mobileCol}>
         {/* Left: Inputs */}
         <ScrollView
           ref={scrollRef}
@@ -1059,6 +1059,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.cream,
+  },
+  mobileCol: {
+    flex: 1,
   },
   scroll: {
     flex: 1,
