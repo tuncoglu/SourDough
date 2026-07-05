@@ -891,6 +891,8 @@ export default function CalculatorScreen() {
         totalFlourWeight={totalFlourWeight}
         starterFlourType={starterFlourLabel}
         prefermentType={prefermentEnabled ? 'poolish' : undefined}
+        typicalUnitGrams={selectedPreset?.typicalUnitGrams}
+        unitLabel={selectedPreset?.unitLabel}
       />
 
       {/* Advice */}

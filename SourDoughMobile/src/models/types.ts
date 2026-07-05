@@ -265,4 +265,9 @@ export interface RecipePreset {
   process: ProcessProfile;
   bake: BakeProfile;
   tips?: string[];
+  /** Typical weight in grams for a single unit (loaf, baguette, pizza, etc.).
+   *  0 means the whole batch is one unit (e.g. focaccia tray, cracker sheet). */
+  typicalUnitGrams: number;
+  /** Label for a single unit: "loaf", "baguette", "pizza", "piece", etc. */
+  unitLabel: string;
 }

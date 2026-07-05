@@ -9,9 +9,13 @@ interface Props {
   totalFlourWeight?: number;
   starterFlourType?: string;
   prefermentType?: string;
+  /** Typical weight per unit (loaf, baguette, etc.). 0 = whole batch. */
+  typicalUnitGrams?: number;
+  /** Label for a single unit. */
+  unitLabel?: string;
 }
 
-export function IngredientResults({ ingredients, blend, totalFlourWeight, starterFlourType, prefermentType }: Props) {
+export function IngredientResults({ ingredients, blend, totalFlourWeight, starterFlourType, prefermentType, typicalUnitGrams, unitLabel }: Props) {
   const showBlend = blend && blend.length > 1 && totalFlourWeight;
 
   return (
@@ -98,6 +102,24 @@ export function IngredientResults({ ingredients, blend, totalFlourWeight, starte
           (incl. {ingredients.flourFromStarter.toFixed(1)}g from starter{ingredients.prefermentFlour > 0 ? ` + ${ingredients.prefermentFlour.toFixed(1)}g in pre-ferment` : ''})
         </Text>
       </View>
+
+      {/* Yield suggestion */}
+      {typicalUnitGrams && typicalUnitGrams > 0 && unitLabel && (
+        <View style={styles.yieldRow}>
+          <Text style={styles.yieldText}>
+            🧮  This dough yields{' '}
+            <Text style={styles.yieldBold}>
+              ~{(ingredients.totalDoughWeight / typicalUnitGrams).toFixed(1)} {unitLabel}{ingredients.totalDoughWeight / typicalUnitGrams >= 1.95 ? 's' : ''}
+            </Text>
+            {' '}({typicalUnitGrams}g per {unitLabel})
+          </Text>
+          {ingredients.totalDoughWeight / typicalUnitGrams >= 2 && (
+            <Text style={styles.yieldSub}>
+              Scale each to {typicalUnitGrams}g for the best result.
+            </Text>
+          )}
+        </View>
+      )}
     </View>
   );
 }
@@ -189,5 +211,33 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: Colors.border,
+  },
+  yieldRow: {
+    marginTop: Spacing.md,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: Colors.terracotta,
+    backgroundColor: '#FFF5EF',
+    marginHorizontal: -Spacing.md,
+    paddingHorizontal: Spacing.md,
+    paddingBottom: Spacing.sm,
+    marginBottom: -Spacing.md,
+    borderBottomLeftRadius: BorderRadius.md,
+    borderBottomRightRadius: BorderRadius.md,
+  },
+  yieldText: {
+    fontSize: FontSize.sm,
+    color: Colors.espresso,
+    lineHeight: 20,
+  },
+  yieldBold: {
+    fontWeight: '700',
+    color: Colors.terracotta,
+  },
+  yieldSub: {
+    fontSize: FontSize.xs,
+    color: Colors.muted,
+    marginTop: Spacing.xs,
+    fontStyle: 'italic',
   },
 });

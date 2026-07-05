@@ -9,6 +9,8 @@ export const RECIPE_PRESETS: RecipePreset[] = [
     description:
       'The everyday sourdough loaf. A versatile recipe that works with almost any flour and suits beginners and experienced bakers alike.',
     difficulty: 'easy',
+    typicalUnitGrams: 750,
+    unitLabel: 'loaf',
     dough: {
       hydrationMin: 65,
       hydrationMax: 78,
@@ -51,6 +53,8 @@ export const RECIPE_PRESETS: RecipePreset[] = [
     description:
       'High-hydration Italian flatbread enriched with olive oil. Crisp, golden crust with a pillowy interior. Dimple the top before baking.',
     difficulty: 'easy',
+    typicalUnitGrams: 0,
+    unitLabel: 'tray',
     dough: {
       hydrationMin: 75,
       hydrationMax: 90,
@@ -94,6 +98,8 @@ export const RECIPE_PRESETS: RecipePreset[] = [
     description:
       'Classic French baguette with a thin, crackling crust and open crumb. Uses a poolish pre-ferment for depth of flavour.',
     difficulty: 'advanced',
+    typicalUnitGrams: 250,
+    unitLabel: 'baguette',
     dough: {
       hydrationMin: 63,
       hydrationMax: 72,
@@ -137,6 +143,8 @@ export const RECIPE_PRESETS: RecipePreset[] = [
     description:
       'Italian slipper bread with a wildly open crumb and thin crust. Very wet dough — handle with care. Uses a biga pre-ferment.',
     difficulty: 'medium',
+    typicalUnitGrams: 250,
+    unitLabel: 'ciabatta',
     dough: {
       hydrationMin: 78,
       hydrationMax: 88,
@@ -181,6 +189,8 @@ export const RECIPE_PRESETS: RecipePreset[] = [
     description:
       'Versatile pizza dough. Use lower hydration for Neapolitan-style, or push higher for a focaccia-like pan pizza (teglia).',
     difficulty: 'medium',
+    typicalUnitGrams: 250,
+    unitLabel: 'pizza',
     dough: {
       hydrationMin: 58,
       hydrationMax: 72,
@@ -224,6 +234,8 @@ export const RECIPE_PRESETS: RecipePreset[] = [
     description:
       'The sourdough pizza that built a 70-restaurant chain. Ultra-lean inoculation (8%) with a very long 16–18 hour ferment at cool room temp. Baked in a cast-iron pan on the hob, then finished under the grill — no pizza stone needed.',
     difficulty: 'medium',
+    typicalUnitGrams: 170,
+    unitLabel: 'pizza',
     dough: {
       hydrationMin: 62,
       hydrationMax: 70,
@@ -275,6 +287,8 @@ export const RECIPE_PRESETS: RecipePreset[] = [
     description:
       'Soft, pocket-forming flatbreads. Pita are baked dry at high heat; naan are enriched with yoghurt and cooked in a hot pan or tandoor.',
     difficulty: 'easy',
+    typicalUnitGrams: 100,
+    unitLabel: 'piece',
     dough: {
       hydrationMin: 55,
       hydrationMax: 68,
@@ -318,6 +332,8 @@ export const RECIPE_PRESETS: RecipePreset[] = [
     description:
       'Quick, simple flatbreads — tortillas, lavash, or chapati. No oven needed; cook on a stovetop griddle or in a dry pan.',
     difficulty: 'easy',
+    typicalUnitGrams: 80,
+    unitLabel: 'flatbread',
     dough: {
       hydrationMin: 52,
       hydrationMax: 68,
@@ -361,6 +377,8 @@ export const RECIPE_PRESETS: RecipePreset[] = [
     description:
       'Dense, dark, and deeply flavourful. Rye dough handles completely differently from wheat — it is sticky, paste-like, and relies on pentosans rather than gluten for structure.',
     difficulty: 'medium',
+    typicalUnitGrams: 750,
+    unitLabel: 'loaf',
     dough: {
       hydrationMin: 75,
       hydrationMax: 90,
@@ -403,6 +421,8 @@ export const RECIPE_PRESETS: RecipePreset[] = [
     description:
       'Nutty, slightly sweet loaf made with spelt flour. Spelt gluten is more extensible and fragile than wheat — handle gently and expect a slightly denser crumb.',
     difficulty: 'medium',
+    typicalUnitGrams: 750,
+    unitLabel: 'loaf',
     dough: {
       hydrationMin: 68,
       hydrationMax: 80,
@@ -445,6 +465,8 @@ export const RECIPE_PRESETS: RecipePreset[] = [
     description:
       'The "glass bread" from Barcelona. 100%+ hydration — an almost pourable dough that produces an impossibly open, translucent crumb with a paper-thin, shatteringly crisp crust.',
     difficulty: 'advanced',
+    typicalUnitGrams: 300,
+    unitLabel: 'piece',
     dough: {
       hydrationMin: 100,
       hydrationMax: 120,
@@ -487,6 +509,8 @@ export const RECIPE_PRESETS: RecipePreset[] = [
     description:
       'Rich, slightly sweet braided Jewish bread enriched with egg and oil. Golden, tender crumb — perfect for Shabbat, French toast, or bread pudding.',
     difficulty: 'medium',
+    typicalUnitGrams: 500,
+    unitLabel: 'loaf',
     dough: {
       hydrationMin: 48,
       hydrationMax: 60,
@@ -530,6 +554,8 @@ export const RECIPE_PRESETS: RecipePreset[] = [
     description:
       'The most indulgent bread in the world. Enriched with butter and egg, brioche is soft, rich, and golden — almost cake-like. Sourdough brioche takes patience but rewards you with extraordinary flavour.',
     difficulty: 'advanced',
+    typicalUnitGrams: 500,
+    unitLabel: 'loaf',
     dough: {
       hydrationMin: 45,
       hydrationMax: 58,
@@ -573,6 +599,8 @@ export const RECIPE_PRESETS: RecipePreset[] = [
     description:
       'Crisp sourdough crackers or Italian breadsticks. A great way to use discard starter. Roll thin, season well, and bake until golden and snapping-crisp.',
     difficulty: 'easy',
+    typicalUnitGrams: 0,
+    unitLabel: 'batch',
     dough: {
       hydrationMin: 35,
       hydrationMax: 55,
@@ -615,6 +643,8 @@ export const RECIPE_PRESETS: RecipePreset[] = [
     emoji: '✏️',
     description: 'Set everything manually. No preset defaults — you are in full control.',
     difficulty: 'easy',
+    typicalUnitGrams: 0,
+    unitLabel: '',
     dough: {
       hydrationMin: 40,
       hydrationMax: 120,

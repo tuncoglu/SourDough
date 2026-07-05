@@ -248,6 +248,8 @@ export default function RecipeDetailScreen() {
         totalFlourWeight={recipe.inputs.flourWeight}
         starterFlourType={recipe.inputs.starterFlourType}
         prefermentType={recipe.inputs.preferment?.type}
+        typicalUnitGrams={preset?.typicalUnitGrams}
+        unitLabel={preset?.unitLabel}
       />
 
       {/* Advice */}
