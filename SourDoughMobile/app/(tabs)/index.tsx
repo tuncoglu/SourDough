@@ -495,7 +495,7 @@ export default function CalculatorScreen() {
     ambientTemp, flourTemp, waterTemp, starterTemp, starterHydrationStr,
     oilPct, prefermentEnabled, prefermentFlourPct,
     mixRows, starterFlourLabel, locationData, isDesktop,
-    breadType,
+    breadType, settings.waterHardnessOverride,
   ]);
 
   const handleSave = useCallback(async () => {
