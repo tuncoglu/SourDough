@@ -1,6 +1,6 @@
 import { SymbolView } from 'expo-symbols';
 import { Tabs } from 'expo-router';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, type ColorValue } from 'react-native';
 
 import { useBreakpoint } from '@/src/hooks/useBreakpoint';
 import { Sidebar } from '@/src/components/Sidebar';
@@ -13,11 +13,11 @@ const TAB_BAR_STYLE = {
 
 const TAB_ICON_SIZE = 26;
 
-function TabIcon({ name, color }: { name: string; color: string }) {
+function TabIcon({ name, color }: { name: string; color: ColorValue }) {
   return (
     <SymbolView
       name={{ ios: name, android: name, web: name } as any}
-      tintColor={color as any}
+      tintColor={color}
       size={TAB_ICON_SIZE}
     />
   );
@@ -33,7 +33,7 @@ export default function TabLayout() {
     <View style={[styles.shell, isDesktop && styles.shellDesktop]}>
       {isDesktop && <Sidebar />}
       <View style={styles.content}>
-        <View style={isDesktop ? styles.maxWidth : undefined}>
+        <View style={styles.maxWidth}>
           <Tabs
             screenOptions={{
               tabBarActiveTintColor: '#C1784B',

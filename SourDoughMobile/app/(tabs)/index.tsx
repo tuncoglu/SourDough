@@ -985,36 +985,55 @@ export default function CalculatorScreen() {
     </>
   );
 
-  // ── Desktop Layout ───────────────────────────────────────────────────
-  if (isDesktop) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <Text style={styles.header}>🍞  Sourdough Optimizer</Text>
+  // ── Layout (responsive; single component tree — no remount on resize) ──
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      {isDesktop && <Text style={styles.header}>🍞  Sourdough Optimizer</Text>}
+
+      {isDesktop && (
         <LocationBar
           summary={locationData?.summary ?? null}
           loading={locLoading}
           error={locError}
           onRefresh={detect}
           showFallbackWarning={!locLoading && !locationData}
-          onTapFallback={() => {
-            // Scroll to temperature section for manual entry
-          }}
-          onPostcodeSubmit={(postcode) => {
-            refineWithPostcode(postcode);
-          }}
+          onTapFallback={() => {}}
+          onPostcodeSubmit={(postcode) => refineWithPostcode(postcode)}
         />
-        <View style={desktopStyles.twoCol}>
-          {/* Left: Inputs */}
-          <ScrollView
-            style={desktopStyles.leftCol}
-            contentContainerStyle={desktopStyles.leftContent}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            {inputPanels}
-          </ScrollView>
+      )}
 
-          {/* Right: Results */}
+      <View style={isDesktop ? desktopStyles.twoCol : undefined}>
+        {/* Left: Inputs */}
+        <ScrollView
+          ref={scrollRef}
+          style={isDesktop ? desktopStyles.leftCol : styles.scroll}
+          contentContainerStyle={isDesktop ? desktopStyles.leftContent : styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {!isDesktop && <Text style={styles.header}>🍞  Sourdough Optimizer</Text>}
+
+          {!isDesktop && (
+            <LocationBar
+              summary={locationData?.summary ?? null}
+              loading={locLoading}
+              error={locError}
+              onRefresh={detect}
+              showFallbackWarning={!locLoading && !locationData}
+              onTapFallback={() => {}}
+              onPostcodeSubmit={(postcode) => refineWithPostcode(postcode)}
+            />
+          )}
+
+          {inputPanels}
+
+          {!isDesktop && resultsPanel}
+
+          {!isDesktop && <View style={styles.bottomPad} />}
+        </ScrollView>
+
+        {/* Right: Results (desktop only) */}
+        {isDesktop && (
           <ScrollView
             ref={rightScrollRef}
             style={desktopStyles.rightCol}
@@ -1030,43 +1049,8 @@ export default function CalculatorScreen() {
               </View>
             )}
           </ScrollView>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // ── Mobile Layout ────────────────────────────────────────────────────
-  return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView
-        ref={scrollRef}
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={styles.header}>🍞  Sourdough Optimizer</Text>
-
-        <LocationBar
-          summary={locationData?.summary ?? null}
-          loading={locLoading}
-          error={locError}
-          onRefresh={detect}
-          showFallbackWarning={!locLoading && !locationData}
-          onTapFallback={() => {
-            // Scroll to temperature section for manual entry
-          }}
-          onPostcodeSubmit={(postcode) => {
-            refineWithPostcode(postcode);
-          }}
-        />
-
-        {inputPanels}
-
-        {resultsPanel}
-
-        <View style={styles.bottomPad} />
-      </ScrollView>
+        )}
+      </View>
     </SafeAreaView>
   );
 }
