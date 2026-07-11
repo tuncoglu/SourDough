@@ -146,13 +146,15 @@ function renderRow(
   );
 }
 
+const CARD_PADDING = Spacing.md;
+
 const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.card,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: BorderRadius.md,
-    padding: Spacing.md,
+    padding: CARD_PADDING,
     marginBottom: Spacing.md,
   },
   title: {
@@ -225,10 +227,10 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Colors.terracotta,
     backgroundColor: '#FFF5EF',
-    marginHorizontal: -Spacing.md,
-    paddingHorizontal: Spacing.md,
+    marginHorizontal: -CARD_PADDING,
+    paddingHorizontal: CARD_PADDING,
     paddingBottom: Spacing.sm,
-    marginBottom: -Spacing.md,
+    marginBottom: -CARD_PADDING,
     borderBottomLeftRadius: BorderRadius.md,
     borderBottomRightRadius: BorderRadius.md,
   },

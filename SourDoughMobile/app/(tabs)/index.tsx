@@ -1,5 +1,6 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
+  AppState,
   ScrollView,
   View,
   Text,
@@ -350,16 +351,22 @@ export default function CalculatorScreen() {
     }, []),
   );
 
-  // Update "hours since" every minute
+  // Track app state to pause timer when backgrounded
+  const [appState, setAppState] = useState(AppState.currentState);
   useEffect(() => {
+    const sub = AppState.addEventListener('change', (nextState) => setAppState(nextState));
+    return () => sub.remove();
+  }, []);
+
+  // Update "hours since" every minute (only when app is active and starter expanded)
+  useEffect(() => {
+    if (appState !== 'active' || !starterExpanded || !lastFed) return;
     const t = setInterval(() => {
-      if (lastFed) {
-        const diff = Date.now() - new Date(lastFed.timestamp).getTime();
-        setHoursSince((diff / 3600000).toFixed(1));
-      }
+      const diff = Date.now() - new Date(lastFed.timestamp).getTime();
+      setHoursSince((diff / 3600000).toFixed(1));
     }, 60000);
     return () => clearInterval(t);
-  }, [lastFed]);
+  }, [appState, starterExpanded, lastFed]);
 
   // Pre-fill temps when location detected
   useEffect(() => {
@@ -602,6 +609,19 @@ export default function CalculatorScreen() {
 
   const zoneInfo = results ? getTempZoneInfo(results.tempZone) : null;
 
+  // Show manual override in location bar when active
+  const displaySummary = useMemo(() => {
+    if (!locationData) return null;
+    if (settings.waterHardnessOverride > 0) {
+      const classification = classifyHardness(settings.waterHardnessOverride);
+      return locationData.summary.replace(
+        /🧪 Water .+$/,
+        `🧪 Water ${classification} (${settings.waterHardnessOverride} mg/L) [manual]`,
+      );
+    }
+    return locationData.summary;
+  }, [locationData, settings.waterHardnessOverride]);
+
   const handleFeedNow = useCallback(async () => {
     const flourG = parseFloat(feedFlourGrams) || 0;
     const waterG = parseFloat(feedWaterGrams) || 0;
@@ -609,7 +629,8 @@ export default function CalculatorScreen() {
       Alert.alert('Invalid input', 'Enter grams of flour and water used to feed.');
       return;
     }
-    setFeedLogging(true);
+    // Only show loading spinner if the operation takes > 200ms
+    const timer = setTimeout(() => setFeedLogging(true), 200);
     try {
       const feeding: StarterFeeding = {
         id: generateFeedingId(),
@@ -626,6 +647,7 @@ export default function CalculatorScreen() {
       console.error('[handleFeedNow]', err);
       Alert.alert('Error', 'Could not save feeding. Please try again.');
     } finally {
+      clearTimeout(timer);
       setFeedLogging(false);
     }
   }, [starterFlourLabel, feedFlourGrams, feedWaterGrams]);
@@ -647,6 +669,7 @@ export default function CalculatorScreen() {
       {/* ── Starter (compact) ────────────────────────────────── */}
       <View style={starterStyles.card}>
         <TouchableOpacity
+          style={starterStyles.cardHeader}
           onPress={() => setStarterExpanded(!starterExpanded)}
           activeOpacity={0.8}
         >
@@ -979,7 +1002,7 @@ export default function CalculatorScreen() {
 
       {isDesktop && (
         <LocationBar
-          summary={locationData?.summary ?? null}
+          summary={displaySummary}
           loading={locLoading}
           error={locError}
           onRefresh={detect}
@@ -1002,7 +1025,7 @@ export default function CalculatorScreen() {
 
           {!isDesktop && (
             <LocationBar
-              summary={locationData?.summary ?? null}
+              summary={displaySummary}
               loading={locLoading}
               error={locError}
               onRefresh={detect}
@@ -1188,8 +1211,10 @@ const starterStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: BorderRadius.md,
-    padding: Spacing.md,
     marginBottom: Spacing.md,
+  },
+  cardHeader: {
+    padding: Spacing.md,
   },
   collapsedRow: {
     flexDirection: 'row',
@@ -1224,6 +1249,7 @@ const starterStyles = StyleSheet.create({
   expanded: {
     marginTop: Spacing.md,
     paddingTop: Spacing.md,
+    paddingHorizontal: Spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: Colors.border,
     gap: Spacing.sm,
