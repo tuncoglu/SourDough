@@ -18,7 +18,7 @@ import { Colors, Spacing, FontSize, BorderRadius } from '../../src/theme';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { useLocation } from '../../src/hooks/useLocation';
 import { classifyHardness } from '../../src/data/ukWaterHardness';
-import { getAutoTemps } from '../../src/lib/location';
+import { getAutoTemps, buildSummary } from '../../src/lib/location';
 import { runAllCalculations } from '../../src/lib/calculations';
 import { saveRecipe, generateRecipeId, loadRecipes } from '../../src/store/recipeStore';
 import { loadSettings } from '../../src/store/settingsStore';
@@ -358,15 +358,20 @@ export default function CalculatorScreen() {
     return () => sub.remove();
   }, []);
 
-  // Update "hours since" every minute (only when app is active and starter expanded)
+  // Refresh starter data from storage when the card is expanded
   useEffect(() => {
-    if (appState !== 'active' || !starterExpanded || !lastFed) return;
+    if (starterExpanded) refreshStarterData();
+  }, [starterExpanded, refreshStarterData]);
+
+  // Update "hours since" every minute (only when app is active and lastFed exists)
+  useEffect(() => {
+    if (appState !== 'active' || !lastFed) return;
     const t = setInterval(() => {
       const diff = Date.now() - new Date(lastFed.timestamp).getTime();
       setHoursSince((diff / 3600000).toFixed(1));
     }, 60000);
     return () => clearInterval(t);
-  }, [appState, starterExpanded, lastFed]);
+  }, [appState, lastFed]);
 
   // Pre-fill temps when location detected
   useEffect(() => {
@@ -613,10 +618,16 @@ export default function CalculatorScreen() {
   const displaySummary = useMemo(() => {
     if (!locationData) return null;
     if (settings.waterHardnessOverride > 0) {
-      const classification = classifyHardness(settings.waterHardnessOverride);
-      return locationData.summary.replace(
-        /🧪 Water .+$/,
-        `🧪 Water ${classification} (${settings.waterHardnessOverride} mg/L) [manual]`,
+      return buildSummary(
+        locationData.location,
+        locationData.ambientTemp,
+        locationData.waterTemp,
+        {
+          mgL: settings.waterHardnessOverride,
+          classification: classifyHardness(settings.waterHardnessOverride),
+          note: 'Manual override — user-supplied value',
+          key: 'manual',
+        },
       );
     }
     return locationData.summary;
