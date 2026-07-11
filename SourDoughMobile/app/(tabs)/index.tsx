@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   AppState,
   ScrollView,
@@ -222,7 +222,7 @@ function nextMixKey(): string {
 }
 
 /** Build a FlourBlendEntry array from the current mix rows. */
-function buildBlend(rows: MixRow[], totalGrams: number): FlourBlendEntry[] {
+function buildBlend(rows: MixRow[], totalFlourWeight: number): FlourBlendEntry[] {
   return rows.map((row) => {
     const grams = parseFloat(row.grams) || 0;
     return {
@@ -230,9 +230,18 @@ function buildBlend(rows: MixRow[], totalGrams: number): FlourBlendEntry[] {
       protein: row.flour.protein,
       productNumber: row.flour.productNumber,
       category: row.flour.category,
-      percentage: totalGrams > 0 ? (grams / totalGrams) * 100 : 0,
+      percentage: totalFlourWeight > 0 ? (grams / totalFlourWeight) * 100 : 0,
     };
   });
+}
+
+function buildManualHardness(mgL: number): WaterHardness {
+  return {
+    mgL,
+    classification: classifyHardness(mgL),
+    note: 'Manual override — user-supplied value',
+    key: 'manual',
+  };
 }
 
 export default function CalculatorScreen() {
@@ -345,10 +354,19 @@ export default function CalculatorScreen() {
   // Reload settings when the calculator tab regains focus
   // (only waterHardnessOverride is read from settings in doCalculate;
   //  the other defaults initialize local inputs on mount and stay user-controlled)
+  const didMountRef = useRef(false);
   useFocusEffect(
     useCallback(() => {
-      loadSettings().then((s) => setSettings(s));
-    }, []),
+      if (!didMountRef.current) {
+        didMountRef.current = true;
+        return; // settings already loaded by the mount useEffect
+      }
+      loadSettings().then((s) => {
+        if (s.waterHardnessOverride !== settings.waterHardnessOverride) {
+          setSettings(s);
+        }
+      });
+    }, [settings.waterHardnessOverride]),
   );
 
   // Track app state to pause timer when backgrounded
@@ -459,7 +477,7 @@ export default function CalculatorScreen() {
     // Use manual hardness override if provided, otherwise use detected
     const manualHw = settings.waterHardnessOverride || 0;
     const hardness: WaterHardness = (!isNaN(manualHw) && manualHw > 0)
-      ? { mgL: manualHw, classification: classifyHardness(manualHw), note: 'Manual override — user-supplied value', key: 'manual' }
+      ? buildManualHardness(manualHw)
       : (locationData?.hardness ?? fallbackHardness);
 
     const warnings: string[] = [];
@@ -615,23 +633,10 @@ export default function CalculatorScreen() {
   const zoneInfo = results ? getTempZoneInfo(results.tempZone) : null;
 
   // Show manual override in location bar when active
-  const displaySummary = useMemo(() => {
-    if (!locationData) return null;
-    if (settings.waterHardnessOverride > 0) {
-      return buildSummary(
-        locationData.location,
-        locationData.ambientTemp,
-        locationData.waterTemp,
-        {
-          mgL: settings.waterHardnessOverride,
-          classification: classifyHardness(settings.waterHardnessOverride),
-          note: 'Manual override — user-supplied value',
-          key: 'manual',
-        },
-      );
-    }
-    return locationData.summary;
-  }, [locationData, settings.waterHardnessOverride]);
+  const displaySummary = !locationData ? null
+    : settings.waterHardnessOverride > 0
+      ? buildSummary(locationData.location, locationData.ambientTemp, locationData.waterTemp, buildManualHardness(settings.waterHardnessOverride))
+      : locationData.summary;
 
   const handleFeedNow = useCallback(async () => {
     const flourG = parseFloat(feedFlourGrams) || 0;
