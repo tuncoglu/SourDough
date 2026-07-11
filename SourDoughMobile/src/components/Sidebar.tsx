@@ -27,15 +27,11 @@ export function Sidebar() {
   return (
     <View style={styles.sidebar}>
       {/* Brand */}
-      <TouchableOpacity
-        style={styles.brand}
-        onPress={() => router.push('/')}
-        activeOpacity={0.7}
-      >
+      <View style={styles.brand}>
         <Text style={styles.brandIcon}>🥖</Text>
         <Text style={styles.brandName}>Just Dough It</Text>
         <Text style={styles.brandSub}>Perfect bread, less guesswork</Text>
-      </TouchableOpacity>
+      </View>
 
       {/* Nav links */}
       <ScrollView style={styles.navScroll} showsVerticalScrollIndicator={false}>

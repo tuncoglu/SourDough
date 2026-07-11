@@ -54,14 +54,14 @@ export function IngredientResults({ ingredients, blend, totalFlourWeight, starte
       {renderRow('Starter', `${ingredients.starterTotal.toFixed(1)} g`,
         `(${ingredients.starterPct.toFixed(0)}% of total flour)`)}
       <View style={styles.subRow}>
-        <Text style={styles.subLabel}>  └ flour in starter</Text>
+        <Text style={styles.subLabel}>flour in starter</Text>
         <Text style={styles.subValue}>
           {ingredients.flourFromStarter.toFixed(1)} g
           {starterFlourType ? `  (${starterFlourType.replace(/\s*\([^)]*\)$/, '')})` : ''}
         </Text>
       </View>
       <View style={styles.subRow}>
-        <Text style={styles.subLabel}>  └ water in starter</Text>
+        <Text style={styles.subLabel}>water in starter</Text>
         <Text style={styles.subValue}>{ingredients.waterFromStarter.toFixed(1)} g</Text>
       </View>
 
@@ -74,11 +74,11 @@ export function IngredientResults({ ingredients, blend, totalFlourWeight, starte
             `${(ingredients.prefermentFlour / ingredients.totalFlour * 100).toFixed(0)}% of total flour`,
           )}
           <View style={styles.subRow}>
-            <Text style={styles.subLabel}>  └ flour in pre-ferment</Text>
+            <Text style={styles.subLabel}>flour in pre-ferment</Text>
             <Text style={styles.subValue}>{ingredients.prefermentFlour.toFixed(1)} g</Text>
           </View>
           <View style={styles.subRow}>
-            <Text style={styles.subLabel}>  └ water in pre-ferment</Text>
+            <Text style={styles.subLabel}>water in pre-ferment</Text>
             <Text style={styles.subValue}>{ingredients.prefermentWater.toFixed(1)} g</Text>
           </View>
         </>
@@ -200,6 +200,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 2,
     paddingLeft: Spacing.md,
+    borderLeftWidth: 2,
+    borderLeftColor: Colors.border,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: Colors.border,
     marginTop: 2,

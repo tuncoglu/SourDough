@@ -128,7 +128,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
   },
   cardWrapper: {
-    alignItems: 'flex-end',
+    alignItems: 'stretch',
+    paddingHorizontal: Spacing.lg,
   },
   cardWrapperGrid: {
     flex: 1,
@@ -137,7 +138,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     color: Colors.error,
     marginRight: Spacing.xl,
-    marginTop: -Spacing.sm,
+    marginTop: Spacing.xs,
     marginBottom: Spacing.sm,
     padding: Spacing.sm,
   },

@@ -402,6 +402,13 @@ export default function CalculatorScreen() {
     }
   }, [locationData]);
 
+  // ── Auto-scroll to results ─────────────────────────────────────────────
+  useEffect(() => {
+    if (results && scrollRef.current) {
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+    }
+  }, [results]);
+
   // ── Preset selection ───────────────────────────────────────────────────
   const handlePresetSelect = useCallback((preset: RecipePreset) => {
     setBreadType(preset.id);
@@ -803,6 +810,7 @@ export default function CalculatorScreen() {
                 style={mixStyles.removeBtn}
                 onPress={() => handleRemoveFlour(row.key)}
                 activeOpacity={0.6}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Text style={mixStyles.removeBtnText}>×</Text>
               </TouchableOpacity>
@@ -930,6 +938,19 @@ export default function CalculatorScreen() {
         <Text style={[styles.fdtZone, { color: zoneInfo?.color }]}>
           {zoneInfo?.label}
         </Text>
+        {(() => {
+          const label = zoneInfo?.label ?? '';
+          const hint = label.includes('Ideal')
+            ? 'Your dough is in the optimal fermentation range'
+            : label.includes('Cold')
+            ? 'Consider using warmer water to speed fermentation'
+            : label.includes('Warm')
+            ? 'Fermentation may be faster than expected'
+            : label.includes('Hot')
+            ? 'Use cold water to bring dough temp down'
+            : '';
+          return hint ? <Text style={styles.fdtHint}>{hint}</Text> : null;
+        })()}
       </View>
 
       {/* Fermentation */}
@@ -974,7 +995,7 @@ export default function CalculatorScreen() {
         activeOpacity={0.8}
       >
         {saving ? (
-          <ActivityIndicator color={Colors.terracotta} />
+          <ActivityIndicator color={Colors.white} />
         ) : (
           <Text style={styles.saveBtnText}>💾  Save Recipe</Text>
         )}
@@ -1059,6 +1080,13 @@ export default function CalculatorScreen() {
 
           {!isDesktop && resultsPanel}
 
+          {!results && !isDesktop && (
+            <View style={styles.emptyResult}>
+              <Text style={styles.emptyResultIcon}>🥖</Text>
+              <Text style={styles.emptyResultText}>Enter your ingredients and tap Calculate to see your recipe</Text>
+            </View>
+          )}
+
           {!isDesktop && <View style={styles.bottomPad} />}
         </ScrollView>
 
@@ -1072,10 +1100,8 @@ export default function CalculatorScreen() {
           >
             {resultsPanel || (
               <View style={styles.emptyResult}>
-                <Text style={styles.emptyResultIcon}>👆</Text>
-                <Text style={styles.emptyResultText}>
-                  Fill in your ingredients and temperatures, then click Calculate.
-                </Text>
+                <Text style={styles.emptyResultIcon}>🥖</Text>
+                <Text style={styles.emptyResultText}>Enter your ingredients and tap Calculate to see your recipe</Text>
               </View>
             )}
           </ScrollView>
@@ -1177,29 +1203,35 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
     fontWeight: '500',
   },
+  fdtHint: {
+    fontSize: FontSize.xs,
+    color: Colors.muted,
+    marginTop: Spacing.xs,
+    textAlign: 'center',
+  },
   saveBtn: {
-    backgroundColor: Colors.card,
-    borderWidth: 2,
-    borderColor: Colors.terracotta,
+    backgroundColor: Colors.terracotta,
     borderRadius: BorderRadius.md,
     paddingVertical: Spacing.md,
     alignItems: 'center',
     marginBottom: Spacing.sm,
   },
   saveBtnText: {
-    color: Colors.terracotta,
+    color: Colors.white,
     fontSize: FontSize.md,
     fontWeight: '700',
   },
   shareBtn: {
-    backgroundColor: Colors.olive,
+    backgroundColor: Colors.card,
+    borderWidth: 1.5,
+    borderColor: Colors.olive,
     borderRadius: BorderRadius.md,
     paddingVertical: Spacing.md,
     alignItems: 'center',
     marginBottom: Spacing.lg,
   },
   shareBtnText: {
-    color: Colors.white,
+    color: Colors.olive,
     fontSize: FontSize.md,
     fontWeight: '700',
   },
@@ -1214,8 +1246,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
   },
   emptyResultIcon: {
-    fontSize: 48,
-    marginBottom: Spacing.md,
+    fontSize: 40,
+    marginBottom: Spacing.sm,
+    textAlign: 'center',
   },
   emptyResultText: {
     fontSize: FontSize.md,
@@ -1320,7 +1353,7 @@ const prefStyles = StyleSheet.create({
   },
   removeBtnText: {
     fontSize: FontSize.xs,
-    color: Colors.error,
+    color: Colors.terracotta,
     fontWeight: '600',
   },
 });
@@ -1347,16 +1380,16 @@ const mixStyles = StyleSheet.create({
     fontWeight: '500',
   },
   removeBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: Colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   removeBtnSpacer: {
-    width: 28,
-    height: 28,
+    width: 36,
+    height: 36,
   },
   removeBtnText: {
     fontSize: FontSize.lg,

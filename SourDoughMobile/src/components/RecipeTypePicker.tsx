@@ -80,7 +80,13 @@ export function RecipeTypePicker({ selected, onSelect }: Props) {
         <Text style={desktopStyles.triggerEmoji}>
           {selectedPreset?.emoji ?? '🥖'}
         </Text>
-        <Text style={desktopStyles.triggerText} numberOfLines={1}>
+        <Text
+          style={[
+            desktopStyles.triggerText,
+            { color: selectedPreset ? Colors.espresso : Colors.muted },
+          ]}
+          numberOfLines={1}
+        >
           {selectedPreset?.name ?? 'Select recipe type…'}
         </Text>
         <Text style={desktopStyles.chevron}>▼</Text>
@@ -171,7 +177,7 @@ const mobileStyles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    backgroundColor: '#F0EBE5',
+    backgroundColor: Colors.white,
     borderRadius: BorderRadius.xl,
     borderWidth: 1,
     borderColor: Colors.border,

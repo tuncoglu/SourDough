@@ -138,9 +138,13 @@ export default function SettingsScreen() {
         <Text style={styles.saveBtnText}>Save Defaults</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.resetBtn} onPress={handleReset} activeOpacity={0.7}>
-        <Text style={styles.resetBtnText}>Reset to Factory Defaults</Text>
-      </TouchableOpacity>
+      <View style={{ height: 1, backgroundColor: Colors.border, marginTop: Spacing.lg, marginBottom: Spacing.md }} />
+
+      <View style={{ backgroundColor: Colors.card, borderRadius: BorderRadius.md, padding: Spacing.md }}>
+        <TouchableOpacity style={styles.resetBtn} onPress={handleReset} activeOpacity={0.7}>
+          <Text style={styles.resetBtnText}>Reset to Factory Defaults</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* About */}
       <View style={[styles.card, styles.aboutCard]}>
@@ -215,6 +219,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     fontWeight: '700',
     color: Colors.muted,
+    textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: Spacing.sm,
   },
