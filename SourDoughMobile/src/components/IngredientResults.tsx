@@ -104,22 +104,29 @@ export function IngredientResults({ ingredients, blend, totalFlourWeight, starte
       </View>
 
       {/* Yield suggestion */}
-      {typicalUnitGrams && typicalUnitGrams > 0 && unitLabel && (
-        <View style={styles.yieldRow}>
-          <Text style={styles.yieldText}>
-            🧮  This dough yields{' '}
-            <Text style={styles.yieldBold}>
-              ~{(ingredients.totalDoughWeight / typicalUnitGrams).toFixed(1)} {unitLabel}{ingredients.totalDoughWeight / typicalUnitGrams >= 1.95 ? 's' : ''}
-            </Text>
-            {' '}({typicalUnitGrams}g per {unitLabel})
-          </Text>
-          {ingredients.totalDoughWeight / typicalUnitGrams >= 2 && (
-            <Text style={styles.yieldSub}>
-              Scale each to {typicalUnitGrams}g for the best result.
-            </Text>
-          )}
-        </View>
-      )}
+      {typicalUnitGrams != null && typicalUnitGrams > 0 && unitLabel
+        ? (() => {
+            const unitCount = ingredients.totalDoughWeight / typicalUnitGrams;
+            const IRREGULAR_PLURALS: Record<string, string> = { loaf: 'loaves' };
+            const pluralLabel = IRREGULAR_PLURALS[unitLabel] ?? `${unitLabel}s`;
+            return (
+              <View style={styles.yieldRow}>
+                <Text style={styles.yieldText}>
+                  🧮  This dough yields{' '}
+                  <Text style={styles.yieldBold}>
+                    ~{unitCount.toFixed(1)} {unitCount > 1 ? pluralLabel : unitLabel}
+                  </Text>
+                  {' '}({typicalUnitGrams}g per {unitLabel})
+                </Text>
+                {unitCount >= 2 && (
+                  <Text style={styles.yieldSub}>
+                    Scale each to {typicalUnitGrams}g for the best result.
+                  </Text>
+                )}
+              </View>
+            );
+          })()
+        : null}
     </View>
   );
 }

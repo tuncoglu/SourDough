@@ -12,9 +12,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as StoreReview from 'expo-store-review';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from 'expo-router';
 import { Colors, Spacing, FontSize, BorderRadius } from '../../src/theme';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { useLocation } from '../../src/hooks/useLocation';
+import { classifyHardness } from '../../src/data/ukWaterHardness';
 import { getAutoTemps } from '../../src/lib/location';
 import { runAllCalculations } from '../../src/lib/calculations';
 import { saveRecipe, generateRecipeId, loadRecipes } from '../../src/store/recipeStore';
@@ -218,6 +220,20 @@ function nextMixKey(): string {
   return `flour_${_mixKeyCounter++}`;
 }
 
+/** Build a FlourBlendEntry array from the current mix rows. */
+function buildBlend(rows: MixRow[], totalGrams: number): FlourBlendEntry[] {
+  return rows.map((row) => {
+    const grams = parseFloat(row.grams) || 0;
+    return {
+      label: row.flour.label,
+      protein: row.flour.protein,
+      productNumber: row.flour.productNumber,
+      category: row.flour.category,
+      percentage: totalGrams > 0 ? (grams / totalGrams) * 100 : 0,
+    };
+  });
+}
+
 export default function CalculatorScreen() {
   const { data: locationData, loading: locLoading, error: locError, detect, refineWithPostcode } = useLocation();
   const { isDesktop } = useBreakpoint();
@@ -325,6 +341,15 @@ export default function CalculatorScreen() {
     refreshStarterData();
   }, [refreshStarterData]);
 
+  // Reload settings when the calculator tab regains focus
+  // (only waterHardnessOverride is read from settings in doCalculate;
+  //  the other defaults initialize local inputs on mount and stay user-controlled)
+  useFocusEffect(
+    useCallback(() => {
+      loadSettings().then((s) => setSettings(s));
+    }, []),
+  );
+
   // Update "hours since" every minute
   useEffect(() => {
     const t = setInterval(() => {
@@ -409,16 +434,7 @@ export default function CalculatorScreen() {
     }
 
     // Build blend from mix rows — convert gram weights to percentages
-    const blend: FlourBlendEntry[] = mixRows.map((row) => {
-      const grams = parseFloat(row.grams) || 0;
-      return {
-        label: row.flour.label,
-        protein: row.flour.protein,
-        productNumber: row.flour.productNumber,
-        category: row.flour.category,
-        percentage: fw > 0 ? (grams / fw) * 100 : 0,
-      };
-    });
+    const blend = buildBlend(mixRows, fw);
 
     if (blend.every((e) => e.percentage === 0)) {
       Alert.alert('Invalid flour mix', 'Enter grams for at least one flour.');
@@ -431,7 +447,7 @@ export default function CalculatorScreen() {
     // Use manual hardness override if provided, otherwise use detected
     const manualHw = settings.waterHardnessOverride || 0;
     const hardness: WaterHardness = (!isNaN(manualHw) && manualHw > 0)
-      ? { mgL: manualHw, classification: manualHw < 30 ? 'very soft' : manualHw < 60 ? 'soft' : manualHw < 120 ? 'moderately soft' : manualHw < 200 ? 'moderately hard' : manualHw < 300 ? 'hard' : 'very hard', note: 'Manual override — user-supplied value', key: 'manual' }
+      ? { mgL: manualHw, classification: classifyHardness(manualHw), note: 'Manual override — user-supplied value', key: 'manual' }
       : (locationData?.hardness ?? fallbackHardness);
 
     const warnings: string[] = [];
@@ -504,16 +520,7 @@ export default function CalculatorScreen() {
     setSaving(true);
 
     const fw = totalFlourWeight;
-    const blend: FlourBlendEntry[] = mixRows.map((row) => {
-      const grams = parseFloat(row.grams) || 0;
-      return {
-        label: row.flour.label,
-        protein: row.flour.protein,
-        productNumber: row.flour.productNumber,
-        category: row.flour.category,
-        percentage: fw > 0 ? (grams / fw) * 100 : 0,
-      };
-    });
+    const blend = buildBlend(mixRows, fw);
 
     const flourType =
       blend.length === 1
@@ -615,7 +622,8 @@ export default function CalculatorScreen() {
       setLastFed(feeding);
       setHoursSince('0.0');
       setRecentFeedings((prev) => [feeding, ...prev].slice(0, 3));
-    } catch {
+    } catch (err) {
+      console.error('[handleFeedNow]', err);
       Alert.alert('Error', 'Could not save feeding. Please try again.');
     } finally {
       setFeedLogging(false);
@@ -696,9 +704,11 @@ export default function CalculatorScreen() {
               disabled={feedLogging}
               activeOpacity={0.7}
             >
-              <Text style={starterStyles.feedBtnText}>
-                {feedLogging ? 'Saving...' : 'Log Feeding'}
-              </Text>
+              {feedLogging ? (
+                <ActivityIndicator color={Colors.white} />
+              ) : (
+                <Text style={starterStyles.feedBtnText}>Log Feeding</Text>
+              )}
             </TouchableOpacity>
 
             {lastFed && (
@@ -890,16 +900,7 @@ export default function CalculatorScreen() {
       {/* Ingredients */}
       <IngredientResults
         ingredients={results.ingredients}
-        blend={mixRows.map((r) => {
-          const grams = parseFloat(r.grams) || 0;
-          return {
-            label: r.flour.label,
-            protein: r.flour.protein,
-            productNumber: r.flour.productNumber,
-            category: r.flour.category,
-            percentage: totalFlourWeight > 0 ? (grams / totalFlourWeight) * 100 : 0,
-          };
-        })}
+        blend={buildBlend(mixRows, totalFlourWeight)}
         totalFlourWeight={totalFlourWeight}
         starterFlourType={starterFlourLabel}
         prefermentType={prefermentEnabled ? 'poolish' : undefined}
@@ -939,16 +940,7 @@ export default function CalculatorScreen() {
       <TouchableOpacity
         style={styles.shareBtn}
         onPress={async () => {
-          const blend: FlourBlendEntry[] = mixRows.map((row) => {
-            const grams = parseFloat(row.grams) || 0;
-            return {
-              label: row.flour.label,
-              protein: row.flour.protein,
-              productNumber: row.flour.productNumber,
-              category: row.flour.category,
-              percentage: totalFlourWeight > 0 ? (grams / totalFlourWeight) * 100 : 0,
-            };
-          });
+          const blend = buildBlend(mixRows, totalFlourWeight);
           const text = generateShareTextFromState(
             blend,
             totalFlourWeight,
