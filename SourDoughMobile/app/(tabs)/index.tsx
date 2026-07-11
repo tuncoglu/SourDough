@@ -641,7 +641,11 @@ export default function CalculatorScreen() {
       return;
     }
     // Only show loading spinner if the operation takes > 200ms
-    const timer = setTimeout(() => setFeedLogging(true), 200);
+    let didShowSpinner = false;
+    const timer = setTimeout(() => {
+      didShowSpinner = true;
+      setFeedLogging(true);
+    }, 200);
     try {
       const feeding: StarterFeeding = {
         id: generateFeedingId(),
@@ -659,7 +663,7 @@ export default function CalculatorScreen() {
       Alert.alert('Error', 'Could not save feeding. Please try again.');
     } finally {
       clearTimeout(timer);
-      setFeedLogging(false);
+      if (didShowSpinner) setFeedLogging(false);
     }
   }, [starterFlourLabel, feedFlourGrams, feedWaterGrams]);
 
