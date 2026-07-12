@@ -6,6 +6,7 @@ import { RecipePreset } from '../models/types';
 interface Props {
   preset: RecipePreset;
   staticFermentHours: number;
+  fermentAdvice?: string[];
 }
 
 interface Step {
@@ -144,7 +145,7 @@ function buildSteps(preset: RecipePreset, fermentHours: number): Step[] {
   return steps;
 }
 
-export function MethodTimeline({ preset, staticFermentHours }: Props) {
+export function MethodTimeline({ preset, staticFermentHours, fermentAdvice }: Props) {
   if (preset.id === 'custom') return null;
 
   const steps = buildSteps(preset, staticFermentHours);
@@ -165,6 +166,13 @@ export function MethodTimeline({ preset, staticFermentHours }: Props) {
             <Text style={styles.stepTitle}>{step.title}</Text>
             <Text style={styles.stepDesc}>{step.description}</Text>
             <Text style={styles.stepTime}>⏱ {step.time}</Text>
+            {step.title === 'Bulk fermentation' && fermentAdvice && fermentAdvice.length > 0 && (
+              <View style={styles.fermentAdviceBox}>
+                {fermentAdvice.map((line, j) => (
+                  <Text key={j} style={styles.fermentAdviceLine}>{line}</Text>
+                ))}
+              </View>
+            )}
           </View>
         </View>
       ))}
@@ -262,5 +270,21 @@ const styles = StyleSheet.create({
     color: Colors.espresso,
     lineHeight: 17,
     marginBottom: 2,
+  },
+  fermentAdviceBox: {
+    marginTop: Spacing.sm,
+    paddingTop: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    paddingBottom: Spacing.sm,
+    backgroundColor: '#FDF8F0',
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.olive,
+    borderRadius: BorderRadius.sm,
+  },
+  fermentAdviceLine: {
+    fontSize: FontSize.xs,
+    color: Colors.espresso,
+    lineHeight: 18,
+    marginBottom: 1,
   },
 });

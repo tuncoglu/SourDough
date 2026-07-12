@@ -3,41 +3,19 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
 
 interface Props {
-  fermentAdvice: string[];
-  waterHardnessAdvice: string[];
   warnings: string[];
 }
 
-export function AdviceCards({ fermentAdvice, waterHardnessAdvice, warnings }: Props) {
+export function AdviceCards({ warnings }: Props) {
+  if (warnings.length === 0) return null;
+
   return (
-    <>
-      {warnings.length > 0 && (
-        <View style={[styles.card, styles.warningCard]}>
-          <Text style={styles.title}>⚠️  Warnings</Text>
-          {warnings.map((w, i) => (
-            <Text key={i} style={styles.warningText}>{w}</Text>
-          ))}
-        </View>
-      )}
-
-      {fermentAdvice.length > 0 && (
-        <View style={styles.card}>
-          <Text style={styles.title}>🛠️  Fermentation Advice</Text>
-          {fermentAdvice.map((a, i) => (
-            <Text key={i} style={styles.adviceText}>{a}</Text>
-          ))}
-        </View>
-      )}
-
-      {waterHardnessAdvice.length > 0 && (
-        <View style={styles.card}>
-          <Text style={styles.title}>🧪  Water Hardness</Text>
-          {waterHardnessAdvice.map((h, i) => (
-            <Text key={i} style={styles.adviceText}>{h}</Text>
-          ))}
-        </View>
-      )}
-    </>
+    <View style={[styles.card, styles.warningCard]}>
+      <Text style={styles.title}>⚠️  Warnings</Text>
+      {warnings.map((w, i) => (
+        <Text key={i} style={styles.warningText}>{w}</Text>
+      ))}
+    </View>
   );
 }
 
@@ -61,12 +39,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: Spacing.sm,
-  },
-  adviceText: {
-    fontSize: FontSize.sm,
-    color: Colors.espresso,
-    lineHeight: 20,
-    marginBottom: 2,
   },
   warningText: {
     fontSize: FontSize.sm,

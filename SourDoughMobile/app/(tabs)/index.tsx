@@ -972,18 +972,15 @@ export default function CalculatorScreen() {
         unitLabel={selectedPreset?.unitLabel}
       />
 
-      {/* Advice */}
-      <AdviceCards
-        fermentAdvice={results.fermentAdvice}
-        waterHardnessAdvice={results.waterHardnessAdvice}
-        warnings={results.warnings}
-      />
+      {/* Warnings */}
+      <AdviceCards warnings={results.warnings} />
 
       {/* Method Timeline (only when a preset is selected) */}
       {selectedPreset && (
         <MethodTimeline
           preset={selectedPreset}
           staticFermentHours={results.staticFermentHours}
+          fermentAdvice={results.fermentAdvice}
         />
       )}
 

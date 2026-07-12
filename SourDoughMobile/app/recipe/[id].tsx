@@ -252,18 +252,15 @@ export default function RecipeDetailScreen() {
         unitLabel={preset?.unitLabel}
       />
 
-      {/* Advice */}
-      <AdviceCards
-        fermentAdvice={recipe.results.fermentAdvice}
-        waterHardnessAdvice={recipe.results.waterHardnessAdvice}
-        warnings={recipe.results.warnings}
-      />
+      {/* Warnings */}
+      <AdviceCards warnings={recipe.results.warnings} />
 
       {/* Method Timeline */}
       {preset && (
         <MethodTimeline
           preset={preset}
           staticFermentHours={recipe.results.staticFermentHours}
+          fermentAdvice={recipe.results.fermentAdvice}
         />
       )}
     </>
