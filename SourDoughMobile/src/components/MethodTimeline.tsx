@@ -165,7 +165,9 @@ export function MethodTimeline({ preset, staticFermentHours, fermentAdvice }: Pr
           <View style={styles.stepContent}>
             <Text style={styles.stepTitle}>{step.title}</Text>
             <Text style={styles.stepDesc}>{step.description}</Text>
-            <Text style={styles.stepTime}>⏱ {step.time}</Text>
+            <View style={styles.timeBadge}>
+              <Text style={styles.timeBadgeText}>⏱ {step.time}</Text>
+            </View>
             {step.title === 'Bulk fermentation' && fermentAdvice && fermentAdvice.length > 0 && (
               <View style={styles.fermentAdviceBox}>
                 {fermentAdvice.map((line, j) => (
@@ -252,6 +254,19 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     color: Colors.muted,
     fontWeight: '500',
+  },
+  timeBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#FDF3E8',
+    borderRadius: BorderRadius.sm,
+    paddingHorizontal: Spacing.sm + 2,
+    paddingVertical: Spacing.xs,
+    marginTop: Spacing.xs + 1,
+  },
+  timeBadgeText: {
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+    color: Colors.terracotta,
   },
   tipsSection: {
     marginTop: Spacing.sm,
