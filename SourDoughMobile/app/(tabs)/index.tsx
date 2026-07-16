@@ -1198,14 +1198,42 @@ export default function CalculatorScreen() {
         const m = parseInt(readyByMinute, 10);
         if (isNaN(h) || isNaN(m)) return null;
         const fermentHours = results.dynamicFerment?.totalHours ?? results.staticFermentHours;
+
+        // Compute total time including all method steps
+        let totalMinutes = fermentHours * 60; // bulk fermentation
+        if (selectedPreset) {
+          const { process, bake } = selectedPreset;
+          totalMinutes += process.autolyseMinutes;
+          totalMinutes += process.folds * process.foldIntervalMinutes;
+          totalMinutes += process.benchRestMinutes;
+          totalMinutes += fermentHours * 0.6 * 60; // proof
+          totalMinutes += bake.bakeTimeMinutes;
+          totalMinutes += 5; // shaping + scoring
+        }
+        const totalHours = totalMinutes / 60;
+
         const readyDate = new Date();
         readyDate.setHours(h, m, 0, 0);
         // If ready time is earlier than now, assume tomorrow
         if (readyDate <= new Date()) readyDate.setDate(readyDate.getDate() + 1);
-        const startDate = new Date(readyDate.getTime() - fermentHours * 3600000);
+        const startDate = new Date(readyDate.getTime() - totalMinutes * 60000);
         const startTimeStr = startDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
         const readyTimeStr = readyDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
         const isToday = startDate.toDateString() === new Date().toDateString();
+
+        // Build breakdown
+        const breakdownParts: string[] = [];
+        breakdownParts.push(`bulk ferment ~${fermentHours.toFixed(1)}h`);
+        if (selectedPreset) {
+          if (selectedPreset.process.autolyseMinutes > 0) breakdownParts.push(`autolyse ${selectedPreset.process.autolyseMinutes}min`);
+          const foldTime = selectedPreset.process.folds * selectedPreset.process.foldIntervalMinutes;
+          if (foldTime > 0) breakdownParts.push(`folds ${foldTime}min`);
+          if (selectedPreset.process.benchRestMinutes > 0) breakdownParts.push(`bench rest ${selectedPreset.process.benchRestMinutes}min`);
+          const proofH = fermentHours * 0.6;
+          breakdownParts.push(`proof ~${proofH.toFixed(1)}h`);
+          breakdownParts.push(`bake ${selectedPreset.bake.bakeTimeMinutes}min`);
+        }
+
         return (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>🕐  YOUR SCHEDULE</Text>
@@ -1222,7 +1250,7 @@ export default function CalculatorScreen() {
               </View>
             </View>
             <Text style={styles.cardHint}>
-              Based on {results.dynamicFerment ? 'dynamic forecast' : 'static estimate'} of ~{fermentHours.toFixed(1)}h fermentation. Times include bulk ferment only — add proofing and baking time.
+              ~{totalHours.toFixed(1)}h total · {breakdownParts.join(' · ')}
             </Text>
           </View>
         );
