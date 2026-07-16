@@ -2,7 +2,14 @@
  * Just Dough It — warm bakery color palette
  */
 
-export const Colors = {
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useColorScheme } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { ThemeMode } from '../models/types';
+
+const THEME_MODE_KEY = 'sourdough_theme_mode';
+
+export const LightColors = {
   // Base
   cream: '#FFF5ED',
   white: '#FFFFFF',
@@ -33,6 +40,110 @@ export const Colors = {
   error: '#C44536',
   success: '#6B8E4D',
 } as const;
+
+export const DarkColors = {
+  // Base
+  cream: '#1A1412',
+  white: '#2A2420',
+  card: '#2F2824',
+
+  // Text
+  espresso: '#F0E8E0',
+  muted: '#A09890',
+  lightText: '#6B6360',
+
+  // Accent — slightly lightened for dark bg contrast
+  terracotta: '#D48B5F',
+  terracottaDark: '#C1784B',
+  olive: '#8CB369',
+  oliveLight: '#A0C985',
+
+  // Semantic — kept mostly the same, they're semantic
+  cold: '#5BA0E9',
+  cool: '#7BB5D4',
+  ideal: '#8CB369',
+  warm: '#F0B860',
+  hot: '#E06050',
+
+  // Misc
+  border: '#3D3530',
+  disabled: '#5A524D',
+  disabledBg: '#352E29',
+  error: '#E06050',
+  success: '#8CB369',
+} as const;
+
+// Legacy Colors alias — defaults to light for backward compat with static styles
+export const Colors = LightColors;
+
+export interface AppColors {
+  cream: string;
+  white: string;
+  card: string;
+  espresso: string;
+  muted: string;
+  lightText: string;
+  terracotta: string;
+  terracottaDark: string;
+  olive: string;
+  oliveLight: string;
+  cold: string;
+  cool: string;
+  ideal: string;
+  warm: string;
+  hot: string;
+  border: string;
+  disabled: string;
+  disabledBg: string;
+  error: string;
+  success: string;
+}
+
+interface ThemeContextValue {
+  colors: AppColors;
+  themeMode: ThemeMode;
+  setThemeMode: (mode: ThemeMode) => void;
+  isDark: boolean;
+}
+
+const ThemeContext = createContext<ThemeContextValue>({
+  colors: LightColors,
+  themeMode: 'system',
+  setThemeMode: () => {},
+  isDark: false,
+});
+
+export function AppThemeProvider({ children }: { children: React.ReactNode }) {
+  const systemScheme = useColorScheme();
+  const [themeMode, setThemeModeState] = useState<ThemeMode>('system');
+
+  // Load persisted theme preference
+  useEffect(() => {
+    AsyncStorage.getItem(THEME_MODE_KEY).then((stored) => {
+      if (stored === 'light' || stored === 'dark' || stored === 'system') {
+        setThemeModeState(stored);
+      }
+    });
+  }, []);
+
+  const setThemeMode = useCallback((mode: ThemeMode) => {
+    setThemeModeState(mode);
+    AsyncStorage.setItem(THEME_MODE_KEY, mode);
+  }, []);
+
+  const isDark = themeMode === 'system' ? systemScheme === 'dark' : themeMode === 'dark';
+  const colors = isDark ? DarkColors : LightColors;
+
+  return React.createElement(
+    ThemeContext.Provider,
+    { value: { colors, themeMode, setThemeMode, isDark } },
+    children,
+  );
+}
+
+export function useAppTheme(): ThemeContextValue {
+  return useContext(ThemeContext);
+}
 
 export const Spacing = {
   xs: 4,

@@ -4,6 +4,7 @@ import {
   ScrollView,
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   StyleSheet,
   Alert,
@@ -14,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as StoreReview from 'expo-store-review';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from 'expo-router';
-import { Colors, Spacing, FontSize, BorderRadius } from '../../src/theme';
+import { Colors, Spacing, FontSize, BorderRadius, useAppTheme } from '../../src/theme';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { useLocation } from '../../src/hooks/useLocation';
 import { classifyHardness } from '../../src/data/ukWaterHardness';
@@ -58,6 +59,21 @@ import { RECIPE_PRESETS, getPreset } from '../../src/data/recipePresets';
 
 const SAVE_COUNT_KEY = 'sourdough_save_count';
 const REVIEW_REQUESTED_KEY = 'sourdough_review_requested';
+
+/** Color mapping for flour category visual bars */
+const CATEGORY_COLORS: Record<string, string> = {
+  'White Bread': '#E8D5B7',
+  'Wholemeal': '#8B6914',
+  'Brown, Malted & Seeded': '#A0825A',
+  'Spelt': '#C4956A',
+  'Ancient & Heritage': '#B8956A',
+  'Rye': '#6B5344',
+  'Other Grains': '#C4A882',
+  'Cake & Pastry': '#F0E0C8',
+  'Gluten-Free': '#D4C5B2',
+  'Malt & Brewing': '#7B6040',
+  'Generic': '#BFB5AD',
+};
 
 const fallbackHardness: WaterHardness = {
   mgL: 120,
@@ -247,6 +263,7 @@ function buildManualHardness(mgL: number): WaterHardness {
 export default function CalculatorScreen() {
   const { data: locationData, loading: locLoading, error: locError, detect, refineWithPostcode } = useLocation();
   const { isDesktop } = useBreakpoint();
+  const { colors } = useAppTheme();
 
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
   const [mixRows, setMixRows] = useState<MixRow[]>([
@@ -269,6 +286,11 @@ export default function CalculatorScreen() {
   const [oilPct, setOilPct] = useState('0');
   const [prefermentEnabled, setPrefermentEnabled] = useState(false);
   const [prefermentFlourPct, setPrefermentFlourPct] = useState('30');
+
+  // Ready-by planner state
+  const [planByReadyEnabled, setPlanByReadyEnabled] = useState(false);
+  const [readyByHour, setReadyByHour] = useState('18');
+  const [readyByMinute, setReadyByMinute] = useState('00');
 
   // Starter feeding state
   const [feedFlourGrams, setFeedFlourGrams] = useState('50');
@@ -308,12 +330,23 @@ export default function CalculatorScreen() {
   const handleAddFlour = useCallback(() => {
     setMixRows((prev) => {
       if (prev.length >= 3) return prev;
+      // If only one row with all the grams, split evenly for a sensible default
+      let newGrams = '0';
+      const updated = [...prev];
+      if (updated.length === 1) {
+        const existing = parseFloat(updated[0].grams) || 0;
+        if (existing > 0) {
+          const half = Math.round(existing / 2);
+          newGrams = String(half);
+          updated[0] = { ...updated[0], grams: String(existing - half) };
+        }
+      }
       return [
-        ...prev,
+        ...updated,
         {
           key: nextMixKey(),
           flour: findFlour('Generic: Bread Flour'),
-          grams: '0',
+          grams: newGrams,
         },
       ];
     });
@@ -680,8 +713,66 @@ export default function CalculatorScreen() {
   }, [starterFlourLabel, feedFlourGrams, feedWaterGrams]);
 
   // ── Shared input sections ────────────────────────────────────────────
+  // ── Smart daily recommendation ───────────────────────────────────────
+  const [dismissedRecommendation, setDismissedRecommendation] = useState(false);
+  const dailyRecommendation = (() => {
+    if (dismissedRecommendation) return null;
+    const amb = parseFloat(ambientTemp);
+    if (isNaN(amb)) return null;
+    const hour = new Date().getHours();
+    // Score presets based on ambient temp suitability
+    // Cold kitchen → long ferments shine; warm → quick bakes; hot → flatbreads
+    let rec: RecipePreset | null = null;
+    let reason = '';
+    if (amb < 19) {
+      rec = RECIPE_PRESETS.find((p) => p.id === 'classic-boule')!;
+      reason = `Cool ${amb.toFixed(0)}°C kitchen — perfect for a slow, flavourful ferment.`;
+    } else if (amb >= 26) {
+      rec = RECIPE_PRESETS.find((p) => p.id === 'focaccia')!;
+      reason = `Warm ${amb.toFixed(0)}°C — dough will ferment fast. A focaccia handles speed well.`;
+    } else if (hour >= 16 && hour < 20) {
+      rec = RECIPE_PRESETS.find((p) => p.id === 'pita-naan')!;
+      reason = `Evening bake? Quick pita or naan — ready in time for dinner.`;
+    } else if (hour >= 6 && hour < 11) {
+      rec = RECIPE_PRESETS.find((p) => p.id === 'classic-boule')!;
+      reason = `Morning start — you have all day for a classic sourdough boule.`;
+    } else {
+      rec = RECIPE_PRESETS.find((p) => p.id === 'classic-boule')!;
+      reason = `${amb.toFixed(0)}°C ambient — a versatile day for sourdough.`;
+    }
+    return { preset: rec!, reason };
+  })();
+
   const inputPanels = (
     <>
+      {/* ── Daily Recommendation ─────────────────────────────── */}
+      {dailyRecommendation && breadType === 'custom' && (
+        <View style={recStyles.card}>
+          <View style={recStyles.row}>
+            <Text style={recStyles.icon}>💡</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={recStyles.title}>Today's suggestion</Text>
+              <Text style={recStyles.body}>
+                <Text style={recStyles.presetName}>{dailyRecommendation.preset.emoji} {dailyRecommendation.preset.name}</Text>
+                {' — '}{dailyRecommendation.reason}
+              </Text>
+              <TouchableOpacity
+                onPress={() => handlePresetSelect(dailyRecommendation.preset)}
+                activeOpacity={0.7}
+              >
+                <Text style={recStyles.applyBtn}>Use this preset →</Text>
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              onPress={() => setDismissedRecommendation(true)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={recStyles.dismiss}>×</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
       {/* ── Recipe Type ──────────────────────────────────────── */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>RECIPE TYPE</Text>
@@ -702,11 +793,30 @@ export default function CalculatorScreen() {
         >
           <View style={starterStyles.collapsedRow}>
             <Text style={starterStyles.icon}>🫙</Text>
-            <Text style={starterStyles.summary} numberOfLines={1}>
-              {lastFed
-                ? `${lastFed.flourGrams ?? '?'}g flour + ${lastFed.waterGrams ?? '?'}g water · ${hoursSince}h ago`
-                : 'Tap to set up your starter'}
-            </Text>
+            <View style={{ flex: 1 }}>
+              <Text style={starterStyles.summary} numberOfLines={1}>
+                {lastFed
+                  ? `${lastFed.flourGrams ?? '?'}g flour + ${lastFed.waterGrams ?? '?'}g water · ${hoursSince}h ago`
+                  : 'Tap to set up your starter'}
+              </Text>
+              {lastFed && (() => {
+                const h = parseFloat(hoursSince);
+                if (isNaN(h)) return null;
+                if (h <= 4) {
+                  return <Text style={starterStyles.statusHint}>🌱 Just fed — building strength</Text>;
+                }
+                if (h <= 8) {
+                  return <Text style={[starterStyles.statusHint, { color: Colors.olive }]}>🟢 At peak activity — great time to bake!</Text>;
+                }
+                if (h <= 14) {
+                  return <Text style={starterStyles.statusHint}>🟡 Still active but past peak</Text>;
+                }
+                if (h <= 24) {
+                  return <Text style={[starterStyles.statusHint, { color: Colors.warm }]}>🟠 Slowing down — feed soon</Text>;
+                }
+                return <Text style={[starterStyles.statusHint, { color: Colors.error }]}>🔴 Hungry — time to feed!</Text>;
+              })()}
+            </View>
             <Text style={starterStyles.chevron}>{starterExpanded ? '▲' : '▼'}</Text>
           </View>
         </TouchableOpacity>
@@ -824,15 +934,51 @@ export default function CalculatorScreen() {
         <View style={mixStyles.summaryRow}>
           <Text style={mixStyles.summaryText}>
             Total: {totalFlourWeight.toFixed(0)}g
-            {mixRows.length > 1 && totalFlourWeight > 0
-              ? `  (${mixRows
-                  .map((r) => {
-                    const pct = ((parseFloat(r.grams) || 0) / totalFlourWeight) * 100;
-                    return `${Math.round(pct)}% ${r.flour.label.replace(/\s*\([^)]*\)$/, '')}`;
-                  })
-                  .join(' · ')})`
-              : ''}
           </Text>
+          {mixRows.length > 1 && totalFlourWeight > 0 && (
+            <View style={mixStyles.blendBar}>
+              {mixRows.map((r) => {
+                const grams = parseFloat(r.grams) || 0;
+                const pct = totalFlourWeight > 0 ? (grams / totalFlourWeight) * 100 : 0;
+                if (pct <= 0) return null;
+                const color = CATEGORY_COLORS[r.flour.category] ?? CATEGORY_COLORS['Generic'];
+                const shortName = r.flour.label.replace(/\s*\([^)]*\)$/, '');
+                return (
+                  <View
+                    key={r.key}
+                    style={[
+                      mixStyles.blendSegment,
+                      { flex: pct, backgroundColor: color },
+                    ]}
+                  >
+                    {pct >= 18 && (
+                      <Text style={mixStyles.blendSegmentText} numberOfLines={1}>
+                        {shortName} {Math.round(pct)}%
+                      </Text>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          )}
+          {mixRows.length > 1 && totalFlourWeight > 0 && (
+            <View style={mixStyles.blendLegend}>
+              {mixRows.map((r) => {
+                const pct = ((parseFloat(r.grams) || 0) / totalFlourWeight) * 100;
+                if (pct <= 0) return null;
+                const color = CATEGORY_COLORS[r.flour.category] ?? CATEGORY_COLORS['Generic'];
+                const shortName = r.flour.label.replace(/\s*\([^)]*\)$/, '');
+                return (
+                  <View key={r.key} style={mixStyles.legendItem}>
+                    <View style={[mixStyles.legendDot, { backgroundColor: color }]} />
+                    <Text style={mixStyles.legendText}>
+                      {shortName} ({Math.round(pct)}%)
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          )}
         </View>
 
         {/* Add flour button */}
@@ -880,6 +1026,68 @@ export default function CalculatorScreen() {
           >
             <Text style={prefStyles.removeBtnText}>Remove Pre-ferment</Text>
           </TouchableOpacity>
+        </View>
+      )}
+
+      {/* ── Ready-By Planner ────────────────────────────────── */}
+      {!planByReadyEnabled ? (
+        <TouchableOpacity
+          style={styles.card}
+          onPress={() => setPlanByReadyEnabled(true)}
+          activeOpacity={0.7}
+        >
+          <View style={readyStyles.promptRow}>
+            <Text style={readyStyles.promptIcon}>🕐</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={readyStyles.promptTitle}>Plan by ready time</Text>
+              <Text style={readyStyles.promptHint}>
+                Tell us when you want your bread ready — we'll tell you when to start
+              </Text>
+            </View>
+            <Text style={readyStyles.promptChevron}>›</Text>
+          </View>
+        </TouchableOpacity>
+      ) : (
+        <View style={styles.card}>
+          <View style={readyStyles.headerRow}>
+            <Text style={styles.cardTitle}>🕐  READY-BY PLANNER</Text>
+            <TouchableOpacity onPress={() => setPlanByReadyEnabled(false)}>
+              <Text style={readyStyles.removeText}>Remove</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.cardHint}>
+            Set the time you want your bread to come out of the oven. We'll calculate when to start mixing.
+          </Text>
+          <View style={readyStyles.timeRow}>
+            <Text style={readyStyles.timeLabel}>Ready by</Text>
+            <View style={readyStyles.timeInputGroup}>
+              <TextInput
+                style={readyStyles.timeInput}
+                value={readyByHour}
+                onChangeText={(t) => {
+                  const n = parseInt(t, 10);
+                  if (t === '' || (!isNaN(n) && n >= 0 && n <= 23)) setReadyByHour(t);
+                }}
+                keyboardType="number-pad"
+                maxLength={2}
+                placeholder="HH"
+                placeholderTextColor={Colors.lightText}
+              />
+              <Text style={readyStyles.timeColon}>:</Text>
+              <TextInput
+                style={readyStyles.timeInput}
+                value={readyByMinute}
+                onChangeText={(t) => {
+                  const n = parseInt(t, 10);
+                  if (t === '' || (!isNaN(n) && n >= 0 && n <= 59)) setReadyByMinute(t);
+                }}
+                keyboardType="number-pad"
+                maxLength={2}
+                placeholder="MM"
+                placeholderTextColor={Colors.lightText}
+              />
+            </View>
+          </View>
         </View>
       )}
 
@@ -940,16 +1148,38 @@ export default function CalculatorScreen() {
         </Text>
         {(() => {
           const label = zoneInfo?.label ?? '';
-          const hint = label.includes('Ideal')
-            ? 'Your dough is in the optimal fermentation range'
-            : label.includes('Cold')
-            ? 'Consider using warmer water to speed fermentation'
-            : label.includes('Warm')
-            ? 'Fermentation may be faster than expected'
-            : label.includes('Hot')
-            ? 'Use cold water to bring dough temp down'
-            : '';
-          return hint ? <Text style={styles.fdtHint}>{hint}</Text> : null;
+          const zone = results.tempZone;
+          if (zone === 'ideal') {
+            return <Text style={styles.fdtHint}>Your dough is in the optimal fermentation range</Text>;
+          }
+          // Compute the exact water temperature needed to hit 26°C target
+          const targetFDT = 26.0;
+          const neededWater = Math.round((targetFDT * 4 - parseFloat(flourTemp) - parseFloat(ambientTemp) - parseFloat(starterTemp)) * 10) / 10;
+          const currentWater = parseFloat(waterTemp);
+          const diff = Math.round((neededWater - currentWater) * 10) / 10;
+          if (zone === 'cold' || zone === 'cool') {
+            return (
+              <>
+                <Text style={styles.fdtHint}>
+                  {results.fdt.toFixed(1)}°C is below the 26°C target — fermentation will be slower.
+                </Text>
+                <Text style={styles.fdtAction}>
+                  💧 Heat your water to <Text style={{ fontWeight: '800' }}>{neededWater.toFixed(1)}°C</Text> (currently {currentWater.toFixed(1)}°C, +{diff.toFixed(1)}°C)
+                </Text>
+              </>
+            );
+          }
+          // warm or hot
+          return (
+            <>
+              <Text style={styles.fdtHint}>
+                {results.fdt.toFixed(1)}°C is above the 26°C target — fermentation will be faster. Watch closely!
+              </Text>
+              <Text style={styles.fdtAction}>
+                💧 Cool your water to <Text style={{ fontWeight: '800' }}>{neededWater.toFixed(1)}°C</Text> (currently {currentWater.toFixed(1)}°C, {diff.toFixed(1)}°C)
+              </Text>
+            </>
+          );
         })()}
       </View>
 
@@ -960,6 +1190,42 @@ export default function CalculatorScreen() {
         staticNote={results.staticFermentNote}
         fdt={results.fdt}
       />
+
+      {/* Ready-By Result */}
+      {planByReadyEnabled && (() => {
+        const h = parseInt(readyByHour, 10);
+        const m = parseInt(readyByMinute, 10);
+        if (isNaN(h) || isNaN(m)) return null;
+        const fermentHours = results.dynamicFerment?.totalHours ?? results.staticFermentHours;
+        const readyDate = new Date();
+        readyDate.setHours(h, m, 0, 0);
+        // If ready time is earlier than now, assume tomorrow
+        if (readyDate <= new Date()) readyDate.setDate(readyDate.getDate() + 1);
+        const startDate = new Date(readyDate.getTime() - fermentHours * 3600000);
+        const startTimeStr = startDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+        const readyTimeStr = readyDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+        const isToday = startDate.toDateString() === new Date().toDateString();
+        return (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>🕐  YOUR SCHEDULE</Text>
+            <View style={readyStyles.resultRow}>
+              <View style={readyStyles.resultBlock}>
+                <Text style={readyStyles.resultLabel}>Start mixing</Text>
+                <Text style={readyStyles.resultTime}>{startTimeStr}</Text>
+                {!isToday && <Text style={readyStyles.resultDate}>{startDate.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}</Text>}
+              </View>
+              <Text style={readyStyles.resultArrow}>→</Text>
+              <View style={readyStyles.resultBlock}>
+                <Text style={readyStyles.resultLabel}>Ready by</Text>
+                <Text style={readyStyles.resultTime}>{readyTimeStr}</Text>
+              </View>
+            </View>
+            <Text style={styles.cardHint}>
+              Based on {results.dynamicFerment ? 'dynamic forecast' : 'static estimate'} of ~{fermentHours.toFixed(1)}h fermentation. Times include bulk ferment only — add proofing and baking time.
+            </Text>
+          </View>
+        );
+      })()}
 
       {/* Ingredients */}
       <IngredientResults
@@ -1035,8 +1301,8 @@ export default function CalculatorScreen() {
 
   // ── Layout (responsive; single component tree — no remount on resize) ──
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      {isDesktop && <Text style={styles.header}>🥖  Just Dough It</Text>}
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.cream }]} edges={['top']}>
+      {isDesktop && <Text style={[styles.header, { color: colors.espresso }]}>🥖  Just Dough It</Text>}
 
       {isDesktop && (
         <LocationBar
@@ -1059,7 +1325,7 @@ export default function CalculatorScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {!isDesktop && <Text style={styles.header}>🥖  Just Dough It</Text>}
+          {!isDesktop && <Text style={[styles.header, { color: colors.espresso }]}>🥖  Just Dough It</Text>}
 
           {!isDesktop && (
             <LocationBar
@@ -1206,6 +1472,18 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
     textAlign: 'center',
   },
+  fdtAction: {
+    fontSize: FontSize.sm,
+    color: Colors.espresso,
+    marginTop: Spacing.sm,
+    textAlign: 'center',
+    backgroundColor: '#FDF3E8',
+    borderRadius: BorderRadius.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    overflow: 'hidden',
+    lineHeight: 20,
+  },
   saveBtn: {
     backgroundColor: Colors.terracotta,
     borderRadius: BorderRadius.md,
@@ -1275,9 +1553,14 @@ const starterStyles = StyleSheet.create({
     fontSize: 18,
   },
   summary: {
-    flex: 1,
     fontSize: FontSize.sm,
     color: Colors.espresso,
+    fontWeight: '500',
+  },
+  statusHint: {
+    fontSize: FontSize.xs,
+    color: Colors.muted,
+    marginTop: 2,
     fontWeight: '500',
   },
   feedBtn: {
@@ -1375,6 +1658,46 @@ const mixStyles = StyleSheet.create({
     fontSize: FontSize.xs,
     color: Colors.muted,
     fontWeight: '500',
+    marginBottom: Spacing.xs,
+  },
+  blendBar: {
+    flexDirection: 'row',
+    height: 24,
+    borderRadius: BorderRadius.sm,
+    overflow: 'hidden',
+    marginBottom: Spacing.xs,
+  },
+  blendSegment: {
+    minWidth: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  blendSegmentText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: Colors.white,
+    textShadowColor: 'rgba(0,0,0,0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
+  },
+  blendLegend: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  legendText: {
+    fontSize: FontSize.xs,
+    color: Colors.muted,
   },
   removeBtn: {
     width: 36,
@@ -1404,6 +1727,157 @@ const mixStyles = StyleSheet.create({
     fontSize: FontSize.sm,
     color: Colors.terracotta,
     fontWeight: '600',
+  },
+});
+
+const recStyles = StyleSheet.create({
+  card: {
+    backgroundColor: '#F8F4ED',
+    borderWidth: 1,
+    borderColor: '#E0D6C5',
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
+  },
+  icon: {
+    fontSize: 20,
+    marginTop: 1,
+  },
+  title: {
+    fontSize: FontSize.xs,
+    fontWeight: '700',
+    color: Colors.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  body: {
+    fontSize: FontSize.sm,
+    color: Colors.espresso,
+    lineHeight: 19,
+  },
+  presetName: {
+    fontWeight: '700',
+  },
+  applyBtn: {
+    fontSize: FontSize.xs,
+    color: Colors.terracotta,
+    fontWeight: '700',
+    marginTop: Spacing.sm,
+  },
+  dismiss: {
+    fontSize: FontSize.lg,
+    color: Colors.muted,
+    fontWeight: '300',
+    paddingLeft: Spacing.sm,
+  },
+});
+
+const readyStyles = StyleSheet.create({
+  promptRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  promptIcon: {
+    fontSize: 22,
+  },
+  promptTitle: {
+    fontSize: FontSize.sm,
+    fontWeight: '600',
+    color: Colors.espresso,
+  },
+  promptHint: {
+    fontSize: FontSize.xs,
+    color: Colors.muted,
+    marginTop: 2,
+  },
+  promptChevron: {
+    fontSize: FontSize.xl,
+    color: Colors.muted,
+    fontWeight: '300',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
+  },
+  removeText: {
+    fontSize: FontSize.xs,
+    color: Colors.terracotta,
+    fontWeight: '600',
+  },
+  timeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+  },
+  timeLabel: {
+    width: 90,
+    fontSize: FontSize.sm,
+    color: Colors.espresso,
+  },
+  timeInputGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  timeInput: {
+    width: 52,
+    height: 40,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.sm,
+    textAlign: 'center',
+    fontSize: FontSize.lg,
+    fontWeight: '700',
+    color: Colors.espresso,
+  },
+  timeColon: {
+    fontSize: FontSize.xl,
+    fontWeight: '700',
+    color: Colors.espresso,
+  },
+  resultRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.lg,
+    paddingVertical: Spacing.md,
+  },
+  resultBlock: {
+    alignItems: 'center',
+  },
+  resultLabel: {
+    fontSize: FontSize.xs,
+    color: Colors.muted,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: Spacing.xs,
+  },
+  resultTime: {
+    fontSize: FontSize.xxl,
+    fontWeight: '800',
+    color: Colors.terracotta,
+  },
+  resultDate: {
+    fontSize: FontSize.xs,
+    color: Colors.muted,
+    marginTop: 2,
+  },
+  resultArrow: {
+    fontSize: FontSize.xl,
+    color: Colors.muted,
+    fontWeight: '300',
+    marginTop: Spacing.md,
   },
 });
 

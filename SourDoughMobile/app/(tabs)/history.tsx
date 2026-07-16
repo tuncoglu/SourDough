@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Spacing, FontSize } from '../../src/theme';
+import { Colors, Spacing, FontSize, useAppTheme } from '../../src/theme';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { SavedRecipe } from '../../src/models/types';
 import { loadRecipes, deleteRecipe } from '../../src/store/recipeStore';
@@ -21,6 +21,7 @@ export default function HistoryScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
   const { isDesktop, isTablet } = useBreakpoint();
+  const { colors } = useAppTheme();
 
   const fetchRecipes = useCallback(async () => {
     const data = await loadRecipes();
@@ -68,8 +69,8 @@ export default function HistoryScreen() {
   const numColumns = isDesktop ? 2 : 1;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <Text style={styles.header}>📖  Recipe History</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.cream }]} edges={['top']}>
+      <Text style={[styles.header, { color: colors.espresso }]}>📖  Recipe History</Text>
 
       {recipes.length === 0 ? (
         <EmptyState

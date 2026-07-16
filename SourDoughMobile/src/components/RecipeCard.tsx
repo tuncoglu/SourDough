@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
+import { Colors, Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
 import { SavedRecipe } from '../models/types';
 import { getTempZoneInfo } from '../models/types';
 import { getBlendDisplayLabel } from '../lib/flourSearch';
@@ -11,13 +11,18 @@ interface Props {
 }
 
 export function RecipeCard({ recipe, onPress }: Props) {
+  const { colors } = useAppTheme();
   const zoneInfo = getTempZoneInfo(recipe.results.tempZone);
   const date = new Date(recipe.createdAt);
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
       <View style={styles.header}>
-        <Text style={styles.date}>
+        <Text style={[styles.date, { color: colors.muted }]}>
           {date.toLocaleDateString(undefined, {
             weekday: 'short',
             month: 'short',
@@ -31,10 +36,10 @@ export function RecipeCard({ recipe, onPress }: Props) {
         </Text>
       </View>
       <View style={styles.body}>
-        <Text style={styles.flour} numberOfLines={1}>
+        <Text style={[styles.flour, { color: colors.espresso }]} numberOfLines={1}>
           {getBlendDisplayLabel(recipe.inputs)}
         </Text>
-        <Text style={styles.meta}>
+        <Text style={[styles.meta, { color: colors.muted }]}>
           {recipe.inputs.hydration.toFixed(0)}% hydration ·{' '}
           {recipe.results.ingredients.totalDoughWeight.toFixed(0)}g ·{' '}
           ~{recipe.results.dynamicFerment?.totalHours ?? recipe.results.staticFermentHours}h ferment

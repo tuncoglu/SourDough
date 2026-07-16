@@ -8,18 +8,25 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Spacing, FontSize, BorderRadius, MaxWidth } from '../../src/theme';
+import { Colors, Spacing, FontSize, BorderRadius, MaxWidth, useAppTheme } from '../../src/theme';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
-import { UserSettings, DEFAULT_SETTINGS } from '../../src/models/types';
+import { UserSettings, DEFAULT_SETTINGS, ThemeMode } from '../../src/models/types';
 import { loadSettings, saveSettings } from '../../src/store/settingsStore';
 import { NumberInput } from '../../src/components/NumberInput';
 import { FlourPicker } from '../../src/components/FlourPicker';
+
+const THEME_OPTIONS: { key: ThemeMode; label: string }[] = [
+  { key: 'system', label: '🌓  System' },
+  { key: 'light', label: '☀️  Light' },
+  { key: 'dark', label: '🌙  Dark' },
+];
 
 export default function SettingsScreen() {
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
   const [flourLabel, setFlourLabel] = useState(DEFAULT_SETTINGS.defaultFlourType);
   const [loading, setLoading] = useState(true);
   const { isDesktop } = useBreakpoint();
+  const { colors, themeMode, setThemeMode } = useAppTheme();
 
   useEffect(() => {
     loadSettings().then((s) => {
@@ -59,7 +66,7 @@ export default function SettingsScreen() {
   const content = (
     <>
       {/* Defaults */}
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Text style={styles.cardTitle}>DEFAULT VALUES</Text>
         <Text style={styles.description}>
           These defaults are pre-filled when you open the calculator.
@@ -115,7 +122,7 @@ export default function SettingsScreen() {
       </View>
 
       {/* Water Hardness Override */}
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Text style={styles.cardTitle}>WATER HARDNESS OVERRIDE (OPTIONAL)</Text>
         <Text style={styles.description}>
           Leave at 0 for auto-detect. Enter your local water hardness in mg/L CaCO₃{'\n'}
@@ -133,26 +140,56 @@ export default function SettingsScreen() {
         />
       </View>
 
+      {/* Theme */}
+      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={styles.cardTitle}>APPEARANCE</Text>
+        <View style={styles.themeRow}>
+          {THEME_OPTIONS.map((opt) => (
+            <TouchableOpacity
+              key={opt.key}
+              style={[
+                styles.themeChip,
+                {
+                  backgroundColor: themeMode === opt.key ? colors.terracotta : colors.white,
+                  borderColor: themeMode === opt.key ? colors.terracotta : colors.border,
+                },
+              ]}
+              onPress={() => setThemeMode(opt.key)}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.themeChipText,
+                  { color: themeMode === opt.key ? '#FFFFFF' : colors.espresso },
+                ]}
+              >
+                {opt.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
       {/* Actions */}
       <TouchableOpacity style={styles.saveBtn} onPress={handleSave} activeOpacity={0.8}>
         <Text style={styles.saveBtnText}>Save Defaults</Text>
       </TouchableOpacity>
 
-      <View style={{ height: 1, backgroundColor: Colors.border, marginTop: Spacing.lg, marginBottom: Spacing.md }} />
+      <View style={{ height: 1, backgroundColor: colors.border, marginTop: Spacing.lg, marginBottom: Spacing.md }} />
 
-      <View style={{ backgroundColor: Colors.card, borderRadius: BorderRadius.md, padding: Spacing.md }}>
+      <View style={{ backgroundColor: colors.card, borderRadius: BorderRadius.md, padding: Spacing.md }}>
         <TouchableOpacity style={styles.resetBtn} onPress={handleReset} activeOpacity={0.7}>
           <Text style={styles.resetBtnText}>Reset to Factory Defaults</Text>
         </TouchableOpacity>
       </View>
 
       {/* About */}
-      <View style={[styles.card, styles.aboutCard]}>
+      <View style={[styles.card, styles.aboutCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Text style={styles.cardTitle}>ABOUT</Text>
-        <Text style={styles.aboutText}>
+        <Text style={[styles.aboutText, { color: colors.espresso }]}>
           🥖 Just Dough It v3.0
         </Text>
-        <Text style={styles.aboutText}>
+        <Text style={[styles.aboutText, { color: colors.espresso }]}>
           Auto-detects your location, local temperature, and water hardness
           to calculate exact ingredient weights and predict fermentation time
           dynamically based on the weather forecast.
@@ -167,7 +204,7 @@ export default function SettingsScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.cream }]} edges={['top']}>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[
@@ -176,7 +213,7 @@ export default function SettingsScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.header}>⚙️  Settings</Text>
+        <Text style={[styles.header, { color: colors.espresso }]}>⚙️  Settings</Text>
         {isDesktop ? (
           <View style={{ maxWidth: MaxWidth.form, alignSelf: 'center', width: '100%' }}>
             {content}
@@ -272,5 +309,21 @@ const styles = StyleSheet.create({
   aboutCredit: {
     color: Colors.muted,
     fontSize: FontSize.xs,
+  },
+  themeRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+  },
+  themeChip: {
+    flex: 1,
+    paddingVertical: Spacing.sm + 2,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  themeChipText: {
+    fontSize: FontSize.sm,
+    fontWeight: '600',
   },
 });

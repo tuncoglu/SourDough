@@ -10,12 +10,20 @@ interface Props {
   fdt: number;
 }
 
+/** Format a Date to a friendly time string like "2:30 PM" */
+function formatClockTime(date: Date): string {
+  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+}
+
 export function FermentationTimeline({
   dynamic,
   staticHours,
   staticNote,
   fdt,
 }: Props) {
+  const now = new Date();
+  const readyTime = new Date(now.getTime() + (dynamic?.totalHours ?? staticHours) * 3600000);
+
   return (
     <View style={styles.card}>
       <Text style={styles.title}>⏱️  Fermentation</Text>
@@ -23,16 +31,26 @@ export function FermentationTimeline({
       <View style={styles.summary}>
         {dynamic ? (
           <>
-            <Text style={styles.hours}>
-              ~{dynamic.totalHours.toFixed(1)} hours
-            </Text>
+            <View style={styles.hoursRow}>
+              <Text style={styles.hours}>
+                ~{dynamic.totalHours.toFixed(1)} hours
+              </Text>
+              <Text style={styles.readyLabel}>
+                Ready ≈ <Text style={styles.readyTime}>{formatClockTime(readyTime)}</Text>
+              </Text>
+            </View>
             <Text style={styles.meta}>
               Avg ambient: {dynamic.avgAmbient}°C · Peak rate: {dynamic.peakRate}× baseline
             </Text>
           </>
         ) : (
           <>
-            <Text style={styles.hours}>~{staticHours.toFixed(1)} hours</Text>
+            <View style={styles.hoursRow}>
+              <Text style={styles.hours}>~{staticHours.toFixed(1)} hours</Text>
+              <Text style={styles.readyLabel}>
+                Ready ≈ <Text style={styles.readyTime}>{formatClockTime(readyTime)}</Text>
+              </Text>
+            </View>
             <Text style={styles.meta}>{staticNote}</Text>
             <Text style={styles.noForecast}>
               ⚡ No hourly forecast — using constant-temp estimate
@@ -44,7 +62,7 @@ export function FermentationTimeline({
       {dynamic && dynamic.profile.length > 0 && (
         <View style={styles.timeline}>
           <View style={styles.tableHeader}>
-            <Text style={textColHour}>Hour</Text>
+            <Text style={textColHour}>Time</Text>
             <Text style={textColTemp}>Amb</Text>
             <Text style={textColTemp}>Dough</Text>
             <Text style={textColRate}>Rate</Text>
@@ -93,10 +111,25 @@ const styles = StyleSheet.create({
   summary: {
     marginBottom: Spacing.md,
   },
+  hoursRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: Spacing.sm,
+    flexWrap: 'wrap',
+  },
   hours: {
     fontSize: FontSize.xl,
     fontWeight: '700',
     color: Colors.espresso,
+  },
+  readyLabel: {
+    fontSize: FontSize.sm,
+    color: Colors.muted,
+  },
+  readyTime: {
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+    color: Colors.terracotta,
   },
   meta: {
     fontSize: FontSize.sm,

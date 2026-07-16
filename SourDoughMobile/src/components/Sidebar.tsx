@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
-import { Colors, Spacing, FontSize, BorderRadius, MaxWidth } from '../theme';
+import { Colors, Spacing, FontSize, BorderRadius, MaxWidth, useAppTheme } from '../theme';
 
 interface NavItem {
   path: string;
@@ -18,6 +18,7 @@ const NAV_ITEMS: NavItem[] = [
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
+  const { colors, isDark } = useAppTheme();
 
   const isActive = (path: string) => {
     if (path === '/') return pathname === '/';
@@ -25,12 +26,12 @@ export function Sidebar() {
   };
 
   return (
-    <View style={styles.sidebar}>
+    <View style={[styles.sidebar, { backgroundColor: colors.card, borderRightColor: colors.border }]}>
       {/* Brand */}
-      <View style={styles.brand}>
+      <View style={[styles.brand, { borderBottomColor: colors.border }]}>
         <Text style={styles.brandIcon}>🥖</Text>
-        <Text style={styles.brandName}>Just Dough It</Text>
-        <Text style={styles.brandSub}>Perfect bread, less guesswork</Text>
+        <Text style={[styles.brandName, { color: colors.espresso }]}>Just Dough It</Text>
+        <Text style={[styles.brandSub, { color: colors.muted }]}>Perfect bread, less guesswork</Text>
       </View>
 
       {/* Nav links */}
@@ -40,12 +41,15 @@ export function Sidebar() {
           return (
             <TouchableOpacity
               key={item.path}
-              style={[styles.navItem, active && styles.navItemActive]}
+              style={[
+                styles.navItem,
+                active && { backgroundColor: isDark ? '#3D3530' : '#F5EDE4' },
+              ]}
               onPress={() => router.push(item.path as any)}
               activeOpacity={0.6}
             >
               <Text style={styles.navIcon}>{item.icon}</Text>
-              <Text style={[styles.navLabel, active && styles.navLabelActive]}>
+              <Text style={[styles.navLabel, { color: active ? colors.terracotta : colors.muted }, active && styles.navLabelActive]}>
                 {item.label}
               </Text>
             </TouchableOpacity>
@@ -54,9 +58,9 @@ export function Sidebar() {
       </ScrollView>
 
       {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>v3.0</Text>
-        <Text style={styles.footerText}>MIT License</Text>
+      <View style={[styles.footer, { borderTopColor: colors.border }]}>
+        <Text style={[styles.footerText, { color: colors.lightText }]}>v3.0</Text>
+        <Text style={[styles.footerText, { color: colors.lightText }]}>MIT License</Text>
       </View>
     </View>
   );

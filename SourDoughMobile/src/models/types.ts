@@ -160,6 +160,8 @@ export interface StarterFeeding {
 }
 
 // ── Settings ───────────────────────────────────────────────────────────
+export type ThemeMode = 'system' | 'light' | 'dark';
+
 export interface UserSettings {
   defaultFlourType: string;
   defaultFlourWeight: number;
@@ -169,6 +171,7 @@ export interface UserSettings {
   starterFeedingIntervalHours: number;
   notificationsEnabled: boolean;
   waterHardnessOverride: number; // mg/L CaCO₃, 0 = auto-detect
+  themeMode: ThemeMode;
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -180,6 +183,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   starterFeedingIntervalHours: 24,
   notificationsEnabled: false,
   waterHardnessOverride: 0,
+  themeMode: 'system',
 };
 
 // ── FDT Temperature Zone ──────────────────────────────────────────────

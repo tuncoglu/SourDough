@@ -4,12 +4,15 @@ import { View, StyleSheet, type ColorValue } from 'react-native';
 
 import { useBreakpoint } from '@/src/hooks/useBreakpoint';
 import { Sidebar } from '@/src/components/Sidebar';
-import { MaxWidth } from '@/src/theme';
+import { MaxWidth, useAppTheme } from '@/src/theme';
 
-const TAB_BAR_STYLE = {
-  backgroundColor: '#FFFCF7',
-  borderTopColor: '#E8DDD4',
-} as const;
+function useTabBarStyle() {
+  const { colors } = useAppTheme();
+  return {
+    backgroundColor: colors.card,
+    borderTopColor: colors.border,
+  };
+}
 
 const TAB_ICON_SIZE = 26;
 
@@ -25,6 +28,8 @@ function TabIcon({ name, color }: { name: string; color: ColorValue }) {
 
 export default function TabLayout() {
   const { isDesktop } = useBreakpoint();
+  const { colors } = useAppTheme();
+  const tabBarStyle = useTabBarStyle();
 
   // Single <Tabs> navigator instance — never swaps, so navigation state is
   // preserved across responsive layout changes (critical for web hydration
@@ -36,10 +41,10 @@ export default function TabLayout() {
         <View style={styles.maxWidth}>
           <Tabs
             screenOptions={{
-              tabBarActiveTintColor: '#C1784B',
-              tabBarInactiveTintColor: '#998B82',
+              tabBarActiveTintColor: colors.terracotta,
+              tabBarInactiveTintColor: colors.muted,
               tabBarStyle: {
-                ...TAB_BAR_STYLE,
+                ...tabBarStyle,
                 // Hide the bottom tab bar on desktop (sidebar replaces it)
                 display: isDesktop ? 'none' : 'flex',
               },

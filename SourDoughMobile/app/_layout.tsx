@@ -1,10 +1,9 @@
 import { useFonts } from 'expo-font';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import 'react-native-reanimated';
-
-import { useColorScheme } from '@/components/useColorScheme';
+import { AppThemeProvider, useAppTheme, DarkColors, LightColors } from '../src/theme';
 
 export {
   ErrorBoundary,
@@ -35,27 +34,32 @@ export default function RootLayout() {
     return null;
   }
 
-  return <RootLayoutNav />;
+  return (
+    <AppThemeProvider>
+      <RootLayoutNav />
+    </AppThemeProvider>
+  );
 }
 
 function RootLayoutNav() {
-  const colorScheme = useColorScheme();
+  const { isDark } = useAppTheme();
+  const bg = isDark ? DarkColors.cream : LightColors.cream;
+  const cardBg = isDark ? DarkColors.card : LightColors.card;
+  const tint = isDark ? DarkColors.terracotta : LightColors.terracotta;
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="recipe/[id]"
-          options={{
-            title: 'Recipe',
-            presentation: 'card',
-            headerStyle: { backgroundColor: '#FFFCF7' },
-            headerTintColor: '#C1784B',
-            headerTitleStyle: { fontWeight: '600' },
-          }}
-        />
-      </Stack>
-    </ThemeProvider>
+    <Stack>
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="recipe/[id]"
+        options={{
+          title: 'Recipe',
+          presentation: 'card',
+          headerStyle: { backgroundColor: cardBg },
+          headerTintColor: tint,
+          headerTitleStyle: { fontWeight: '600' },
+        }}
+      />
+    </Stack>
   );
 }
