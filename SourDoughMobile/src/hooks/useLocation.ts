@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import * as ExpoLocation from 'expo-location';
 import { LocationData, detectAll } from '../lib/location';
 import { geocodePostcode } from '../lib/api';
+import { getErrorMessage } from '../lib/errors';
 
 export function useLocation() {
   const [data, setData] = useState<LocationData | null>(null);
@@ -36,8 +37,8 @@ export function useLocation() {
       } else {
         setError('Could not resolve location. Enter temps manually.');
       }
-    } catch (e: any) {
-      setError(e?.message || 'Location detection failed.');
+    } catch (e: unknown) {
+      setError(getErrorMessage(e) || 'Location detection failed.');
     } finally {
       setLoading(false);
     }
@@ -61,8 +62,8 @@ export function useLocation() {
       } else {
         setError('Could not fetch weather for that location.');
       }
-    } catch (e: any) {
-      setError(e?.message || 'Postcode lookup failed.');
+    } catch (e: unknown) {
+      setError(getErrorMessage(e) || 'Postcode lookup failed.');
     } finally {
       setLoading(false);
     }

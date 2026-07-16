@@ -1,13 +1,15 @@
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import 'react-native-reanimated';
 import { AppThemeProvider, useAppTheme, DarkColors, LightColors } from '../src/theme';
+import { ErrorFallback } from '../src/components/ErrorFallback';
 
-export {
-  ErrorBoundary,
-} from 'expo-router';
+// Custom error boundary wrapping the entire app
+export function ErrorBoundary({ error, retry }: { error: Error; retry: () => void }) {
+  return <ErrorFallback error={error} resetError={retry} />;
+}
 
 export const unstable_settings = {
   initialRouteName: '(tabs)',

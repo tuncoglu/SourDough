@@ -15,72 +15,15 @@ import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { SavedRecipe, FlourBlendEntry } from '../../src/models/types';
 import { getRecipe } from '../../src/store/recipeStore';
 import { getTempZoneInfo } from '../../src/models/types';
-import { getBlend } from '../../src/lib/flourSearch';
+import { getBlend } from '../../src/lib/blendUtils';
+import { formatRecipeText } from '../../src/lib/recipeFormatter';
 import { IngredientResults } from '../../src/components/IngredientResults';
 import { FermentationTimeline } from '../../src/components/FermentationTimeline';
 import { AdviceCards } from '../../src/components/FermentAdvice';
 import { MethodTimeline } from '../../src/components/MethodTimeline';
 import { getPreset } from '../../src/data/recipePresets';
 
-/** Generate a plain-text recipe summary for sharing. */
-function generateShareText(recipe: SavedRecipe): string {
-  const { inputs, results, locationSummary } = recipe;
-  const lines: string[] = [
-    '🥖 Just Dough It Recipe — Just Dough It',
-    '',
-    `📍 ${locationSummary}`,
-    '',
-    '📋 Ingredients',
-  ];
-
-  if (inputs.flourBlend && inputs.flourBlend.length > 1) {
-    for (const entry of inputs.flourBlend) {
-      const grams = inputs.flourWeight * entry.percentage / 100;
-      const shortName = entry.label.replace(/\s*\([^)]*\)$/, '');
-      lines.push(`  ${shortName}: ${grams.toFixed(0)}g (${Math.round(entry.percentage)}%)`);
-    }
-  } else {
-    lines.push(`  Flour: ${inputs.flourWeight.toFixed(0)}g ${inputs.flourType.replace(/\s*\([^)]*\)$/, '')}`);
-  }
-  lines.push(`  Hydration: ${inputs.hydration.toFixed(0)}%`);
-  lines.push(`  Starter: ${inputs.starterWeight.toFixed(0)}g (${inputs.starterHydration.toFixed(0)}% hydration)`);
-  lines.push(`  Salt: ${inputs.saltPct.toFixed(1)}%`);
-  if (inputs.oilPct && inputs.oilPct > 0) {
-    lines.push(`  Oil/Fat: ${inputs.oilPct.toFixed(1)}%`);
-  }
-  if (inputs.preferment) {
-    lines.push(`  Pre-ferment: ${inputs.preferment.type} (${inputs.preferment.flourPct.toFixed(0)}% of flour)`);
-  }
-
-  lines.push('');
-  lines.push('⚖️  Weights');
-  lines.push(`  Water: ${results.ingredients.addedWater.toFixed(1)}g`);
-  lines.push(`  Starter: ${results.ingredients.starterTotal.toFixed(1)}g`);
-  if (results.ingredients.oil > 0) {
-    lines.push(`  Oil: ${results.ingredients.oil.toFixed(1)}g`);
-  }
-  lines.push(`  Salt: ${results.ingredients.salt.toFixed(1)}g`);
-  lines.push(`  Total dough: ${results.ingredients.totalDoughWeight.toFixed(1)}g`);
-
-  lines.push('');
-  lines.push('🌡  Temperatures');
-  lines.push(`  FDT: ${results.fdt.toFixed(1)}°C (${results.tempZone})`);
-  lines.push(`  Ambient: ${inputs.ambientTemp.toFixed(1)}°C`);
-  lines.push(`  Water: ${inputs.waterTemp.toFixed(1)}°C`);
-
-  lines.push('');
-  lines.push('⏱️  Fermentation');
-  lines.push(`  Bulk ferment: ~${results.staticFermentHours.toFixed(1)} hours`);
-  if (results.dynamicFerment) {
-    lines.push(`  Dynamic estimate: ~${results.dynamicFerment.totalHours.toFixed(1)} hours`);
-  }
-
-  lines.push('');
-  lines.push('Made with Just Dough It 🥖');
-  lines.push('https://github.com/tuncoglu/SourDough');
-
-  return lines.join('\n');
-}
+// generateShareText replaced by imported formatRecipeText below
 
 export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -118,7 +61,7 @@ export default function RecipeDetailScreen() {
 
   const handleShare = async () => {
     if (!recipe) return;
-    const text = generateShareText(recipe);
+    const text = formatRecipeText(recipe);
     try {
       await Share.share({ message: text });
     } catch {

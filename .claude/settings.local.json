@@ -60,7 +60,8 @@
       "Bash(mkdir *)",
       "Bash(pdftotext data/water_hardness/south_staffs_hardness.pdf -)",
       "Bash(pdftotext data/water_hardness/cambridge_hardness.pdf -)",
-      "Bash(ps -p 6555 -o pid,stat,cmd --no-headers)"
+      "Bash(ps -p 6555 -o pid,stat,cmd --no-headers)",
+      "WebFetch(domain:sourdoughcalculator.uk)"
     ]
   }
 }

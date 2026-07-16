@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
 import { DynamicFermentation } from '../models/types';
 
@@ -60,32 +60,7 @@ export function FermentationTimeline({
       </View>
 
       {dynamic && dynamic.profile.length > 0 && (
-        <View style={styles.timeline}>
-          <View style={styles.tableHeader}>
-            <Text style={textColHour}>Time</Text>
-            <Text style={textColTemp}>Amb</Text>
-            <Text style={textColTemp}>Dough</Text>
-            <Text style={textColRate}>Rate</Text>
-            <Text style={textColProgress}>Progress</Text>
-          </View>
-          {dynamic.profile.slice(0, 12).map((pt, i) => (
-            <View style={styles.timelineRow} key={i}>
-              <Text style={textColHour}>{pt.hour}</Text>
-              <Text style={textColTemp}>{pt.ambient}°</Text>
-              <Text style={textColTemp}>{pt.dough}°</Text>
-              <Text style={textColRate}>{pt.rate}×</Text>
-              <View style={styles.colProgress}>
-                <View style={styles.barContainer}>
-                  <View
-                    style={[styles.barFill, { width: `${pt.progress}%` as any }]}
-                  />
-                  <View style={styles.barBg} />
-                  <Text style={styles.barLabel}>{pt.progress}%</Text>
-                </View>
-              </View>
-            </View>
-          ))}
-        </View>
+        <DynamicProfileTable profile={dynamic.profile} />
       )}
     </View>
   );
@@ -215,3 +190,65 @@ const textColHour = { fontSize: FontSize.xs, color: Colors.espresso, width: 48, 
 const textColTemp = { fontSize: FontSize.xs, color: Colors.espresso, width: 44, textAlign: 'right' as const };
 const textColRate = { fontSize: FontSize.xs, color: Colors.espresso, width: 44, textAlign: 'right' as const };
 const textColProgress = { fontSize: FontSize.xs, color: Colors.espresso, flex: 1, marginLeft: Spacing.sm };
+
+// ── Dynamic Profile Table (collapsible) ──────────────────────────────────
+
+function DynamicProfileTable({ profile }: { profile: DynamicFermentation['profile'] }) {
+  const [showAll, setShowAll] = useState(false);
+  const INITIAL_ROWS = 12;
+  const visible = showAll ? profile : profile.slice(0, INITIAL_ROWS);
+  const hasMore = profile.length > INITIAL_ROWS;
+
+  return (
+    <View style={styles.timeline}>
+      <View style={styles.tableHeader}>
+        <Text style={textColHour}>Time</Text>
+        <Text style={textColTemp}>Amb</Text>
+        <Text style={textColTemp}>Dough</Text>
+        <Text style={textColRate}>Rate</Text>
+        <Text style={textColProgress}>Progress</Text>
+      </View>
+      {visible.map((pt, i) => (
+        <View style={styles.timelineRow} key={i}>
+          <Text style={textColHour}>{pt.hour}</Text>
+          <Text style={textColTemp}>{pt.ambient}°</Text>
+          <Text style={textColTemp}>{pt.dough}°</Text>
+          <Text style={textColRate}>{pt.rate}×</Text>
+          <View style={styles.colProgress}>
+            <View style={styles.barContainer}>
+              <View
+                style={[styles.barFill, { width: `${pt.progress}%` as any }]}
+              />
+              <View style={styles.barBg} />
+              <Text style={styles.barLabel}>{pt.progress}%</Text>
+            </View>
+          </View>
+        </View>
+      ))}
+      {hasMore && (
+        <TouchableOpacity
+          style={toggleStyles.btn}
+          onPress={() => setShowAll(!showAll)}
+          activeOpacity={0.7}
+        >
+          <Text style={toggleStyles.text}>
+            {showAll ? 'Show less ▲' : `Show all ${profile.length} rows ▼`}
+          </Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+
+const toggleStyles = StyleSheet.create({
+  btn: {
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    marginTop: Spacing.xs,
+  },
+  text: {
+    fontSize: FontSize.xs,
+    color: Colors.terracotta,
+    fontWeight: '600',
+  },
+});

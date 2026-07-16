@@ -85,6 +85,9 @@ export interface RecipeInputs {
     flourPct: number;        // % of total flour allocated to pre-ferment
     hydration: number;       // poolish=100, biga=50–60
   };
+  coldProofHours?: number;   // hours of cold proofing (fridge), 0 if not used
+  coldProofTemp?: number;    // fridge temperature in °C, default 4
+  starterHoursSinceFed?: number; // hours since starter was last fed, for vitality adjustment
 }
 
 // ── Ingredient Results ─────────────────────────────────────────────────

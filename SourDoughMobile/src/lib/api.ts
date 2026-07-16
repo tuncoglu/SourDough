@@ -1,4 +1,5 @@
 import { HourlyPoint } from '../models/types';
+import { getErrorMessage } from './errors';
 
 /**
  * Open-Meteo and Nominatim API client.
@@ -8,7 +9,10 @@ import { HourlyPoint } from '../models/types';
 const OPEN_METEO_BASE = 'https://api.open-meteo.com/v1';
 const OPEN_METEO_ARCHIVE = 'https://archive-api.open-meteo.com/v1/archive';
 const NOMINATIM_BASE = 'https://nominatim.openstreetmap.org';
-const USER_AGENT = 'JustDoughIt/3.0';
+const USER_AGENT = 'SourDough/3.0 (JustDoughIt)';
+
+// Nominatim rate limit: 1 req/s (polite use policy)
+let lastNominatimCall = 0;
 
 async function httpGet(url: string, timeoutMs = 8000): Promise<any> {
   const controller = new AbortController();
@@ -27,6 +31,73 @@ async function httpGet(url: string, timeoutMs = 8000): Promise<any> {
   }
 }
 
+/**
+ * Fetch with exponential backoff retry on network errors and 5xx responses.
+ * Does NOT retry on 4xx (client errors).
+ */
+async function fetchWithRetry(
+  url: string,
+  timeoutMs = 8000,
+  maxRetries = 2,
+  baseDelayMs = 1000,
+): Promise<any> {
+  let lastError: unknown = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    if (attempt > 0) {
+      const delay = baseDelayMs * Math.pow(2, attempt - 1);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(url, {
+        signal: controller.signal,
+        headers: { 'User-Agent': USER_AGENT },
+      });
+      clearTimeout(timer);
+
+      if (response.ok) {
+        return response.json();
+      }
+
+      // Don't retry on 4xx (client errors)
+      if (response.status >= 400 && response.status < 500) {
+        return null;
+      }
+
+      // 5xx or other — retry
+      lastError = new Error(`HTTP ${response.status}`);
+    } catch (err) {
+      clearTimeout(timer);
+      lastError = err;
+      // Network errors are retryable; abort errors from timeout are not
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        return null;
+      }
+    }
+  }
+
+  // All retries exhausted — log and return null
+  if (lastError) {
+    console.warn(`[api] fetchWithRetry failed after ${maxRetries} retries: ${getErrorMessage(lastError)}`);
+  }
+  return null;
+}
+
+/** Throttle Nominatim calls to respect 1 req/s rate limit. */
+async function nominatimGet(url: string, timeoutMs = 8000): Promise<any> {
+  const now = Date.now();
+  const wait = Math.max(0, 1100 - (now - lastNominatimCall));
+  if (wait > 0) {
+    await new Promise((resolve) => setTimeout(resolve, wait));
+  }
+  lastNominatimCall = Date.now();
+  return fetchWithRetry(url, timeoutMs, 1, 1000);
+}
+
 // ── Weather ────────────────────────────────────────────────────────────
 
 /** Get current ambient temperature from Open-Meteo */
@@ -35,7 +106,7 @@ export async function getAmbientTemp(
   lon: number,
 ): Promise<number | null> {
   const url = `${OPEN_METEO_BASE}/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m&timezone=auto`;
-  const data = await httpGet(url);
+  const data = await fetchWithRetry(url);
   return data?.current?.temperature_2m ?? null;
 }
 
@@ -45,7 +116,7 @@ export async function fetchHourlyForecast(
   lon: number,
 ): Promise<HourlyPoint[] | null> {
   const url = `${OPEN_METEO_BASE}/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m&timezone=auto&forecast_days=2`;
-  const data = await httpGet(url, 10000);
+  const data = await fetchWithRetry(url, 10000);
   if (!data?.hourly) return null;
 
   const times: string[] = data.hourly.time;
@@ -74,7 +145,7 @@ export async function estimateWaterTemp(
   const startStr = start.toISOString().split('T')[0];
 
   const url = `${OPEN_METEO_ARCHIVE}/archive?latitude=${lat}&longitude=${lon}&start_date=${startStr}&end_date=${endStr}&daily=temperature_2m_mean&timezone=UTC`;
-  const data = await httpGet(url, 12000);
+  const data = await fetchWithRetry(url, 12000);
   if (!data?.daily) return null;
 
   const temps: number[] = data.daily.temperature_2m_mean.filter(
@@ -109,7 +180,7 @@ export async function reverseGeocode(
   lon: number,
 ): Promise<NominatimResult | null> {
   const url = `${NOMINATIM_BASE}/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10`;
-  const data = await httpGet(url);
+  const data = await nominatimGet(url);
   if (!data?.address) return null;
 
   const addr = data.address;
@@ -132,7 +203,7 @@ export async function geocodePostcode(
     countryCode ? `${postcode}, ${countryCode}` : postcode,
   );
   const url = `${NOMINATIM_BASE}/search?q=${query}&format=json&limit=1`;
-  const data = await httpGet(url);
+  const data = await nominatimGet(url);
   if (!data || data.length === 0) return null;
 
   const r = data[0];

@@ -10,136 +10,67 @@ import {
   HourlyPoint,
   CalculationResults,
   WaterHardness,
-  FlourCategory,
   FlourBlendEntry,
 } from '../models/types';
 import { getTempZone } from '../models/types';
 import { findFlour } from './flourSearch';
+import {
+  getFlourFermentFactor,
+  getBlendFermentFactor,
+  getBlendProtein,
+  mergeBlendWithStarter,
+  resolveFermentFactor,
+} from './blendUtils';
 
 // ── Physical Constants ──────────────────────────────────────────────────
+
+/** Baseline fermentation temperature (°C) — the "standard kitchen" reference. */
 const BASE_FERMENTATION_TEMP = 26.0;
+
+/** Baseline fermentation duration (hours) at reference temp with reference
+ *  inoculation (20%), hydration (70%), and white flour. */
 const BASE_FERMENTATION_HOURS = 4.0;
+
+/** Minimum feasible fermentation time (hours) regardless of conditions. */
 const MIN_FERMENTATION_HOURS = 2.0;
+
+/** Additional hours per °C below baseline (cold dough). */
 const ADD_TIME_PER_DEGREE_BELOW = 0.5;
+
+/** Subtracted hours per °C above baseline (warm dough).
+ *  Asymmetric — cooling speeds up less than warming slows down. */
 const SUB_TIME_PER_DEGREE_ABOVE = 0.25;
 
-// ── Flour Fermentation Factors ──────────────────────────────────────────
-/**
- * Different flour categories ferment at different speeds.
- * Wholemeal, rye, and spelt ferment faster than white flour due to higher
- * mineral/ash content, more enzymes (amylase), and bran providing nucleation
- * sites for yeast activity.
- *
- * Factor > 1.0 = faster ferment; < 1.0 = slower.
- * Reference: Hammelman, "Bread"; Gisslen, "Professional Baking" 9th ed.
- */
-const FLOUR_FERMENT_FACTORS: Record<FlourCategory, number> = {
-  'White Bread': 1.0,
-  'Cake & Pastry': 1.0,
-  'Brown, Malted & Seeded': 1.15,
-  'Wholemeal': 1.3,
-  'Spelt': 1.2,
-  'Ancient & Heritage': 1.2,
-  'Rye': 1.5,
-  'Other Grains': 1.0,
-  'Gluten-Free': 0.7,
-  'Malt & Brewing': 1.0,
-  'Generic': 1.0,
-};
+/** Thermal time constant (hours) — how fast dough temperature drifts
+ *  toward ambient. ~1.5 h for a typical 1–2 kg dough mass. */
+export const TAU = 1.5;
 
-/** Look up the fermentation speed factor for a flour by its label. */
-export function getFlourFermentFactor(flourLabel: string): number {
-  const flour = findFlour(flourLabel);
-  return FLOUR_FERMENT_FACTORS[flour.category] ?? 1.0;
-}
+/** Q10 coefficient — fermentation rate multiplier per 10°C.
+ *  Reference: bread science literature (Collar, 2003; Gisslen 9th ed.). */
+export const Q10 = 2.5;
 
-/** Weighted-average ferment factor for a multi-flour blend. */
-export function getBlendFermentFactor(blend: FlourBlendEntry[]): number {
-  let total = 0;
-  for (const entry of blend) {
-    const factor = FLOUR_FERMENT_FACTORS[entry.category] ?? 1.0;
-    total += factor * (entry.percentage / 100);
-  }
-  return total;
-}
+/** Reference temperature for the Q10 model (°C). */
+export const T_BASE = 26.0;
 
-/** Weighted-average protein percentage for a multi-flour blend. */
-export function getBlendProtein(blend: FlourBlendEntry[]): number {
-  let total = 0;
-  for (const entry of blend) {
-    total += entry.protein * (entry.percentage / 100);
-  }
-  return Math.round(total * 10) / 10;
-}
+/** Baseline fermentation target (hours) — the "4-hour benchmark" at 26°C. */
+export const TARGET_HOURS = 4.0;
 
-/**
- * Merge the fresh flour blend with the flour contributed by the starter.
- * The starter flour's category affects fermentation, so it must be included
- * in the weighted-average ferment factor alongside the fresh flour blend.
- */
-export function mergeBlendWithStarter(
-  blend: FlourBlendEntry[] | undefined,
-  starterFlourLabel: string | undefined,
-  freshFlourWeight: number,
-  flourFromStarter: number,
-): FlourBlendEntry[] {
-  const totalFlour = freshFlourWeight + flourFromStarter;
-  if (totalFlour <= 0) return blend ?? [];
+/** Integration time step for dynamic fermentation model (hours). 15 min. */
+export const DT = 0.25;
 
-  const starterFlour = findFlour(starterFlourLabel ?? 'Generic: Bread Flour');
+/** Proof time ≈ 60% of bulk fermentation duration.
+ *  Empirical observation (Hammelman, "Bread") — the shaped loaf proofs
+ *  faster than bulk because the dough is warmer and more active after folds. */
+export const PROOF_FRACTION = 0.6;
 
-  // Build a map keyed by (label) to merge duplicate flours
-  const merged: Record<string, { entry: FlourBlendEntry; grams: number }> = {};
-
-  // Add fresh flour components
-  if (blend && blend.length > 0) {
-    for (const entry of blend) {
-      const grams = freshFlourWeight * (entry.percentage / 100);
-      const key = entry.label;
-      if (merged[key]) {
-        merged[key].grams += grams;
-      } else {
-        merged[key] = { entry: { ...entry }, grams };
-      }
-    }
-  } else {
-    // No blend — single flour from legacy scalar
-    const grams = freshFlourWeight;
-    const key = starterFlour.label; // Actually for the fresh flour, we need another source
-    // This case is handled by the caller passing a synthesized blend
-  }
-
-  // Add starter flour component
-  const starterKey = starterFlour.label;
-  if (merged[starterKey]) {
-    merged[starterKey].grams += flourFromStarter;
-  } else {
-    merged[starterKey] = {
-      entry: {
-        label: starterFlour.label,
-        protein: starterFlour.protein,
-        productNumber: starterFlour.productNumber,
-        category: starterFlour.category,
-        percentage: 0,
-      },
-      grams: flourFromStarter,
-    };
-  }
-
-  // Convert back to FlourBlendEntry[] with recalculated percentages
-  return Object.values(merged).map(({ entry, grams }) => ({
-    ...entry,
-    percentage: (grams / totalFlour) * 100,
-  }));
-}
-
-/** Resolve a flour argument (string label or blend array) to a ferment factor. */
-function resolveFermentFactor(flour: string | FlourBlendEntry[]): number {
-  if (typeof flour === 'string') {
-    return getFlourFermentFactor(flour);
-  }
-  return getBlendFermentFactor(flour);
-}
+// Flour ferment factors, blend utilities, and protein calculation
+// are now in ../lib/blendUtils.ts — re-exported here for backward compat.
+export {
+  getFlourFermentFactor,
+  getBlendFermentFactor,
+  getBlendProtein,
+  mergeBlendWithStarter,
+} from './blendUtils';
 
 // ── FDT Calculation ────────────────────────────────────────────────────
 export function calculateFDT(
@@ -284,18 +215,21 @@ export function estimateDynamicFermentation(
   inoculationPct: number = 20.0,
   hydrationPct: number = 70.0,
   flour: string | FlourBlendEntry[] = 'Generic: Bread Flour',
+  starterHoursSinceFed?: number,
 ): DynamicFermentation | null {
-  const TAU = 1.5;      // hours — thermal time constant
-  const Q10 = 2.5;      // rate multiplier per 10°C
-  const T_BASE = 26.0;  // baseline temp
-  const TARGET = 4.0;   // baseline hours at rate 1.0
-  const DT = 0.25;      // integration step (15 min)
 
   // Inoculation + hydration + flour multipliers
   const inocRate = Math.sqrt(inoculationPct / 20.0);
   const hydRate = Math.pow(hydrationPct / 70.0, 0.6);
   const flourFactor = resolveFermentFactor(flour);
   const baseRate = inocRate * hydRate * flourFactor;
+
+  // Vitality factor: starter weakens linearly from 12h to 24h post-feeding
+  let vitalityFactor = 1.0;
+  if (starterHoursSinceFed !== undefined && starterHoursSinceFed > 12) {
+    vitalityFactor = Math.max(0.7, 1.0 - (starterHoursSinceFed - 12) / 12 * 0.3);
+  }
+  const adjustedBaseRate = baseRate * vitalityFactor;
 
   if (hourlyForecast.length < 2) return null;
 
@@ -335,8 +269,8 @@ export function estimateDynamicFermentation(
     // Thermal drift: dough approaches ambient
     doughTemp += (amb - doughTemp) * (1 - Math.exp(-DT / TAU));
 
-    // Fermentation rate: baseline × temp × inoc × hydration
-    const rate = baseRate * Math.pow(Q10, (doughTemp - T_BASE) / 10.0);
+    // Fermentation rate: baseline × temp × inoc × hydration × vitality
+    const rate = adjustedBaseRate * Math.pow(Q10, (doughTemp - T_BASE) / 10.0);
     peakRate = Math.max(peakRate, rate);
 
     progress += rate * DT;
@@ -345,8 +279,8 @@ export function estimateDynamicFermentation(
     steps++;
 
     // Log roughly hourly
-    if (t.getHours() !== lastLoggedHour || progress >= TARGET) {
-      const pct = Math.min((progress / TARGET) * 100, 100);
+    if (t.getHours() !== lastLoggedHour || progress >= TARGET_HOURS) {
+      const pct = Math.min((progress / TARGET_HOURS) * 100, 100);
       profile.push({
         hour: t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
         ambient: round1(amb),
@@ -357,7 +291,7 @@ export function estimateDynamicFermentation(
       lastLoggedHour = t.getHours();
     }
 
-    if (progress >= TARGET) break;
+    if (progress >= TARGET_HOURS) break;
   }
 
   const totalHours = steps * DT;
@@ -501,6 +435,75 @@ export function waterHardnessAdvice(hardness: WaterHardness): string[] {
   return tips;
 }
 
+// ── Cold Proof Extension ──────────────────────────────────────────────
+
+/**
+ * Extend a dynamic fermentation profile with a cold-proof (retard) phase.
+ *
+ * After bulk fermentation completes, the shaped dough is placed in the
+ * fridge. The dough temperature drifts from FDT toward fridge temp with
+ * the same thermal time constant τ, and fermentation continues at a very
+ * slow rate (Q10 model extended downward).
+ *
+ * At 4°C, rate ≈ 0.05–0.08× baseline — primarily acetic acid production.
+ */
+export function estimateColdProof(
+  baseProfile: DynamicFermentation,
+  fdt: number,
+  coldHours: number,
+  coldTemp: number = 4,
+): DynamicFermentation {
+  let doughTemp = fdt;
+  let progress = TARGET_HOURS; // starts where bulk left off (100% completion)
+  // Cold target: proof is done when it reaches ~1.3× baseline (gentle rise in fridge)
+  const COLD_TARGET = TARGET_HOURS * 1.3;
+  let steps = 0;
+  const profile = [...baseProfile.profile];
+  let peakRate = baseProfile.peakRate;
+  let ambientSum = baseProfile.avgAmbient * baseProfile.profile.length;
+  let ambientCount = baseProfile.profile.length;
+
+  const totalSteps = Math.ceil(coldHours / DT);
+  let lastLoggedHour = -1;
+
+  for (let i = 0; i < totalSteps && progress < COLD_TARGET; i++) {
+    // Thermal drift toward fridge temp
+    doughTemp += (coldTemp - doughTemp) * (1 - Math.exp(-DT / TAU));
+
+    // Fermentation rate at fridge temp (Q10 model)
+    const rate = Math.pow(Q10, (doughTemp - T_BASE) / 10.0);
+    peakRate = Math.max(peakRate, rate);
+
+    progress += rate * DT;
+    ambientSum += coldTemp;
+    ambientCount++;
+    steps++;
+
+    const hour = Math.floor(steps * DT);
+    if (hour !== lastLoggedHour || progress >= COLD_TARGET) {
+      const pct = Math.min(((progress - TARGET_HOURS) / (COLD_TARGET - TARGET_HOURS)) * 100, 100);
+      profile.push({
+        hour: `❄️ +${hour}h`,
+        ambient: coldTemp,
+        dough: round1(doughTemp),
+         rate: round2(rate),
+         progress: Math.round(pct),
+       });
+       lastLoggedHour = hour;
+     }
+   }
+
+   const totalHours = baseProfile.totalHours + steps * DT;
+   const avgAmbient = round1(ambientSum / Math.max(ambientCount, 1));
+
+   return {
+     totalHours: Math.round(totalHours * 2) / 2,
+     profile: profile.slice(0, 32), // allow more rows with cold phase
+     peakRate: round1(peakRate),
+     avgAmbient,
+   };
+}
+
 // ── Full Calculation Pipeline ──────────────────────────────────────────
 export function runAllCalculations(
   inputs: RecipeInputs,
@@ -562,7 +565,18 @@ export function runAllCalculations(
       ingredients.starterPct,
       inputs.hydration,
       totalBlend,
+      inputs.starterHoursSinceFed,
     );
+
+    // Extend with cold proof if requested
+    if (dynamicFerment && (inputs.coldProofHours ?? 0) > 0) {
+      dynamicFerment = estimateColdProof(
+        dynamicFerment,
+        fdt,
+        inputs.coldProofHours!,
+        inputs.coldProofTemp ?? 4,
+      );
+    }
   }
 
   const fa = fermentAdvice(

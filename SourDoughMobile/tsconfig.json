@@ -11,5 +11,10 @@
   "include": [
     "**/*.ts",
     "**/*.tsx"
+  ],
+  "exclude": [
+    "__tests__",
+    "jest.config.js",
+    "jest.setup.js"
   ]
 }

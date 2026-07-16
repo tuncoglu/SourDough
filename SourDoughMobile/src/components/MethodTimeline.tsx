@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
 import { RecipePreset } from '../models/types';
+import { PROOF_FRACTION } from '../lib/calculations';
 
 interface Props {
   preset: RecipePreset;
@@ -69,7 +70,6 @@ function buildSteps(preset: RecipePreset, fermentHours: number): Step[] {
 
   // Step 4: Bulk fermentation
   n++;
-  const proofEstimate = Math.round(fermentHours * 0.6 * 2) / 2;
   steps.push({
     number: n,
     title: 'Bulk fermentation',
@@ -104,6 +104,7 @@ function buildSteps(preset: RecipePreset, fermentHours: number): Step[] {
 
   // Step 7: Proof
   n++;
+  const proofEstimate = Math.round(fermentHours * PROOF_FRACTION * 2) / 2;
   steps.push({
     number: n,
     title: 'Proof',

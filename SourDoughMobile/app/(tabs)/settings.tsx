@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Spacing, FontSize, BorderRadius, MaxWidth, useAppTheme } from '../../src/theme';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { UserSettings, DEFAULT_SETTINGS, ThemeMode } from '../../src/models/types';
-import { loadSettings, saveSettings } from '../../src/store/settingsStore';
+import { getSettings, updateSettings } from '../../src/store/settingsCache';
 import { NumberInput } from '../../src/components/NumberInput';
 import { FlourPicker } from '../../src/components/FlourPicker';
 
@@ -29,7 +29,7 @@ export default function SettingsScreen() {
   const { colors, themeMode, setThemeMode } = useAppTheme();
 
   useEffect(() => {
-    loadSettings().then((s) => {
+    getSettings().then((s) => {
       setSettings(s);
       setFlourLabel(s.defaultFlourType);
       setLoading(false);
@@ -41,7 +41,7 @@ export default function SettingsScreen() {
       ...settings,
       defaultFlourType: flourLabel,
     };
-    await saveSettings(updated);
+    await updateSettings(updated);
     setSettings(updated);
     Alert.alert('Saved', 'Settings saved. New defaults will apply to new calculations.');
   };
@@ -53,7 +53,7 @@ export default function SettingsScreen() {
         text: 'Reset',
         style: 'destructive',
         onPress: async () => {
-          await saveSettings(DEFAULT_SETTINGS);
+          await updateSettings(DEFAULT_SETTINGS);
           setSettings(DEFAULT_SETTINGS);
           setFlourLabel(DEFAULT_SETTINGS.defaultFlourType);
         },
