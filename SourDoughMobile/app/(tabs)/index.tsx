@@ -10,6 +10,7 @@ import {
   Alert,
   ActivityIndicator,
   Share,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as StoreReview from 'expo-store-review';
@@ -1245,7 +1246,7 @@ export default function CalculatorScreen() {
       {selectedPreset && (
         <MethodTimeline
           preset={selectedPreset}
-          staticFermentHours={results.staticFermentHours}
+          staticFermentHours={results.dynamicFerment?.totalHours ?? results.staticFermentHours}
           fermentAdvice={results.fermentAdvice}
         />
       )}
@@ -1287,7 +1288,28 @@ export default function CalculatorScreen() {
               : undefined,
           );
           try {
-            await Share.share({ message: text });
+            if (Platform.OS === 'web') {
+              // Try Web Share API first, fall back to clipboard
+              if (navigator.share) {
+                await navigator.share({ text });
+              } else if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(text);
+                Alert.alert('Copied!', 'Recipe copied to clipboard.');
+              } else {
+                // Legacy fallback
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                Alert.alert('Copied!', 'Recipe copied to clipboard.');
+              }
+            } else {
+              await Share.share({ message: text });
+            }
           } catch {
             // User cancelled — no-op
           }
