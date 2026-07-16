@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { AppState, Alert } from 'react-native';
 import {
   getStarterFlour,
@@ -8,25 +8,20 @@ import {
   getLastFeeding,
   loadFeedings,
 } from '../store/starterStore';
-import { StarterFeeding } from '../models/types';
+import { StarterFeeding, StarterStatus } from '../models/types';
+import { computeStarterStatus } from '../lib/starterStatus';
 
 export interface StarterTrackerState {
-  /** Current starter flour label. */
   starterFlourLabel: string;
-  /** Number input: grams of flour used to feed. */
   feedFlourGrams: string;
-  /** Number input: grams of water used to feed. */
   feedWaterGrams: string;
-  /** Whether a feed is being persisted. */
   feedLogging: boolean;
-  /** Whether the starter card is expanded. */
   expanded: boolean;
-  /** Last feeding record (or null). */
   lastFed: StarterFeeding | null;
-  /** Hours since last feeding. */
   hoursSince: string;
-  /** Most recent 3 feedings. */
   recentFeedings: StarterFeeding[];
+  /** Computed starter readiness status. */
+  status: StarterStatus | null;
 }
 
 export interface StarterTrackerActions {
@@ -35,6 +30,10 @@ export interface StarterTrackerActions {
   setFeedWaterGrams: (v: string) => void;
   setExpanded: (v: boolean) => void;
   handleFeedNow: () => Promise<void>;
+  /** Put starter in fridge (records timestamp on last feeding). */
+  handleFridgeIn: () => Promise<void>;
+  /** Take starter out of fridge. */
+  handleFridgeOut: () => Promise<void>;
   refresh: () => Promise<void>;
 }
 
@@ -47,6 +46,8 @@ export function useStarterTracker(): StarterTrackerState & StarterTrackerActions
   const [lastFed, setLastFed] = useState<StarterFeeding | null>(null);
   const [hoursSince, setHoursSince] = useState('');
   const [recentFeedings, setRecentFeedings] = useState<StarterFeeding[]>([]);
+
+  const status = useMemo(() => computeStarterStatus(lastFed), [lastFed, hoursSince]);
 
   const refresh = useCallback(async () => {
     const lf = await getLastFeeding();
@@ -98,6 +99,37 @@ export function useStarterTracker(): StarterTrackerState & StarterTrackerActions
     }
   }, [starterFlourLabel, feedFlourGrams, feedWaterGrams]);
 
+  const handleFridgeIn = useCallback(async () => {
+    if (!lastFed) {
+      Alert.alert('No feeding', 'Log a feeding before putting starter in the fridge.');
+      return;
+    }
+    if (lastFed.fridgeAt) {
+      Alert.alert('Already fridged', 'Starter is already in the fridge.');
+      return;
+    }
+    const updated = { ...lastFed, fridgeAt: new Date().toISOString() };
+    await logFeeding(updated);
+    setLastFed(updated);
+    await refresh();
+  }, [lastFed, refresh]);
+
+  const handleFridgeOut = useCallback(async () => {
+    if (!lastFed) return;
+    if (!lastFed.fridgeAt) {
+      Alert.alert('Not in fridge', 'Starter is not in the fridge.');
+      return;
+    }
+    if (lastFed.outOfFridgeAt) {
+      Alert.alert('Already out', 'Starter is already out of the fridge.');
+      return;
+    }
+    const updated = { ...lastFed, outOfFridgeAt: new Date().toISOString() };
+    await logFeeding(updated);
+    setLastFed(updated);
+    await refresh();
+  }, [lastFed, refresh]);
+
   // Load persisted preferences on mount
   useEffect(() => {
     getStarterFlour().then(setStarterFlourLabelState);
@@ -109,7 +141,7 @@ export function useStarterTracker(): StarterTrackerState & StarterTrackerActions
     if (expanded) refresh();
   }, [expanded, refresh]);
 
-  // Track app state to pause timer when backgrounded
+  // Track app state
   const [appState, setAppState] = useState(AppState.currentState);
   useEffect(() => {
     const sub = AppState.addEventListener('change', (nextState) => setAppState(nextState));
@@ -135,11 +167,14 @@ export function useStarterTracker(): StarterTrackerState & StarterTrackerActions
     lastFed,
     hoursSince,
     recentFeedings,
+    status,
     setStarterFlourLabel,
     setFeedFlourGrams,
     setFeedWaterGrams,
     setExpanded,
     handleFeedNow,
+    handleFridgeIn,
+    handleFridgeOut,
     refresh,
   };
 }

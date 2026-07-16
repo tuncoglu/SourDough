@@ -160,6 +160,23 @@ export interface StarterFeeding {
   flourGrams: number;         // g of flour used to feed
   waterGrams: number;         // g of water used to feed
   notes?: string;
+  /** If the starter went into the fridge after this feeding, when (ISO). */
+  fridgeAt?: string;
+  /** If the starter came out of the fridge after this feeding, when (ISO). */
+  outOfFridgeAt?: string;
+}
+
+/** Computed starter readiness based on feeding and fridge history. */
+export interface StarterStatus {
+  hoursSinceFed: number;      // raw clock hours since last feeding
+  effectiveHours: number;     // adjusted for fridge time (fridge ≈ 0.1× rate)
+  isInFridge: boolean;
+  /** Hours since taken out of fridge (0 if never in fridge or still in). */
+  hoursSinceFridgeOut: number;
+  zone: 'just-fed' | 'building' | 'peak' | 'past-peak' | 'hungry' | 'dormant';
+  emoji: string;
+  label: string;
+  color?: string;
 }
 
 // ── Settings ───────────────────────────────────────────────────────────

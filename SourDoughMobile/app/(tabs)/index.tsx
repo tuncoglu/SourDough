@@ -130,7 +130,7 @@ export default function CalculatorScreen() {
       coldProofHours,
       coldProofTemp,
       coldProofEnabled,
-      starterHoursSinceFed: parseFloat(starter.hoursSince) || undefined,
+      starterHoursSinceFed: starter.status?.effectiveHours,
     }, isDesktop);
   }, [inputs, preset, starter.starterFlourLabel, isDesktop, calc]);
 
