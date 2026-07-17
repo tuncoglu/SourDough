@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Spacing, FontSize, BorderRadius } from '../../src/theme';
+import { Colors, Spacing, FontSize, BorderRadius, useAppTheme } from '../../src/theme';
+import { formatTemp, formatWeight, formatWeightValue, weightUnit } from '../../src/lib/unitConversion';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { SavedRecipe, FlourBlendEntry } from '../../src/models/types';
 import { getRecipe } from '../../src/store/recipeStore';
@@ -30,6 +31,7 @@ export default function RecipeDetailScreen() {
   const [recipe, setRecipe] = useState<SavedRecipe | null>(null);
   const [loading, setLoading] = useState(true);
   const { isDesktop } = useBreakpoint();
+  const { unitSystem } = useAppTheme();
 
   useEffect(() => {
     if (!id) return;
@@ -61,7 +63,7 @@ export default function RecipeDetailScreen() {
 
   const handleShare = async () => {
     if (!recipe) return;
-    const text = formatRecipeText(recipe);
+    const text = formatRecipeText(recipe, unitSystem);
     try {
       await Share.share({ message: text });
     } catch {
@@ -80,7 +82,7 @@ export default function RecipeDetailScreen() {
       {showBlendDetail ? (
         // Multi-flour breakdown
         <>
-          <Text style={styles.sectionLabel}>Flour mix ({recipe.inputs.flourWeight.toFixed(0)}g total)</Text>
+          <Text style={styles.sectionLabel}>Flour mix ({formatWeight(recipe.inputs.flourWeight, unitSystem, 0)} total)</Text>
           {blend.map((entry: FlourBlendEntry) => {
             const grams = recipe.inputs.flourWeight * entry.percentage / 100;
             return (
@@ -89,7 +91,7 @@ export default function RecipeDetailScreen() {
                   {entry.label.replace(/\s*\([^)]*\)$/, '')}
                 </Text>
                 <Text style={styles.value}>
-                  {grams.toFixed(0)}g ({Math.round(entry.percentage)}%)
+                  {formatWeightValue(grams, unitSystem, 0)}{weightUnit(unitSystem)} ({Math.round(entry.percentage)}%)
                 </Text>
               </View>
             );
@@ -103,7 +105,7 @@ export default function RecipeDetailScreen() {
         <>
           <View style={styles.row}>
             <Text style={styles.label}>Flour</Text>
-            <Text style={styles.value}>{recipe.inputs.flourWeight.toFixed(0)}g — {recipe.inputs.flourType}</Text>
+            <Text style={styles.value}>{formatWeight(recipe.inputs.flourWeight, unitSystem, 0)} — {recipe.inputs.flourType}</Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Protein</Text>
@@ -118,7 +120,7 @@ export default function RecipeDetailScreen() {
       </View>
       <View style={styles.row}>
         <Text style={styles.label}>Starter</Text>
-        <Text style={styles.value}>{recipe.inputs.starterWeight.toFixed(0)}g ({recipe.inputs.starterHydration.toFixed(0)}% hyd.)</Text>
+        <Text style={styles.value}>{formatWeight(recipe.inputs.starterWeight, unitSystem, 0)} ({recipe.inputs.starterHydration.toFixed(0)}% hyd.)</Text>
       </View>
       {recipe.inputs.starterFlourType && (
         <View style={styles.row}>
@@ -145,19 +147,19 @@ export default function RecipeDetailScreen() {
       <View style={styles.divider} />
       <View style={styles.row}>
         <Text style={styles.label}>Ambient</Text>
-        <Text style={styles.value}>{recipe.inputs.ambientTemp.toFixed(1)}°C</Text>
+        <Text style={styles.value}>{formatTemp(recipe.inputs.ambientTemp, unitSystem)}</Text>
       </View>
       <View style={styles.row}>
         <Text style={styles.label}>Flour temp</Text>
-        <Text style={styles.value}>{recipe.inputs.flourTemp.toFixed(1)}°C</Text>
+        <Text style={styles.value}>{formatTemp(recipe.inputs.flourTemp, unitSystem)}</Text>
       </View>
       <View style={styles.row}>
         <Text style={styles.label}>Water temp</Text>
-        <Text style={styles.value}>{recipe.inputs.waterTemp.toFixed(1)}°C</Text>
+        <Text style={styles.value}>{formatTemp(recipe.inputs.waterTemp, unitSystem)}</Text>
       </View>
       <View style={styles.row}>
         <Text style={styles.label}>Starter temp</Text>
-        <Text style={styles.value}>{recipe.inputs.starterTemp.toFixed(1)}°C</Text>
+        <Text style={styles.value}>{formatTemp(recipe.inputs.starterTemp, unitSystem)}</Text>
       </View>
     </View>
   );
@@ -169,7 +171,7 @@ export default function RecipeDetailScreen() {
       <View style={styles.fdtCard}>
         <Text style={styles.fdtLabel}>Final Dough Temperature</Text>
         <Text style={[styles.fdtValue, { color: zoneInfo.color }]}>
-          {zoneInfo.icon}  {recipe.results.fdt.toFixed(1)}°C
+          {zoneInfo.icon}  {formatTemp(recipe.results.fdt, unitSystem)}
         </Text>
         <Text style={[styles.fdtZone, { color: zoneInfo.color }]}>
           {zoneInfo.label}

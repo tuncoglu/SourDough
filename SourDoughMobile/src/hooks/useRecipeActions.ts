@@ -11,6 +11,7 @@ import { saveRecipe, generateRecipeId } from '../store/recipeStore';
 import { getBlendProtein } from '../lib/blendUtils';
 import { formatRecipeTextFromState } from '../lib/recipeFormatter';
 import { copyToClipboard } from '../lib/clipboard';
+import { useAppTheme } from '../theme';
 
 const SAVE_COUNT_KEY = 'sourdough_save_count';
 const REVIEW_REQUESTED_KEY = 'sourdough_review_requested';
@@ -53,6 +54,7 @@ interface ShareParams {
 }
 
 export function useRecipeActions() {
+  const { unitSystem } = useAppTheme();
   const [saving, setSaving] = useState(false);
 
   const handleSave = useCallback(async (params: SaveParams) => {
@@ -153,6 +155,7 @@ export function useRecipeActions() {
       prefermentEnabled ? parseFloat(prefermentFlourPct) || undefined : undefined,
       results,
       bakeInfo,
+      unitSystem,
     );
 
     try {

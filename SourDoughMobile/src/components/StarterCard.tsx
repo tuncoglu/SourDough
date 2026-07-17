@@ -6,7 +6,8 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
+import { Colors, Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
+import { formatWeight, formatWeightValue, weightUnit } from '../lib/unitConversion';
 import { FlourPicker } from './FlourPicker';
 import { NumberInput } from './NumberInput';
 import { StarterStatus } from '../models/types';
@@ -15,6 +16,8 @@ import type { StarterTrackerState, StarterTrackerActions } from '../hooks/useSta
 interface Props extends StarterTrackerState, StarterTrackerActions {}
 
 export function StarterCard(props: Props) {
+  const { unitSystem } = useAppTheme();
+  const wu = weightUnit(unitSystem);
   const {
     expanded, setExpanded,
     lastFed, hoursSince, status,
@@ -40,7 +43,7 @@ export function StarterCard(props: Props) {
           <View style={{ flex: 1 }}>
             <Text style={styles.summary} numberOfLines={1}>
               {lastFed
-                ? `${lastFed.flourGrams ?? '?'}g flour + ${lastFed.waterGrams ?? '?'}g water · ${hoursSince}h ago`
+                ? `${lastFed.flourGrams != null ? formatWeightValue(lastFed.flourGrams, unitSystem, 0) : '?'}${wu} flour + ${lastFed.waterGrams != null ? formatWeightValue(lastFed.waterGrams, unitSystem, 0) : '?'}${wu} water · ${hoursSince}h ago`
                 : 'Tap to set up your starter'}
             </Text>
             {status && (
@@ -126,7 +129,7 @@ export function StarterCard(props: Props) {
                     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
                   })}
                   {' · '}
-                  {f.flourGrams != null ? `${f.flourGrams}g` : '?'} flour + {f.waterGrams != null ? `${f.waterGrams}g` : '?'} water
+                  {f.flourGrams != null ? formatWeight(f.flourGrams, unitSystem, 0) : '?'} flour + {f.waterGrams != null ? formatWeight(f.waterGrams, unitSystem, 0) : '?'} water
                   {f.fridgeAt ? ' · ❄️ fridged' : ''}
                   {f.outOfFridgeAt ? ' · 🌡️ out' : ''}
                   {' · '}{f.flourUsed.replace(/\s*\([^)]*\)$/, '')}

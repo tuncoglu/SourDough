@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
+import { Colors, Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
+import { formatTempValue, formatTemp } from '../lib/unitConversion';
 import { DynamicFermentation } from '../models/types';
 
 interface Props {
@@ -21,6 +22,7 @@ export function FermentationTimeline({
   staticNote,
   fdt,
 }: Props) {
+  const { unitSystem } = useAppTheme();
   const now = new Date();
   const readyTime = new Date(now.getTime() + (dynamic?.totalHours ?? staticHours) * 3600000);
 
@@ -40,7 +42,7 @@ export function FermentationTimeline({
               </Text>
             </View>
             <Text style={styles.meta}>
-              Avg ambient: {dynamic.avgAmbient}°C · Peak rate: {dynamic.peakRate}× baseline
+              Avg ambient: {formatTemp(dynamic.avgAmbient, unitSystem)} · Peak rate: {dynamic.peakRate}× baseline
             </Text>
           </>
         ) : (
@@ -194,6 +196,7 @@ const textColProgress = { fontSize: FontSize.xs, color: Colors.espresso, flex: 1
 // ── Dynamic Profile Table (collapsible) ──────────────────────────────────
 
 function DynamicProfileTable({ profile }: { profile: DynamicFermentation['profile'] }) {
+  const { unitSystem } = useAppTheme();
   const [showAll, setShowAll] = useState(false);
   const INITIAL_ROWS = 12;
   const visible = showAll ? profile : profile.slice(0, INITIAL_ROWS);
@@ -211,8 +214,8 @@ function DynamicProfileTable({ profile }: { profile: DynamicFermentation['profil
       {visible.map((pt, i) => (
         <View style={styles.timelineRow} key={i}>
           <Text style={textColHour}>{pt.hour}</Text>
-          <Text style={textColTemp}>{pt.ambient}°</Text>
-          <Text style={textColTemp}>{pt.dough}°</Text>
+          <Text style={textColTemp}>{formatTempValue(pt.ambient, unitSystem)}°</Text>
+          <Text style={textColTemp}>{formatTempValue(pt.dough, unitSystem)}°</Text>
           <Text style={textColRate}>{pt.rate}×</Text>
           <View style={styles.colProgress}>
             <View style={styles.barContainer}>

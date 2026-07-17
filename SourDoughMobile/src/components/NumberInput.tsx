@@ -6,7 +6,8 @@ import {
   StyleSheet,
   TextInputProps,
 } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
+import { Colors, Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
+import { weightUnit } from '../lib/unitConversion';
 
 interface Props extends Omit<TextInputProps, 'onChangeText'> {
   label: string;
@@ -24,6 +25,10 @@ export function NumberInput({
   autoBadge,
   ...rest
 }: Props) {
+  const { unitSystem } = useAppTheme();
+  // If unit is "g", use the dynamic weight unit; otherwise keep as-is
+  const displayUnit = unit === 'g' ? weightUnit(unitSystem) : unit;
+
   return (
     <View style={styles.row}>
       <Text style={styles.label}>{label}</Text>
@@ -35,7 +40,7 @@ export function NumberInput({
         placeholderTextColor={Colors.muted}
         {...rest}
       />
-      {unit && <Text style={styles.unit}>{unit}</Text>}
+      {displayUnit && <Text style={styles.unit}>{displayUnit}</Text>}
       {autoBadge && <Text style={styles.autoBadge}>auto</Text>}
     </View>
   );

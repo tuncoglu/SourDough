@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
+import { Colors, Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
+import { formatWeight, formatWeightValue, weightUnit } from '../lib/unitConversion';
 import { IngredientResults as IngredientResultsType, FlourBlendEntry } from '../models/types';
 
 interface Props {
@@ -16,7 +17,9 @@ interface Props {
 }
 
 export function IngredientResults({ ingredients, blend, totalFlourWeight, starterFlourType, prefermentType, typicalUnitGrams, unitLabel }: Props) {
+  const { unitSystem } = useAppTheme();
   const showBlend = blend && blend.length > 1 && totalFlourWeight;
+  const wu = weightUnit(unitSystem);
 
   return (
     <View style={styles.card}>
@@ -32,7 +35,7 @@ export function IngredientResults({ ingredients, blend, totalFlourWeight, starte
                 <Text style={styles.label}>
                   {entry.label.replace(/\s*\([^)]*\)$/, '')}
                 </Text>
-                <Text style={styles.value}>{grams.toFixed(1)} g</Text>
+                <Text style={styles.value}>{formatWeight(grams, unitSystem)}</Text>
                 <Text style={styles.note}>{Math.round(entry.percentage)}%</Text>
               </View>
             );
@@ -42,27 +45,27 @@ export function IngredientResults({ ingredients, blend, totalFlourWeight, starte
               Total flour
             </Text>
             <Text style={styles.subValue}>
-              {ingredients.freshFlour.toFixed(1)} g
+              {formatWeight(ingredients.freshFlour, unitSystem)}
             </Text>
           </View>
         </>
       ) : (
-        renderRow('Flour', `${ingredients.freshFlour.toFixed(1)} g`, null)
+        renderRow('Flour', formatWeight(ingredients.freshFlour, unitSystem), null)
       )}
 
-      {renderRow('Water', `${ingredients.addedWater.toFixed(1)} g`, null)}
-      {renderRow('Starter', `${ingredients.starterTotal.toFixed(1)} g`,
+      {renderRow('Water', formatWeight(ingredients.addedWater, unitSystem), null)}
+      {renderRow('Starter', formatWeight(ingredients.starterTotal, unitSystem),
         `(${ingredients.starterPct.toFixed(0)}% of total flour)`)}
       <View style={styles.subRow}>
         <Text style={styles.subLabel}>flour in starter</Text>
         <Text style={styles.subValue}>
-          {ingredients.flourFromStarter.toFixed(1)} g
+          {formatWeight(ingredients.flourFromStarter, unitSystem)}
           {starterFlourType ? `  (${starterFlourType.replace(/\s*\([^)]*\)$/, '')})` : ''}
         </Text>
       </View>
       <View style={styles.subRow}>
         <Text style={styles.subLabel}>water in starter</Text>
-        <Text style={styles.subValue}>{ingredients.waterFromStarter.toFixed(1)} g</Text>
+        <Text style={styles.subValue}>{formatWeight(ingredients.waterFromStarter, unitSystem)}</Text>
       </View>
 
       {/* Pre-ferment breakdown */}
@@ -70,36 +73,36 @@ export function IngredientResults({ ingredients, blend, totalFlourWeight, starte
         <>
           {renderRow(
             `Pre-ferment (${prefermentType ?? 'poolish'})`,
-            `${ingredients.prefermentTotal.toFixed(1)} g`,
+            formatWeight(ingredients.prefermentTotal, unitSystem),
             `${(ingredients.prefermentFlour / ingredients.totalFlour * 100).toFixed(0)}% of total flour`,
           )}
           <View style={styles.subRow}>
             <Text style={styles.subLabel}>flour in pre-ferment</Text>
-            <Text style={styles.subValue}>{ingredients.prefermentFlour.toFixed(1)} g</Text>
+            <Text style={styles.subValue}>{formatWeight(ingredients.prefermentFlour, unitSystem)}</Text>
           </View>
           <View style={styles.subRow}>
             <Text style={styles.subLabel}>water in pre-ferment</Text>
-            <Text style={styles.subValue}>{ingredients.prefermentWater.toFixed(1)} g</Text>
+            <Text style={styles.subValue}>{formatWeight(ingredients.prefermentWater, unitSystem)}</Text>
           </View>
         </>
       )}
 
       {/* Oil */}
       {ingredients.oil > 0 &&
-        renderRow('Oil / Fat', `${ingredients.oil.toFixed(1)} g`, null)}
+        renderRow('Oil / Fat', formatWeight(ingredients.oil, unitSystem), null)}
 
-      {renderRow('Salt', `${ingredients.salt.toFixed(1)} g`, null)}
+      {renderRow('Salt', formatWeight(ingredients.salt, unitSystem), null)}
 
       <View style={styles.divider} />
 
-      {renderRow('Total weight', `${ingredients.totalDoughWeight.toFixed(1)} g`,
+      {renderRow('Total weight', formatWeight(ingredients.totalDoughWeight, unitSystem),
         `${ingredients.hydrationPct.toFixed(0)}% hydration`,
         true)}
 
       <View style={styles.noteRow}>
         <Text style={styles.note}>
-          Based on {ingredients.totalFlour.toFixed(0)}g total flour
-          (incl. {ingredients.flourFromStarter.toFixed(1)}g from starter{ingredients.prefermentFlour > 0 ? ` + ${ingredients.prefermentFlour.toFixed(1)}g in pre-ferment` : ''})
+          Based on {formatWeightValue(ingredients.totalFlour, unitSystem, 0)}{wu} total flour
+          (incl. {formatWeight(ingredients.flourFromStarter, unitSystem)} from starter{ingredients.prefermentFlour > 0 ? ` + ${formatWeight(ingredients.prefermentFlour, unitSystem)} in pre-ferment` : ''})
         </Text>
       </View>
 
@@ -116,11 +119,11 @@ export function IngredientResults({ ingredients, blend, totalFlourWeight, starte
                   <Text style={styles.yieldBold}>
                     ~{unitCount.toFixed(1)} {unitCount > 1 ? pluralLabel : unitLabel}
                   </Text>
-                  {' '}({typicalUnitGrams}g per {unitLabel})
+                  {' '}({formatWeight(typicalUnitGrams, unitSystem, 0)} per {unitLabel})
                 </Text>
                 {unitCount >= 2 && (
                   <Text style={styles.yieldSub}>
-                    Scale each to {typicalUnitGrams}g for the best result.
+                    Scale each to {formatWeight(typicalUnitGrams, unitSystem, 0)} for the best result.
                   </Text>
                 )}
               </View>

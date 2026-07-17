@@ -181,6 +181,7 @@ export interface StarterStatus {
 
 // ── Settings ───────────────────────────────────────────────────────────
 export type ThemeMode = 'system' | 'light' | 'dark';
+export type UnitSystem = 'metric' | 'imperial';
 
 export interface UserSettings {
   defaultFlourType: string;
@@ -192,6 +193,7 @@ export interface UserSettings {
   notificationsEnabled: boolean;
   waterHardnessOverride: number; // mg/L CaCO₃, 0 = auto-detect
   themeMode: ThemeMode;
+  unitSystem: UnitSystem;
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -204,6 +206,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   notificationsEnabled: false,
   waterHardnessOverride: 0,
   themeMode: 'system',
+  unitSystem: 'metric',
 };
 
 // ── FDT Temperature Zone ──────────────────────────────────────────────

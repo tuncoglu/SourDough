@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
+import { Colors, Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
+import { formatTemp, formatTempValue } from '../lib/unitConversion';
 import {
   CalculationResults,
   FlourBlendEntry,
@@ -45,13 +46,15 @@ export function ResultsSection({
   flourTemp, ambientTemp, waterTemp, starterTemp,
   saving, onSave, onShare, readyByResult,
 }: Props) {
+  const { unitSystem } = useAppTheme();
   const zoneInfo = getTempZoneInfo(results.tempZone);
+  const targetFDT = 26.0;
 
   const fdtCard = (
     <View style={styles.fdtCard}>
       <Text style={styles.fdtLabel}>Final Dough Temperature</Text>
       <Text style={[styles.fdtValue, { color: zoneInfo.color }]}>
-        {zoneInfo.icon}  {results.fdt.toFixed(1)}°C
+        {zoneInfo.icon}  {formatTemp(results.fdt, unitSystem)}
       </Text>
       <Text style={[styles.fdtZone, { color: zoneInfo.color }]}>{zoneInfo.label}</Text>
       {(() => {
@@ -66,18 +69,18 @@ export function ResultsSection({
         if (zone === 'cold' || zone === 'cool') {
           return (
             <>
-              <Text style={styles.fdtHint}>{results.fdt.toFixed(1)}°C is below the 26°C target — fermentation will be slower.</Text>
+              <Text style={styles.fdtHint}>{formatTemp(results.fdt, unitSystem)} is below the {formatTemp(targetFDT, unitSystem)} target — fermentation will be slower.</Text>
               <Text style={styles.fdtAction}>
-                💧 Heat your water to <Text style={{ fontWeight: '800' }}>{neededWater.toFixed(1)}°C</Text> (currently {currentWater.toFixed(1)}°C, +{diff.toFixed(1)}°C)
+                💧 Heat your water to <Text style={{ fontWeight: '800' }}>{formatTempValue(neededWater, unitSystem)}°</Text> (currently {formatTempValue(currentWater, unitSystem)}°, +{formatTempValue(diff, unitSystem)}°)
               </Text>
             </>
           );
         }
         return (
           <>
-            <Text style={styles.fdtHint}>{results.fdt.toFixed(1)}°C is above the 26°C target — fermentation will be faster. Watch closely!</Text>
+            <Text style={styles.fdtHint}>{formatTemp(results.fdt, unitSystem)} is above the {formatTemp(targetFDT, unitSystem)} target — fermentation will be faster. Watch closely!</Text>
             <Text style={styles.fdtAction}>
-              💧 Cool your water to <Text style={{ fontWeight: '800' }}>{neededWater.toFixed(1)}°C</Text> (currently {currentWater.toFixed(1)}°C, {diff.toFixed(1)}°C)
+              💧 Cool your water to <Text style={{ fontWeight: '800' }}>{formatTempValue(neededWater, unitSystem)}°</Text> (currently {formatTempValue(currentWater, unitSystem)}°, {formatTempValue(diff, unitSystem)}°)
             </Text>
           </>
         );

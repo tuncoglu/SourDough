@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
+import { Colors, Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
+import { tempUnit } from '../lib/unitConversion';
 
 interface Props {
   label: string;
@@ -14,11 +15,14 @@ interface Props {
 export function TempRow({
   label,
   value,
-  unit = '°C',
+  unit,
   onChangeText,
   isAuto = false,
   editing = false,
 }: Props) {
+  const { unitSystem } = useAppTheme();
+  const displayUnit = unit ?? tempUnit(unitSystem);
+
   return (
     <View style={styles.row}>
       <Text style={styles.label}>{label}</Text>
@@ -29,7 +33,7 @@ export function TempRow({
         keyboardType="decimal-pad"
         placeholderTextColor={Colors.muted}
       />
-      <Text style={styles.unit}>{unit}</Text>
+      <Text style={styles.unit}>{displayUnit}</Text>
       {isAuto && !editing && (
         <Text style={styles.autoBadge}>auto</Text>
       )}

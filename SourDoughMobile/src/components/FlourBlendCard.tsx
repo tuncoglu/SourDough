@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
+import { Colors, Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
+import { formatWeight } from '../lib/unitConversion';
 import { FlourPicker } from './FlourPicker';
 import { NumberInput } from './NumberInput';
 import { FlourBlendEntry } from '../models/types';
@@ -42,6 +43,7 @@ export function FlourBlendCard({
   setSaltPct,
   setOilPct,
 }: Props) {
+  const { unitSystem } = useAppTheme();
   return (
     <View style={styles.card}>
       <Text style={styles.cardTitle}>FLOUR & INGREDIENTS</Text>
@@ -76,7 +78,7 @@ export function FlourBlendCard({
 
       {/* Blend summary */}
       <View style={styles.summaryRow}>
-        <Text style={styles.summaryText}>Total: {totalFlourWeight.toFixed(0)}g</Text>
+        <Text style={styles.summaryText}>Total: {formatWeight(totalFlourWeight, unitSystem, 0)}</Text>
         {mixRows.length > 1 && totalFlourWeight > 0 && (
           <View style={styles.blendBar}>
             {mixRows.map((r) => {

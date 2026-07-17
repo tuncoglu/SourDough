@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
+import { Colors, Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
+import { formatTemp } from '../lib/unitConversion';
 import { RecipePreset } from '../models/types';
 import { PROOF_FRACTION } from '../lib/calculations';
 
@@ -17,7 +18,7 @@ interface Step {
   time: string;
 }
 
-function buildSteps(preset: RecipePreset, fermentHours: number): Step[] {
+function buildSteps(preset: RecipePreset, fermentHours: number, unitSystem: import('../models/types').UnitSystem): Step[] {
   const steps: Step[] = [];
   const { process, bake, dough } = preset;
   let n = 0;
@@ -139,7 +140,7 @@ function buildSteps(preset: RecipePreset, fermentHours: number): Step[] {
   steps.push({
     number: n,
     title: 'Bake',
-    description: `Pre-heat oven to ${bake.ovenTempC}°C${bake.bakingVessel && bake.bakingVessel !== 'baking tray' ? ` with ${bake.bakingVessel} inside` : ''}.${steamNote}${bake.notes ? ` ${bake.notes}` : ''}`,
+    description: `Pre-heat oven to ${formatTemp(bake.ovenTempC, unitSystem)}${bake.bakingVessel && bake.bakingVessel !== 'baking tray' ? ` with ${bake.bakingVessel} inside` : ''}.${steamNote}${bake.notes ? ` ${bake.notes}` : ''}`,
     time: `${bake.bakeTimeMinutes} min`,
   });
 
@@ -147,9 +148,10 @@ function buildSteps(preset: RecipePreset, fermentHours: number): Step[] {
 }
 
 export function MethodTimeline({ preset, staticFermentHours, fermentAdvice }: Props) {
+  const { unitSystem } = useAppTheme();
   if (preset.id === 'custom') return null;
 
-  const steps = buildSteps(preset, staticFermentHours);
+  const steps = buildSteps(preset, staticFermentHours, unitSystem);
 
   return (
     <View style={styles.card}>

@@ -5,9 +5,10 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { ThemeMode } from '../models/types';
+import type { ThemeMode, UnitSystem } from '../models/types';
 
 const THEME_MODE_KEY = 'sourdough_theme_mode';
+const UNIT_SYSTEM_KEY = 'sourdough_unit_system';
 
 export const LightColors = {
   // Base
@@ -104,6 +105,8 @@ interface ThemeContextValue {
   themeMode: ThemeMode;
   setThemeMode: (mode: ThemeMode) => void;
   isDark: boolean;
+  unitSystem: UnitSystem;
+  setUnitSystem: (s: UnitSystem) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
@@ -111,17 +114,25 @@ const ThemeContext = createContext<ThemeContextValue>({
   themeMode: 'system',
   setThemeMode: () => {},
   isDark: false,
+  unitSystem: 'metric',
+  setUnitSystem: () => {},
 });
 
 export function AppThemeProvider({ children }: { children: React.ReactNode }) {
   const systemScheme = useColorScheme();
   const [themeMode, setThemeModeState] = useState<ThemeMode>('system');
+  const [unitSystem, setUnitSystemState] = useState<UnitSystem>('metric');
 
-  // Load persisted theme preference
+  // Load persisted preferences
   useEffect(() => {
     AsyncStorage.getItem(THEME_MODE_KEY).then((stored) => {
       if (stored === 'light' || stored === 'dark' || stored === 'system') {
         setThemeModeState(stored);
+      }
+    });
+    AsyncStorage.getItem(UNIT_SYSTEM_KEY).then((stored) => {
+      if (stored === 'metric' || stored === 'imperial') {
+        setUnitSystemState(stored);
       }
     });
   }, []);
@@ -131,12 +142,17 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.setItem(THEME_MODE_KEY, mode);
   }, []);
 
+  const setUnitSystem = useCallback((s: UnitSystem) => {
+    setUnitSystemState(s);
+    AsyncStorage.setItem(UNIT_SYSTEM_KEY, s);
+  }, []);
+
   const isDark = themeMode === 'system' ? systemScheme === 'dark' : themeMode === 'dark';
   const colors = isDark ? DarkColors : LightColors;
 
   return React.createElement(
     ThemeContext.Provider,
-    { value: { colors, themeMode, setThemeMode, isDark } },
+    { value: { colors, themeMode, setThemeMode, isDark, unitSystem, setUnitSystem } },
     children,
   );
 }

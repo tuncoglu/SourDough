@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Spacing, FontSize, BorderRadius, MaxWidth, useAppTheme } from '../../src/theme';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
-import { UserSettings, DEFAULT_SETTINGS, ThemeMode } from '../../src/models/types';
+import { UserSettings, DEFAULT_SETTINGS, ThemeMode, UnitSystem } from '../../src/models/types';
 import { getSettings, updateSettings } from '../../src/store/settingsCache';
 import { NumberInput } from '../../src/components/NumberInput';
 import { FlourPicker } from '../../src/components/FlourPicker';
@@ -26,7 +26,7 @@ export default function SettingsScreen() {
   const [flourLabel, setFlourLabel] = useState(DEFAULT_SETTINGS.defaultFlourType);
   const [loading, setLoading] = useState(true);
   const { isDesktop } = useBreakpoint();
-  const { colors, themeMode, setThemeMode } = useAppTheme();
+  const { colors, themeMode, setThemeMode, unitSystem, setUnitSystem } = useAppTheme();
 
   useEffect(() => {
     getSettings().then((s) => {
@@ -143,6 +143,8 @@ export default function SettingsScreen() {
       {/* Theme */}
       <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Text style={styles.cardTitle}>APPEARANCE</Text>
+
+        <Text style={styles.sectionLabel}>Theme</Text>
         <View style={styles.themeRow}>
           {THEME_OPTIONS.map((opt) => (
             <TouchableOpacity
@@ -164,6 +166,33 @@ export default function SettingsScreen() {
                 ]}
               >
                 {opt.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <Text style={[styles.sectionLabel, { marginTop: Spacing.md }]}>Units</Text>
+        <View style={styles.themeRow}>
+          {(['metric', 'imperial'] as UnitSystem[]).map((opt) => (
+            <TouchableOpacity
+              key={opt}
+              style={[
+                styles.themeChip,
+                {
+                  backgroundColor: unitSystem === opt ? colors.terracotta : colors.white,
+                  borderColor: unitSystem === opt ? colors.terracotta : colors.border,
+                },
+              ]}
+              onPress={() => setUnitSystem(opt)}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.themeChipText,
+                  { color: unitSystem === opt ? '#FFFFFF' : colors.espresso },
+                ]}
+              >
+                {opt === 'metric' ? '📏  Metric (g, °C)' : '📐  Imperial (oz, °F)'}
               </Text>
             </TouchableOpacity>
           ))}
@@ -325,5 +354,11 @@ const styles = StyleSheet.create({
   themeChipText: {
     fontSize: FontSize.sm,
     fontWeight: '600',
+  },
+  sectionLabel: {
+    fontSize: FontSize.xs,
+    color: Colors.muted,
+    fontWeight: '600',
+    marginBottom: Spacing.sm,
   },
 });

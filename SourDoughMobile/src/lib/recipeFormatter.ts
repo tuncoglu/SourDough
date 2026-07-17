@@ -2,10 +2,11 @@
  * Shared plain-text recipe formatting.
  * Used by both the calculator screen (before save) and the recipe detail screen (after save).
  */
-import { SavedRecipe, IngredientResults, FlourBlendEntry, CalculationResults, FlourCategory } from '../models/types';
+import { SavedRecipe, IngredientResults, FlourBlendEntry, CalculationResults, FlourCategory, UnitSystem } from '../models/types';
+import { formatWeight, formatWeightValue, formatTemp, weightUnit } from './unitConversion';
 
 /** Format a saved recipe as plain text for sharing. */
-export function formatRecipeText(recipe: SavedRecipe): string {
+export function formatRecipeText(recipe: SavedRecipe, unitSystem: UnitSystem = 'metric'): string {
   const { inputs, results, locationSummary } = recipe;
   const lines = buildSharedLines(
     locationSummary,
@@ -20,6 +21,7 @@ export function formatRecipeText(recipe: SavedRecipe): string {
     inputs.oilPct,
     inputs.preferment,
     results,
+    unitSystem,
   );
   return lines.join('\n');
 }
@@ -38,6 +40,7 @@ export function formatRecipeTextFromState(
   prefermentFlourPct: number | undefined,
   results: CalculationResults,
   bakeInfo?: string,
+  unitSystem: UnitSystem = 'metric',
 ): string {
   const lines = buildSharedLines(
     locationSummary,
@@ -52,6 +55,7 @@ export function formatRecipeTextFromState(
       ? { type: 'poolish' as const, flourPct: prefermentFlourPct, hydration: 100 }
       : undefined,
     results,
+    unitSystem,
   );
 
   if (bakeInfo) {
@@ -74,7 +78,9 @@ function buildSharedLines(
   oilPct: number | undefined,
   preferment: { type: 'poolish' | 'biga'; flourPct: number; hydration: number } | undefined,
   results: CalculationResults,
+  unitSystem: UnitSystem,
 ): string[] {
+  const wu = weightUnit(unitSystem);
   const lines: string[] = [
     '🥖 Just Dough It Recipe — SourDough',
     '',
@@ -88,14 +94,14 @@ function buildSharedLines(
     for (const entry of blend) {
       const grams = totalFlourWeight * entry.percentage / 100;
       const shortName = entry.label.replace(/\s*\([^)]*\)$/, '');
-      lines.push(`  ${shortName}: ${grams.toFixed(0)}g (${Math.round(entry.percentage)}%)`);
+      lines.push(`  ${shortName}: ${formatWeightValue(grams, unitSystem, 0)}${wu} (${Math.round(entry.percentage)}%)`);
     }
   } else if (blend && blend.length === 1) {
-    lines.push(`  Flour: ${totalFlourWeight.toFixed(0)}g ${blend[0].label.replace(/\s*\([^)]*\)$/, '')}`);
+    lines.push(`  Flour: ${formatWeightValue(totalFlourWeight, unitSystem, 0)}${wu} ${blend[0].label.replace(/\s*\([^)]*\)$/, '')}`);
   }
 
   lines.push(`  Hydration: ${hydrationPct.toFixed(0)}%`);
-  lines.push(`  Starter: ${starterWeightG.toFixed(0)}g (${starterHydrationPct.toFixed(0)}% hydration)`);
+  lines.push(`  Starter: ${formatWeightValue(starterWeightG, unitSystem, 0)}${wu} (${starterHydrationPct.toFixed(0)}% hydration)`);
   lines.push(`  Salt: ${saltPct.toFixed(1)}%`);
   if (oilPct && oilPct > 0) {
     lines.push(`  Oil/Fat: ${oilPct.toFixed(1)}%`);
@@ -106,18 +112,18 @@ function buildSharedLines(
 
   lines.push('');
   lines.push('⚖️  Weights');
-  lines.push(`  Water: ${results.ingredients.addedWater.toFixed(1)}g`);
-  lines.push(`  Starter: ${results.ingredients.starterTotal.toFixed(1)}g`);
+  lines.push(`  Water: ${formatWeightValue(results.ingredients.addedWater, unitSystem)}${wu}`);
+  lines.push(`  Starter: ${formatWeightValue(results.ingredients.starterTotal, unitSystem)}${wu}`);
   if (results.ingredients.oil > 0) {
-    lines.push(`  Oil: ${results.ingredients.oil.toFixed(1)}g`);
+    lines.push(`  Oil: ${formatWeightValue(results.ingredients.oil, unitSystem)}${wu}`);
   }
-  lines.push(`  Salt: ${results.ingredients.salt.toFixed(1)}g`);
-  lines.push(`  Total dough: ${results.ingredients.totalDoughWeight.toFixed(1)}g`);
+  lines.push(`  Salt: ${formatWeightValue(results.ingredients.salt, unitSystem)}${wu}`);
+  lines.push(`  Total dough: ${formatWeightValue(results.ingredients.totalDoughWeight, unitSystem)}${wu}`);
 
   lines.push('');
   lines.push('🌡  Temperatures');
-  lines.push(`  FDT: ${results.fdt.toFixed(1)}°C (${results.tempZone})`);
-  lines.push(`  Ambient: ${results.fdt.toFixed(1)}°C`); // note: fdt is used as proxy — see note below
+  lines.push(`  FDT: ${formatTemp(results.fdt, unitSystem)} (${results.tempZone})`);
+  lines.push(`  Ambient: ${formatTemp(results.fdt, unitSystem)}`); // note: fdt is used as proxy — see note below
   // FIXME: ambient/water temp aren't in CalculationResults — they're in RecipeInputs.
   // For the state-based formatter, the caller should pass these explicitly.
   // For now, we use what we have.
