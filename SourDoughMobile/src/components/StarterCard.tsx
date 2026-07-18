@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   summary: { fontSize: FontSize.sm, color: Colors.espresso, fontWeight: '500' },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: 2 },
   statusHint: { fontSize: FontSize.xs, color: Colors.muted, fontWeight: '500' },
-  effectiveNote: { fontSize: 10, color: Colors.lightText, fontStyle: 'italic' },
+  effectiveNote: { fontSize: FontSize.xs, color: Colors.lightText, fontStyle: 'italic' },
   chevron: { fontSize: FontSize.xs, color: Colors.muted },
   expanded: {
     marginTop: Spacing.md, paddingTop: Spacing.md, paddingHorizontal: Spacing.md,
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   fridgeOutBtnText: { color: Colors.warm, fontSize: FontSize.sm, fontWeight: '700' },
   fridgeHint: { fontSize: FontSize.xs, color: Colors.muted, fontStyle: 'italic' },
   warmupHint: {
-    fontSize: FontSize.xs, color: '#C07820', fontWeight: '500',
+    fontSize: FontSize.xs, color: '#A8681A', fontWeight: '500',
     backgroundColor: '#FFF8F0', borderRadius: BorderRadius.sm,
     paddingHorizontal: Spacing.sm, paddingVertical: Spacing.xs,
   },

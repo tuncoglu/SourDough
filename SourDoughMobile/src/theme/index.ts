@@ -16,30 +16,30 @@ export const LightColors = {
   white: '#FFFFFF',
   card: '#FFFCF7',
 
-  // Text — WCAG AA 4.5:1+ on cream/card backgrounds
-  espresso: '#3E2723',
-  muted: '#6B5F59',
-  lightText: '#71665E',
+  // Text — well above WCAG AA 4.5:1 for readability at small sizes
+  espresso: '#2D1B17',
+  muted: '#5A4A44',
+  lightText: '#5F524A',
 
-  // Accent — 4.5:1+ on cream/card
-  terracotta: '#A55A30',
-  terracottaDark: '#8E4820',
-  olive: '#557536',
-  oliveLight: '#6A8F4A',
+  // Accent — ≥5:1 on cream/card
+  terracotta: '#954D28',
+  terracottaDark: '#7D3E1A',
+  olive: '#4A672F',
+  oliveLight: '#5E7D3F',
 
   // Semantic — ≥3:1 for large/bold labels
-  cold: '#3D7DC9',
-  cool: '#5A94B3',
-  ideal: '#557536',
-  warm: '#C07820',
-  hot: '#B33D2E',
+  cold: '#356EAD',
+  cool: '#4E829E',
+  ideal: '#4A672F',
+  warm: '#A8681A',
+  hot: '#9E3528',
 
   // Misc
-  border: '#D4C6BA',
-  disabled: '#8C8278',
+  border: '#CFC0B4',
+  disabled: '#82776E',
   disabledBg: '#F0EBE5',
-  error: '#B33D2E',
-  success: '#557536',
+  error: '#9E3528',
+  success: '#4A672F',
 } as const;
 
 export const DarkColors = {
@@ -171,13 +171,13 @@ export const Spacing = {
 } as const;
 
 export const FontSize = {
-  xs: 11,
-  sm: 13,
-  md: 15,
-  lg: 17,
-  xl: 20,
-  xxl: 24,
-  title: 28,
+  xs: 12,
+  sm: 14,
+  md: 16,
+  lg: 18,
+  xl: 21,
+  xxl: 25,
+  title: 29,
 } as const;
 
 export const BorderRadius = {

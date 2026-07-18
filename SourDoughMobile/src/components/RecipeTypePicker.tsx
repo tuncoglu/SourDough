@@ -313,7 +313,7 @@ const desktopStyles = StyleSheet.create({
     fontWeight: '500',
   },
   difficultyBadge: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '700',
     color: Colors.olive,
     backgroundColor: '#EDF2E5',

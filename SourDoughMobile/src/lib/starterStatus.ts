@@ -101,8 +101,8 @@ function getZone(effectiveHours: number, isInFridge: boolean, hoursSinceFridgeOu
 const ZONE_INFO: Record<Zone, { emoji: string; label: string; color?: string }> = {
   'just-fed': { emoji: '🌱', label: 'Just fed — building strength' },
   'building': { emoji: '🌤️', label: 'Warming up from fridge — nearly ready' },
-  'peak': { emoji: '🟢', label: 'At peak activity — great time to bake!', color: '#557536' },
+  'peak': { emoji: '🟢', label: 'At peak activity — great time to bake!', color: '#4A672F' },
   'past-peak': { emoji: '🟡', label: 'Still active but past peak' },
-  'hungry': { emoji: '🔴', label: 'Hungry — time to feed!', color: '#B33D2E' },
-  'dormant': { emoji: '❄️', label: 'Dormant in fridge — preserved', color: '#3D7DC9' },
+  'hungry': { emoji: '🔴', label: 'Hungry — time to feed!', color: '#9E3528' },
+  'dormant': { emoji: '❄️', label: 'Dormant in fridge — preserved', color: '#356EAD' },
 };

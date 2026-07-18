@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
   fallbackText: {
     flex: 1,
     fontSize: FontSize.xs,
-    color: '#8E4820',
+    color: '#7D3E1A',
     lineHeight: 18,
     fontWeight: '500',
   },

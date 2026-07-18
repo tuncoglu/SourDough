@@ -220,11 +220,11 @@ export function getTempZone(fdt: number): TempZone {
 
 export function getTempZoneInfo(zone: TempZone): { icon: string; label: string; color: string } {
   switch (zone) {
-    case 'cold': return { icon: '❄️', label: 'cold — slow ferment', color: '#3D7DC9' };
-    case 'cool': return { icon: '🌤️', label: 'cool — good flavour', color: '#5A94B3' };
-    case 'ideal': return { icon: '✅', label: 'ideal — goldilocks zone', color: '#557536' };
-    case 'warm': return { icon: '🌡️', label: 'warm — watch closely', color: '#C07820' };
-    case 'hot': return { icon: '🔥', label: 'hot — check early!', color: '#B33D2E' };
+    case 'cold': return { icon: '❄️', label: 'cold — slow ferment', color: '#356EAD' };
+    case 'cool': return { icon: '🌤️', label: 'cool — good flavour', color: '#4E829E' };
+    case 'ideal': return { icon: '✅', label: 'ideal — goldilocks zone', color: '#4A672F' };
+    case 'warm': return { icon: '🌡️', label: 'warm — watch closely', color: '#A8681A' };
+    case 'hot': return { icon: '🔥', label: 'hot — check early!', color: '#9E3528' };
   }
 }
 

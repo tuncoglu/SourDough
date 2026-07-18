@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
   blendBar: { flexDirection: 'row', height: 24, borderRadius: BorderRadius.sm, overflow: 'hidden', marginBottom: Spacing.xs },
   blendSegment: { minWidth: 4, alignItems: 'center', justifyContent: 'center' },
   blendSegmentText: {
-    fontSize: 9, fontWeight: '700', color: Colors.white,
+    fontSize: 10, fontWeight: '700', color: Colors.white,
     textShadowColor: 'rgba(0,0,0,0.3)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 1,
   },
   blendLegend: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },

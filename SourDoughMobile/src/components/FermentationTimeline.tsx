@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   barLabel: {
-    fontSize: 9,
+    fontSize: FontSize.xs,
     color: Colors.espresso,
     fontWeight: '600',
     marginLeft: 4,
