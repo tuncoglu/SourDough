@@ -324,7 +324,7 @@ const desktopStyles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   difficultyMedium: {
-    color: '#B8860B',
+    color: '#8A6510',
     backgroundColor: '#FFF8E7',
   },
   difficultyAdvanced: {

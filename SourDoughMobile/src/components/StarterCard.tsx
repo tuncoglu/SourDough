@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, alignItems: 'center',
     borderWidth: 1, borderColor: '#B8D4F0',
   },
-  fridgeInBtnText: { color: '#4A90D9', fontSize: FontSize.sm, fontWeight: '700' },
+  fridgeInBtnText: { color: Colors.cold, fontSize: FontSize.sm, fontWeight: '700' },
   fridgeOutBtn: {
     backgroundColor: '#FDF3E8', borderRadius: BorderRadius.sm,
     paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, alignItems: 'center',
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
   fridgeOutBtnText: { color: Colors.warm, fontSize: FontSize.sm, fontWeight: '700' },
   fridgeHint: { fontSize: FontSize.xs, color: Colors.muted, fontStyle: 'italic' },
   warmupHint: {
-    fontSize: FontSize.xs, color: '#E8A040', fontWeight: '500',
+    fontSize: FontSize.xs, color: '#C07820', fontWeight: '500',
     backgroundColor: '#FFF8F0', borderRadius: BorderRadius.sm,
     paddingHorizontal: Spacing.sm, paddingVertical: Spacing.xs,
   },

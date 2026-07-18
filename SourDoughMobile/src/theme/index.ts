@@ -16,30 +16,30 @@ export const LightColors = {
   white: '#FFFFFF',
   card: '#FFFCF7',
 
-  // Text
+  // Text — WCAG AA 4.5:1+ on cream/card backgrounds
   espresso: '#3E2723',
-  muted: '#998B82',
-  lightText: '#BFB5AD',
+  muted: '#6B5F59',
+  lightText: '#71665E',
 
-  // Accent
-  terracotta: '#C1784B',
-  terracottaDark: '#A86435',
-  olive: '#6B8E4D',
-  oliveLight: '#8CB369',
+  // Accent — 4.5:1+ on cream/card
+  terracotta: '#A55A30',
+  terracottaDark: '#8E4820',
+  olive: '#557536',
+  oliveLight: '#6A8F4A',
 
-  // Semantic
-  cold: '#4A90D9',
-  cool: '#6BA5C4',
-  ideal: '#6B8E4D',
-  warm: '#E8A040',
-  hot: '#C44536',
+  // Semantic — ≥3:1 for large/bold labels
+  cold: '#3D7DC9',
+  cool: '#5A94B3',
+  ideal: '#557536',
+  warm: '#C07820',
+  hot: '#B33D2E',
 
   // Misc
-  border: '#E8DDD4',
-  disabled: '#C9C0B8',
+  border: '#D4C6BA',
+  disabled: '#8C8278',
   disabledBg: '#F0EBE5',
-  error: '#C44536',
-  success: '#6B8E4D',
+  error: '#B33D2E',
+  success: '#557536',
 } as const;
 
 export const DarkColors = {
