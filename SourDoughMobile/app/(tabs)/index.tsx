@@ -501,7 +501,7 @@ export default function CalculatorScreen() {
         <>
           <Text style={[layoutStyles.header, { color: colors.espresso }]}>🥖  Just Dough It</Text>
           <Text style={[layoutStyles.tagline, { color: colors.muted }]}>
-            A sourdough calculator for beginners and pros. Tell us your flour, water, and kitchen temperature — we'll figure out the exact ingredients, predict how long your dough needs, and guide you through every step from mixing to fresh-baked bread.
+            A sourdough calculator for beginners and pros. Tell us your flour — we'll grab your local weather for ambient temp, auto-detect water temp, figure out the exact ingredients, predict how long your dough needs, and guide you through every step from mixing to fresh-baked bread.
           </Text>
         </>
       )}
@@ -530,7 +530,7 @@ export default function CalculatorScreen() {
             <>
               <Text style={[layoutStyles.header, { color: colors.espresso }]}>🥖  Just Dough It</Text>
               <Text style={[layoutStyles.tagline, { color: colors.muted }]}>
-                A sourdough calculator for beginners and pros. Tell us your flour, water, and kitchen temperature — we'll figure out the exact ingredients, predict how long your dough needs, and guide you through every step from mixing to fresh-baked bread.
+                A sourdough calculator for beginners and pros. Tell us your flour — we'll grab your local weather for ambient temp, auto-detect water temp, figure out the exact ingredients, predict how long your dough needs, and guide you through every step from mixing to fresh-baked bread.
               </Text>
             </>
           )}
