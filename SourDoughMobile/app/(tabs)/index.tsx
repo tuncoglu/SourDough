@@ -497,7 +497,14 @@ export default function CalculatorScreen() {
   // ═══════════════════════════════════════════════════════════════════════
   return (
     <SafeAreaView style={[layoutStyles.container, { backgroundColor: colors.cream }]} edges={['top']}>
-      {isDesktop && <Text style={[layoutStyles.header, { color: colors.espresso }]}>🥖  Just Dough It</Text>}
+      {isDesktop && (
+        <>
+          <Text style={[layoutStyles.header, { color: colors.espresso }]}>🥖  Just Dough It</Text>
+          <Text style={[layoutStyles.tagline, { color: colors.muted }]}>
+            A sourdough calculator for beginners and pros. Tell us your flour, water, and kitchen temperature — we'll figure out the exact ingredients, predict how long your dough needs, and guide you through every step from mixing to fresh-baked bread.
+          </Text>
+        </>
+      )}
 
       {isDesktop && (
         <LocationBar
@@ -519,7 +526,14 @@ export default function CalculatorScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {!isDesktop && <Text style={[layoutStyles.header, { color: colors.espresso }]}>🥖  Just Dough It</Text>}
+          {!isDesktop && (
+            <>
+              <Text style={[layoutStyles.header, { color: colors.espresso }]}>🥖  Just Dough It</Text>
+              <Text style={[layoutStyles.tagline, { color: colors.muted }]}>
+                A sourdough calculator for beginners and pros. Tell us your flour, water, and kitchen temperature — we'll figure out the exact ingredients, predict how long your dough needs, and guide you through every step from mixing to fresh-baked bread.
+              </Text>
+            </>
+          )}
 
           {!isDesktop && (
             <LocationBar
@@ -576,7 +590,8 @@ const layoutStyles = StyleSheet.create({
   mobileCol: { flex: 1 },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md },
-  header: { fontSize: FontSize.xl, fontWeight: '800', textAlign: 'center', marginBottom: Spacing.md, marginTop: Spacing.md },
+  header: { fontSize: FontSize.xl, fontWeight: '800', textAlign: 'center', marginBottom: Spacing.xs, marginTop: Spacing.md },
+  tagline: { fontSize: FontSize.sm, textAlign: 'center', marginBottom: Spacing.md, paddingHorizontal: Spacing.lg, lineHeight: 20 },
   emptyResult: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 120, paddingHorizontal: Spacing.xl },
   emptyResultIcon: { fontSize: 40, marginBottom: Spacing.sm, textAlign: 'center' },
   emptyResultText: { fontSize: FontSize.md, color: Colors.muted, textAlign: 'center', lineHeight: 22 },
