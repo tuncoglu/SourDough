@@ -551,13 +551,6 @@ export default function CalculatorScreen() {
 
           {!isDesktop && resultsPanel}
 
-          {!calc.results && !isDesktop && (
-            <View style={layoutStyles.emptyResult}>
-              <Text style={layoutStyles.emptyResultIcon}>🥖</Text>
-              <Text style={layoutStyles.emptyResultText}>Enter your ingredients and tap Calculate to see your recipe</Text>
-            </View>
-          )}
-
           {!isDesktop && <View style={layoutStyles.bottomPad} />}
         </ScrollView>
 
@@ -568,12 +561,7 @@ export default function CalculatorScreen() {
             contentContainerStyle={desktopStyles.rightContent}
             showsVerticalScrollIndicator={false}
           >
-            {resultsPanel || (
-              <View style={layoutStyles.emptyResult}>
-                <Text style={layoutStyles.emptyResultIcon}>🥖</Text>
-                <Text style={layoutStyles.emptyResultText}>Enter your ingredients and tap Calculate to see your recipe</Text>
-              </View>
-            )}
+            {resultsPanel}
           </ScrollView>
         )}
       </View>
@@ -592,9 +580,6 @@ const layoutStyles = StyleSheet.create({
   scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md },
   header: { fontSize: FontSize.xl, fontWeight: '800', textAlign: 'center', marginBottom: Spacing.xs, marginTop: Spacing.md },
   tagline: { fontSize: FontSize.sm, textAlign: 'center', marginBottom: Spacing.md, paddingHorizontal: Spacing.lg, lineHeight: 20 },
-  emptyResult: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 120, paddingHorizontal: Spacing.xl },
-  emptyResultIcon: { fontSize: 40, marginBottom: Spacing.sm, textAlign: 'center' },
-  emptyResultText: { fontSize: FontSize.md, color: Colors.muted, textAlign: 'center', lineHeight: 22 },
   bottomPad: { height: 40 },
 });
 
