@@ -97,6 +97,7 @@ export function ResultsSection({
         staticHours={results.staticFermentHours}
         staticNote={results.staticFermentNote}
         fdt={results.fdt}
+        preset={selectedPreset}
       />
 
       {readyByResult && (

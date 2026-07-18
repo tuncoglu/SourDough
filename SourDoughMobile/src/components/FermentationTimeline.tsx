@@ -2,13 +2,16 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Colors, Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
 import { formatTempValue, formatTemp } from '../lib/unitConversion';
-import { DynamicFermentation } from '../models/types';
+import { DynamicFermentation, RecipePreset } from '../models/types';
+import { PROOF_FRACTION } from '../lib/calculations';
 
 interface Props {
   dynamic?: DynamicFermentation | null;
   staticHours: number;
   staticNote: string;
   fdt: number;
+  /** If a recipe preset is selected, compute full process end time (not just ferment) */
+  preset?: RecipePreset | null;
 }
 
 /** Format a Date to a friendly time string like "2:30 PM" */
@@ -16,15 +19,42 @@ function formatClockTime(date: Date): string {
   return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
+/**
+ * Compute the full process time from NOW until bread is out of the oven.
+ * Includes: autolyse (before bulk), bulk ferment, bench rest, shaping,
+ * proof, scoring, and bake.
+ *
+ * Folds happen during bulk fermentation so they don't add extra time.
+ */
+function fullProcessHours(fermentHours: number, preset: RecipePreset | null | undefined): number {
+  if (!preset || preset.id === 'custom') return fermentHours;
+  const { process, bake } = preset;
+  const proofHours = fermentHours * PROOF_FRACTION;
+  return (
+    process.autolyseMinutes / 60 +
+    fermentHours +
+    process.benchRestMinutes / 60 +
+    5 / 60 +  // shaping
+    proofHours +
+    1 / 60 +  // scoring
+    bake.bakeTimeMinutes / 60
+  );
+}
+
 export function FermentationTimeline({
   dynamic,
   staticHours,
   staticNote,
   fdt,
+  preset,
 }: Props) {
   const { unitSystem } = useAppTheme();
   const now = new Date();
-  const readyTime = new Date(now.getTime() + (dynamic?.totalHours ?? staticHours) * 3600000);
+  const fermentHours = dynamic?.totalHours ?? staticHours;
+  const proofHours = fermentHours * PROOF_FRACTION;
+  const totalProcessHours = fullProcessHours(fermentHours, preset);
+
+  const readyTime = new Date(now.getTime() + totalProcessHours * 3600000);
 
   return (
     <View style={styles.card}>
@@ -41,6 +71,11 @@ export function FermentationTimeline({
                 Ready ≈ <Text style={styles.readyTime}>{formatClockTime(readyTime)}</Text>
               </Text>
             </View>
+            {preset && preset.id !== 'custom' && (
+              <Text style={styles.breakdown}>
+                Full process ~{totalProcessHours.toFixed(1)}h: autolyse {preset.process.autolyseMinutes}min + bulk ~{fermentHours.toFixed(1)}h + proof ~{proofHours.toFixed(1)}h + bench/shape/bake
+              </Text>
+            )}
             <Text style={styles.meta}>
               Avg ambient: {formatTemp(dynamic.avgAmbient, unitSystem)} · Peak rate: {dynamic.peakRate}× baseline
             </Text>
@@ -53,6 +88,11 @@ export function FermentationTimeline({
                 Ready ≈ <Text style={styles.readyTime}>{formatClockTime(readyTime)}</Text>
               </Text>
             </View>
+            {preset && preset.id !== 'custom' && (
+              <Text style={styles.breakdown}>
+                Full process ~{totalProcessHours.toFixed(1)}h: autolyse {preset.process.autolyseMinutes}min + bulk ~{fermentHours.toFixed(1)}h + proof ~{proofHours.toFixed(1)}h + bench/shape/bake
+              </Text>
+            )}
             <Text style={styles.meta}>{staticNote}</Text>
             <Text style={styles.noForecast}>
               ⚡ No hourly forecast — using constant-temp estimate
@@ -107,6 +147,12 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     fontWeight: '700',
     color: Colors.terracotta,
+  },
+  breakdown: {
+    fontSize: FontSize.xs,
+    color: Colors.muted,
+    marginTop: 2,
+    fontStyle: 'italic',
   },
   meta: {
     fontSize: FontSize.sm,
