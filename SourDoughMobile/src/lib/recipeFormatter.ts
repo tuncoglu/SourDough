@@ -130,9 +130,9 @@ function buildSharedLines(
 
   lines.push('');
   lines.push('⏱️  Fermentation');
-  lines.push(`  Bulk ferment: ~${results.staticFermentHours.toFixed(1)} hours`);
+  lines.push(`  Bulk ferment: ~${results.dynamicFerment?.bulkHours ?? results.staticFermentHours.toFixed(1)} hours`);
   if (results.dynamicFerment) {
-    lines.push(`  Dynamic estimate: ~${results.dynamicFerment.totalHours.toFixed(1)} hours`);
+    lines.push(`  Dynamic estimate: ~${results.dynamicFerment.totalHours.toFixed(1)}h total (bulk + proof)`);
   }
 
   if (results.hardness) {

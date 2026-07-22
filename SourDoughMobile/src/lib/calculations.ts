@@ -294,11 +294,13 @@ export function estimateDynamicFermentation(
     if (progress >= TARGET_HOURS) break;
   }
 
-  const totalHours = steps * DT;
+  const bulkHours = steps * DT;
+  const bulkRounded = Math.round(bulkHours * 2) / 2; // nearest 0.5 h
   const avgAmbient = round1(ambientSum / Math.max(ambientCount, 1));
 
   return {
-    totalHours: Math.round(totalHours * 2) / 2, // nearest 0.5 h
+    totalHours: bulkRounded, // caller adds proof if needed
+    bulkHours: bulkRounded,
     profile: profile.slice(0, 25),
     peakRate: round1(peakRate),
     avgAmbient,
@@ -493,11 +495,13 @@ export function estimateColdProof(
      }
    }
 
-   const totalHours = baseProfile.totalHours + steps * DT;
+   const coldHoursActual = steps * DT;
+   const totalHours = baseProfile.bulkHours + coldHoursActual;
    const avgAmbient = round1(ambientSum / Math.max(ambientCount, 1));
 
    return {
      totalHours: Math.round(totalHours * 2) / 2,
+     bulkHours: baseProfile.bulkHours,
      profile: profile.slice(0, 32), // allow more rows with cold phase
      peakRate: round1(peakRate),
      avgAmbient,
@@ -576,6 +580,13 @@ export function runAllCalculations(
         inputs.coldProofHours!,
         inputs.coldProofTemp ?? 4,
       );
+    } else if (dynamicFerment) {
+      // No cold proof — add warm proof time (~60% of bulk)
+      const proofHours = dynamicFerment.bulkHours * PROOF_FRACTION;
+      dynamicFerment = {
+        ...dynamicFerment,
+        totalHours: Math.round((dynamicFerment.bulkHours + proofHours) * 2) / 2,
+      };
     }
   }
 

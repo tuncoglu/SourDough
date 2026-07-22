@@ -27,9 +27,9 @@ function formatClockTime(date: Date): string {
  * Folds happen during bulk fermentation so they don't add extra time.
  */
 function fullProcessHours(fermentHours: number, preset: RecipePreset | null | undefined): number {
-  if (!preset || preset.id === 'custom') return fermentHours;
-  const { process, bake } = preset;
   const proofHours = fermentHours * PROOF_FRACTION;
+  if (!preset || preset.id === 'custom') return fermentHours + proofHours;
+  const { process, bake } = preset;
   return (
     process.autolyseMinutes / 60 +
     fermentHours +
@@ -50,7 +50,8 @@ export function FermentationTimeline({
 }: Props) {
   const { unitSystem } = useAppTheme();
   const now = new Date();
-  const fermentHours = dynamic?.totalHours ?? staticHours;
+  const fermentHours = dynamic?.bulkHours ?? staticHours;
+  const totalFermentHours = dynamic?.totalHours ?? staticHours;
   const proofHours = fermentHours * PROOF_FRACTION;
   const totalProcessHours = fullProcessHours(fermentHours, preset);
 
@@ -65,12 +66,15 @@ export function FermentationTimeline({
           <>
             <View style={styles.hoursRow}>
               <Text style={styles.hours}>
-                ~{dynamic.totalHours.toFixed(1)} hours
+                ~{totalFermentHours.toFixed(1)}h total
               </Text>
               <Text style={styles.readyLabel}>
                 Ready ≈ <Text style={styles.readyTime}>{formatClockTime(readyTime)}</Text>
               </Text>
             </View>
+            <Text style={styles.breakdown}>
+              Bulk ~{fermentHours.toFixed(1)}h + proof ~{proofHours.toFixed(1)}h
+            </Text>
             {preset && preset.id !== 'custom' && (
               <Text style={styles.breakdown}>
                 Full process ~{totalProcessHours.toFixed(1)}h: autolyse {preset.process.autolyseMinutes}min + bulk ~{fermentHours.toFixed(1)}h + proof ~{proofHours.toFixed(1)}h + bench/shape/bake
@@ -83,11 +87,14 @@ export function FermentationTimeline({
         ) : (
           <>
             <View style={styles.hoursRow}>
-              <Text style={styles.hours}>~{staticHours.toFixed(1)} hours</Text>
+              <Text style={styles.hours}>~{staticHours.toFixed(1)}h bulk</Text>
               <Text style={styles.readyLabel}>
                 Ready ≈ <Text style={styles.readyTime}>{formatClockTime(readyTime)}</Text>
               </Text>
             </View>
+            <Text style={styles.breakdown}>
+              Bulk ~{fermentHours.toFixed(1)}h + proof ~{proofHours.toFixed(1)}h
+            </Text>
             {preset && preset.id !== 'custom' && (
               <Text style={styles.breakdown}>
                 Full process ~{totalProcessHours.toFixed(1)}h: autolyse {preset.process.autolyseMinutes}min + bulk ~{fermentHours.toFixed(1)}h + proof ~{proofHours.toFixed(1)}h + bench/shape/bake

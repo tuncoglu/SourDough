@@ -189,7 +189,7 @@ export default function CalculatorScreen() {
     const m = parseInt(readyByMinute, 10);
     if (isNaN(h) || isNaN(m)) return null;
 
-    const fermentHours = calc.results.dynamicFerment?.totalHours ?? calc.results.staticFermentHours;
+    const fermentHours = calc.results.dynamicFerment?.bulkHours ?? calc.results.staticFermentHours;
     let totalMinutes = fermentHours * 60;
 
     // Pre-ferment lead time (poolish ~12h, biga ~16h)

@@ -4,14 +4,16 @@ Based on the architecture review of 25 findings. Organized in 6 phases by
 dependency order: each phase can be worked on in parallel within itself,
 but later phases build on earlier ones.
 
+> ✅ = Done &nbsp;&nbsp; 🔧 = In Progress &nbsp;&nbsp; ⬜ = Not Started
+
 ---
 
-## Phase 0 — Clean Slate (Foundation)
+## Phase 0 — Clean Slate (Foundation) ✅
 
 These are standalone cleanups with no dependencies. Do first to clear the
 deck for heavier refactoring.
 
-### #2 · Brand Reconciliation
+### ✅ #2 · Brand Reconciliation
 **Problem:** Repo = "SourDough", app UI = "Just Dough It", UA = `JustDoughIt/3.0`.
 
 **Plan:**
@@ -27,7 +29,7 @@ deck for heavier refactoring.
 
 ---
 
-### #4 · Remove Dead Boilerplate
+### ✅ #4 · Remove Dead Boilerplate
 **Problem:** Root `components/` (Themed.tsx, StyledText.tsx, etc.) is unused
 Expo starter code. Root `recipes.txt` is stale from the retired Python CLI.
 
@@ -52,7 +54,7 @@ Expo starter code. Root `recipes.txt` is stale from the retired Python CLI.
 
 ---
 
-### #17 · Simplify Web Share Clipboard
+### ✅ #17 · Simplify Web Share Clipboard
 **Problem:** Triple-fallback on web (navigator.share → clipboard API →
 document.execCommand). The middle fallback handles 99% of cases.
 
@@ -67,7 +69,7 @@ document.execCommand). The middle fallback handles 99% of cases.
 
 ---
 
-### #3 · Extract Duplicated `generateShareText`
+### ✅ #3 · Extract Duplicated `generateShareText`
 **Problem:** Full recipe-to-text formatter duplicated verbatim in two screens.
 
 **Plan:**
@@ -83,7 +85,7 @@ document.execCommand). The middle fallback handles 99% of cases.
 
 ---
 
-### #5 · Consolidate Blend Utilities
+### ✅ #5 · Consolidate Blend Utilities
 **Problem:** `getBlend()` in `flourSearch.ts`, `getBlendProtein()` and
 `getBlendFermentFactor()` in `calculations.ts`, `validateBlend()` in
 `flourSearch.ts`.
@@ -101,12 +103,12 @@ document.execCommand). The middle fallback handles 99% of cases.
 
 ---
 
-## Phase 1 — Code Quality Hardening
+## Phase 1 — Code Quality Hardening ✅
 
 Builds on Phase 0. Tests go first so refactoring in later phases has a
 safety net.
 
-### #6 · Add Test Suite
+### ✅ #6 · Add Test Suite
 **Problem:** Zero tests.
 
 **Plan:**
@@ -138,7 +140,7 @@ safety net.
 
 ---
 
-### #7 · Document Magic Numbers
+### ✅ #7 · Document Magic Numbers
 **Problem:** `0.6` proof multiplier, unexplained constants, unreachable branch
 in `mergeBlendWithStarter`.
 
@@ -165,7 +167,7 @@ in `mergeBlendWithStarter`.
 
 ---
 
-### #8 · Eliminate `any` and Enable Strict Mode
+### ✅ #8 · Eliminate `any` and Enable Strict Mode
 **Problem:** `catch (e: any)`, `as any` for navigation, loose types.
 
 **Plan:**
@@ -190,7 +192,7 @@ in `mergeBlendWithStarter`.
 
 ---
 
-### #9 · Input Debouncing
+### ✅ #9 · Input Debouncing
 **Problem:** Every keystroke re-renders the entire component tree.
 
 **Plan:**
@@ -207,7 +209,7 @@ in `mergeBlendWithStarter`.
 
 ---
 
-### #10 · Add Strategic Memoization
+### ✅ #10 · Add Strategic Memoization
 **Problem:** `buildBlend()` recalculates on every render, large JSX trees
 reconstruct.
 
@@ -223,11 +225,11 @@ reconstruct.
 
 ---
 
-## Phase 2 — Component Architecture
+## Phase 2 — Component Architecture ✅
 
 Builds on Phase 1. The monolith split is the biggest single change.
 
-### #1 · Split Monolith `index.tsx`
+### ✅ #1 · Split Monolith `index.tsx`
 **Problem:** 1956 lines in one component.
 
 **Plan:** Extract in order of independence:
@@ -294,12 +296,12 @@ export default function CalculatorScreen() {
 
 ---
 
-## Phase 3 — UX Fixes
+## Phase 3 — UX Fixes ✅
 
 These modify existing components and can be done in any order once Phase 2
 is complete (the extracted components make each change smaller).
 
-### #11 · Preset Selection Won't Overwrite Manual Edits
+### ✅ #11 · Preset Selection Won't Overwrite Manual Edits
 **Problem:** Choosing a preset always resets hydration, starter, salt, oil.
 
 **Plan:**
@@ -315,7 +317,7 @@ is complete (the extracted components make each change smaller).
 
 ---
 
-### #12 · Fix Oil Field Visibility
+### ✅ #12 · Fix Oil Field Visibility
 **Problem:** Oil field disappears when switching to a preset without oil,
 even if user has set a value.
 
@@ -330,7 +332,7 @@ even if user has set a value.
 
 ---
 
-### #13 · Pre-ferment Validation
+### ✅ #13 · Pre-ferment Validation
 **Problem:** `prefermentFlourPct` can exceed 100%, producing negative bowl
 flour.
 
@@ -346,7 +348,7 @@ flour.
 
 ---
 
-### #14 · Ready-By Planner Accounts for Pre-ferment
+### ✅ #14 · Ready-By Planner Accounts for Pre-ferment
 **Problem:** Schedule ignores poolish build time (8-12h).
 
 **Plan:**
@@ -364,7 +366,7 @@ flour.
 
 ---
 
-### #15 · Daily Recommendation Non-Destructive
+### ✅ #15 · Daily Recommendation Non-Destructive
 **Problem:** Once dismissed, the daily recommendation card never returns.
 
 **Plan:**
@@ -381,7 +383,7 @@ flour.
 
 ---
 
-### #16 · Show Full Fermentation Profile
+### ✅ #16 · Show Full Fermentation Profile
 **Problem:** Table truncated to 12 rows.
 
 **Plan:**
@@ -395,11 +397,11 @@ flour.
 
 ---
 
-## Phase 4 — New Features
+## Phase 4 — New Features ✅
 
 Each is self-contained. Do in order of user impact.
 
-### #18 · Cold Retard / Proof Model
+### ✅ #18 · Cold Retard / Proof Model
 **Problem:** No support for cold-proofing (4°C fridge overnight).
 
 **Plan:**
@@ -423,7 +425,7 @@ Each is self-contained. Do in order of user impact.
 
 ---
 
-### #19 · Starter ↔ Recipe Readiness Integration
+### ✅ #19 · Starter ↔ Recipe Readiness Integration
 **Problem:** Starter status and recipe calculation are separate silos.
 
 **Plan:**
@@ -444,7 +446,7 @@ Each is self-contained. Do in order of user impact.
 
 ---
 
-### #20 · Recipe History Search & Filter
+### ✅ #20 · Recipe History Search & Filter
 **Problem:** Flat scroll, no search.
 
 **Plan:**
@@ -459,7 +461,7 @@ Each is self-contained. Do in order of user impact.
 
 ---
 
-### #21 · Edit & Duplicate Saved Recipes
+### ✅ #21 · Edit & Duplicate Saved Recipes
 **Problem:** View-only or delete from history.
 
 **Plan:**
@@ -477,7 +479,7 @@ Each is self-contained. Do in order of user impact.
 
 ---
 
-### #22 · Metric / Imperial Toggle
+### ✅ #22 · Metric / Imperial Toggle
 **Problem:** Everything metric.
 
 **Plan:**
@@ -503,9 +505,9 @@ separate `UnitSystemProvider`), all display components
 
 ---
 
-## Phase 5 — Performance & Robustness
+## Phase 5 — Performance & Robustness ✅
 
-### #23 · API Retry Logic
+### ✅ #23 · API Retry Logic
 **Problem:** Single attempt, no retry.
 
 **Plan:**
@@ -522,7 +524,7 @@ new `src/lib/rateLimiter.ts`
 
 ---
 
-### #24 · Settings Cache
+### ✅ #24 · Settings Cache
 **Problem:** AsyncStorage re-read on every tab focus.
 
 **Plan:**
@@ -553,7 +555,7 @@ new `src/lib/rateLimiter.ts`
 
 ---
 
-### #25 · Error Boundary & Crash Reporting
+### ✅ #25 · Error Boundary & Crash Reporting
 **Problem:** No error boundary UI, no crash reporting.
 
 **Plan:**
@@ -579,45 +581,68 @@ new `src/lib/rateLimiter.ts`
 ## Implementation Order Summary
 
 ```
-Phase 0 (Clean Slate) ── 1-2 days
-  #4 Remove dead code
-  #2 Brand reconciliation
-  #3 Extract shared formatter
-  #17 Simplify clipboard
-  #5 Consolidate blend utils
+Phase 0 (Clean Slate) ✅
+  ✅ #4 Remove dead code
+  ✅ #2 Brand reconciliation
+  ✅ #3 Extract shared formatter
+  ✅ #17 Simplify clipboard
+  ✅ #5 Consolidate blend utils
 
-Phase 1 (Code Quality) ── 2-3 days
-  #7 Document magic numbers
-  #6 Add test suite
-  #8 Eliminate any + strict mode
-  #9 Input debouncing
-  #10 Strategic memoization
+Phase 1 (Code Quality) ✅
+  ✅ #7 Document magic numbers
+  ✅ #6 Add test suite
+  ✅ #8 Eliminate any + strict mode
+  ✅ #9 Input debouncing
+  ✅ #10 Strategic memoization
 
-Phase 2 (Architecture) ── 3-4 days
-  #1 Split monolith index.tsx
+Phase 2 (Architecture) ✅
+  ✅ #1 Split monolith index.tsx
 
-Phase 3 (UX Fixes) ── 2-3 days
-  #11 Preset overwrite protection
-  #12 Oil field visibility
-  #13 Pre-ferment validation
-  #14 Ready-by pre-ferment
-  #15 Daily recommendation reset
-  #16 Full fermentation profile
+Phase 3 (UX Fixes) ✅
+  ✅ #11 Preset overwrite protection
+  ✅ #12 Oil field visibility
+  ✅ #13 Pre-ferment validation
+  ✅ #14 Ready-by pre-ferment
+  ✅ #15 Daily recommendation reset
+  ✅ #16 Full fermentation profile
 
-Phase 4 (Features) ── 4-5 days
-  #20 History search/filter
-  #21 Edit & duplicate
-  #18 Cold retard model
-  #19 Starter integration
-  #22 Metric/imperial
+Phase 4 (Features) ✅
+  ✅ #20 History search/filter
+  ✅ #21 Edit & duplicate
+  ✅ #18 Cold retard model
+  ✅ #19 Starter integration
+  ✅ #22 Metric/imperial
 
-Phase 5 (Robustness) ── 1-2 days
-  #23 API retry
-  #24 Settings cache
-  #25 Error boundary
+Phase 5 (Robustness) ✅
+  ✅ #23 API retry
+  ✅ #24 Settings cache
+  ✅ #25 Error boundary
 ```
 
-**Total estimated effort: 13-19 days** for a single developer working
-full-time. Phases 0-3 are the highest leverage — they fix structural
-issues and paper cuts that affect every session. Phases 4-5 add
-features that expand the audience and harden reliability.
+**All 25 items complete.** 🎉
+
+---
+
+## Post-Plan Fixes
+
+### #26 · Total Fermentation Time (Bulk + Proof)
+**Problem:** The dynamic fermentation model calculated only bulk fermentation
+time. The `PROOF_FRACTION` constant (0.6 = proof is ~60% of bulk) was defined
+but never applied to `totalHours`. The main display showed just bulk hours,
+missing the proof phase entirely.
+
+**Fix:**
+- Added `bulkHours` field to `DynamicFermentation` to distinguish bulk from total
+- `runAllCalculations` now adds warm proof time (`bulk * 0.6`) to `totalHours`
+  when cold proof isn't used
+- `estimateColdProof` correctly sets `totalHours = bulk + cold` and preserves
+  `bulkHours`
+- All UI labels updated: main display shows "~Xh total", breakdown shows
+  "Bulk ~Xh + proof ~Yh", recipe cards show total time
+- `fullProcessHours` now includes proof even for custom recipe presets
+- Ready-by planner uses `bulkHours` for accurate ferment breakdown
+
+**Files:** `src/models/types.ts`, `src/lib/calculations.ts`,
+`src/components/FermentationTimeline.tsx`, `src/components/ResultsSection.tsx`,
+`src/components/RecipeCard.tsx`, `src/lib/recipeFormatter.ts`,
+`app/(tabs)/index.tsx`

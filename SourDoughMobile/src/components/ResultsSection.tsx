@@ -140,7 +140,7 @@ export function ResultsSection({
       {selectedPreset && (
         <MethodTimeline
           preset={selectedPreset}
-          staticFermentHours={results.dynamicFerment?.totalHours ?? results.staticFermentHours}
+          staticFermentHours={results.dynamicFerment?.bulkHours ?? results.staticFermentHours}
           fermentAdvice={results.fermentAdvice}
         />
       )}

@@ -119,7 +119,8 @@ export interface FermentationProfilePoint {
 }
 
 export interface DynamicFermentation {
-  totalHours: number;
+  totalHours: number;  // bulk + proof (total elapsed fermentation time)
+  bulkHours: number;   // bulk fermentation only
   profile: FermentationProfilePoint[];
   peakRate: number;
   avgAmbient: number;

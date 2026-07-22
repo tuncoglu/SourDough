@@ -4,6 +4,7 @@ import { Colors, Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
 import { SavedRecipe } from '../models/types';
 import { getTempZoneInfo } from '../models/types';
 import { getBlendDisplayLabel } from '../lib/flourSearch';
+import { PROOF_FRACTION } from '../lib/calculations';
 
 interface Props {
   recipe: SavedRecipe;
@@ -14,6 +15,8 @@ export function RecipeCard({ recipe, onPress }: Props) {
   const { colors } = useAppTheme();
   const zoneInfo = getTempZoneInfo(recipe.results.tempZone);
   const date = new Date(recipe.createdAt);
+  const totalHours = recipe.results.dynamicFerment?.totalHours
+    ?? recipe.results.staticFermentHours * (1 + PROOF_FRACTION);
 
   return (
     <TouchableOpacity
@@ -42,7 +45,7 @@ export function RecipeCard({ recipe, onPress }: Props) {
         <Text style={[styles.meta, { color: colors.muted }]}>
           {recipe.inputs.hydration.toFixed(0)}% hydration ·{' '}
           {recipe.results.ingredients.totalDoughWeight.toFixed(0)}g ·{' '}
-          ~{recipe.results.dynamicFerment?.totalHours ?? recipe.results.staticFermentHours}h ferment
+          ~{totalHours.toFixed(1)}h total
         </Text>
       </View>
     </TouchableOpacity>
