@@ -62,7 +62,7 @@ export default function TabLayout() {
             <Tabs.Screen
               name="ferments"
               options={{
-                title: 'Lacto',
+                title: 'Lacto-ferment',
                 tabBarIcon: () => <TabEmoji emoji={TAB_ICONS.ferments} />,
               }}
             />
