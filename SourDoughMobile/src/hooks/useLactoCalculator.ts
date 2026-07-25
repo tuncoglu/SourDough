@@ -1,8 +1,15 @@
-import { useState, useMemo, useCallback } from 'react';
-import { FermentType, FermentMethod, SaltCrystal, FermentInputs, FermentResults, LactoDayPoint } from '../models/types';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { FermentType, FermentMethod, SaltCrystal, FermentInputs, FermentResults, LactoDayPoint, WaterHardness } from '../models/types';
 import { FERMENT_PRESETS } from '../data/fermentPresets';
 import { VEGETABLES, findVeg, VegEntry } from '../data/vegetables';
-import { runLactoCalculations, buildLactoTimeline, lactoAdvice, estimateFermentDuration } from '../lib/lactoCalculations';
+import {
+  runLactoCalculations,
+  buildLactoTimeline,
+  lactoAdvice,
+  estimateFermentDuration,
+  waterHardnessFermentAdvice,
+} from '../lib/lactoCalculations';
+import { useLocation } from './useLocation';
 
 /** Which vegetable each preset defaults to. */
 const PRESET_DEFAULT_VEG: Record<string, string> = {
@@ -27,16 +34,26 @@ export interface LactoCalculatorState {
   saltPct: string;
   saltType: SaltCrystal;
   ambientTemp: string;
+  isTempAuto: boolean;
 
   // Preset
   presetName: string;
   presetEmoji: string;
   tips: string[];
 
+  // Location & water
+  locationData: ReturnType<typeof useLocation>['data'];
+  locLoading: boolean;
+  locError: string | null;
+  onRefreshLocation: () => void;
+  onPostcodeSubmit: (postcode: string) => void;
+  hardness: WaterHardness | null;
+
   // Results (null until calculated)
   results: FermentResults | null;
   timeline: LactoDayPoint[];
   advice: string[];
+  waterAdvice: string[];
   showResults: boolean;
 
   // Actions
@@ -50,24 +67,51 @@ export interface LactoCalculatorState {
   calculate: () => void;
 }
 
+/** Fallback hardness when no location data is available. */
+const FALLBACK_HARDNESS: WaterHardness = {
+  mgL: 120,
+  classification: 'moderately soft',
+  note: 'Unknown (default)',
+  key: 'fallback',
+};
+
 export function useLactoCalculator(): LactoCalculatorState {
+  const { data: locationData, loading: locLoading, error: locError, detect, refineWithPostcode } = useLocation();
+
   const [fermentType, setFermentType] = useState<FermentType>('sauerkraut');
   const [vegId, setVegId] = useState('green-cabbage');
   const [vegWeight, setVegWeight] = useState('1000');
   const [waterAmount, setWaterAmount] = useState('500');
   const [saltPct, setSaltPct] = useState('2.0');
-  const [saltType, setSaltType] = useState<SaltCrystal>('fine-sea');
+  const [saltType, setSaltType] = useState<SaltCrystal>('maldon-flake');
   const [ambientTemp, setAmbientTemp] = useState('22');
+  const [isTempAuto, setIsTempAuto] = useState(false);
   const [showResults, setShowResults] = useState(false);
 
   const [results, setResults] = useState<FermentResults | null>(null);
   const [timeline, setTimeline] = useState<LactoDayPoint[]>([]);
   const [advice, setAdvice] = useState<string[]>([]);
+  const [waterAdvice, setWaterAdvice] = useState<string[]>([]);
 
   // Derived
   const veg = useMemo(() => findVeg(vegId), [vegId]);
   const preset = FERMENT_PRESETS[fermentType]!;
   const method = preset.method;
+  const hardness = locationData?.hardness ?? null;
+
+  // Auto-fill ambient temp from location detection
+  useEffect(() => {
+    if (locationData?.ambientTemp != null) {
+      setAmbientTemp(String(locationData.ambientTemp));
+      setIsTempAuto(true);
+    }
+  }, [locationData]);
+
+  // Clear auto flag when user manually edits temp
+  const handleSetAmbientTemp = useCallback((v: string) => {
+    setAmbientTemp(v);
+    setIsTempAuto(false);
+  }, []);
 
   // When preset changes, update method + default veg + salt%
   const selectPreset = useCallback((type: FermentType) => {
@@ -79,7 +123,6 @@ export function useLactoCalculator(): LactoCalculatorState {
     const defaultVeg = findVeg(defaultVegId);
     setVegId(defaultVegId);
 
-    // Use the preset's typical salt, or the veg's recommendation
     const recommendedSalt = p.method === 'brine'
       ? defaultVeg.typicalBrineSaltPct
       : defaultVeg.typicalDrySaltPct;
@@ -135,7 +178,6 @@ export function useLactoCalculator(): LactoCalculatorState {
       estimatedDays: duration.days,
       estimatedDaysMin: duration.daysMin,
       estimatedDaysMax: duration.daysMax,
-      // Recalculate effective salinity with veg water content
       effectiveSalinity: (() => {
         const saltG = baseResults.saltGrams;
         if (method === 'brine') return salt;
@@ -145,11 +187,14 @@ export function useLactoCalculator(): LactoCalculatorState {
       })(),
     };
 
+    const h = hardness ?? FALLBACK_HARDNESS;
+
     setResults(finalResults);
     setTimeline(buildLactoTimeline(finalResults.estimatedDays, method));
     setAdvice(lactoAdvice(method, salt, temp, finalResults.estimatedDays));
+    setWaterAdvice(waterHardnessFermentAdvice(h));
     setShowResults(true);
-  }, [vegWeight, waterAmount, saltPct, ambientTemp, saltType, fermentType, method, veg]);
+  }, [vegWeight, waterAmount, saltPct, ambientTemp, saltType, fermentType, method, veg, hardness]);
 
   return {
     fermentType,
@@ -161,12 +206,20 @@ export function useLactoCalculator(): LactoCalculatorState {
     saltPct,
     saltType,
     ambientTemp,
+    isTempAuto,
     presetName: preset.name,
     presetEmoji: preset.emoji,
     tips: preset.tips ?? [],
+    locationData,
+    locLoading,
+    locError,
+    onRefreshLocation: detect,
+    onPostcodeSubmit: refineWithPostcode,
+    hardness,
     results,
     timeline,
     advice,
+    waterAdvice,
     showResults,
     selectPreset,
     selectVeg,
@@ -174,7 +227,7 @@ export function useLactoCalculator(): LactoCalculatorState {
     setWaterAmount,
     setSaltPct,
     setSaltType,
-    setAmbientTemp,
+    setAmbientTemp: handleSetAmbientTemp,
     calculate,
   };
 }

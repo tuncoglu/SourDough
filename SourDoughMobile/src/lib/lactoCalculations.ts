@@ -291,6 +291,37 @@ export function lactoAdvice(
   return tips;
 }
 
+// ── Water Hardness Ferment Advice ─────────────────────────────────────
+
+/**
+ * Fermentation-specific water hardness advice.
+ * Hard water tightens vegetable cell walls (calcium cross-links pectin),
+ * keeping ferments crisp. Soft water produces softer results.
+ */
+export function waterHardnessFermentAdvice(hardness: { mgL: number; classification: string; note: string }): string[] {
+  const tips: string[] = [];
+  const { mgL, classification, note } = hardness;
+
+  if (mgL < 60) {
+    tips.push(`💧 Your water is ${classification} (${mgL} mg/L CaCO₃).`);
+    tips.push('   → Soft water may produce softer ferments. Add a grape leaf, oak leaf, or a pinch of calcium chloride for extra crunch.');
+    tips.push('   → Low mineral content means less buffering — ferments may sour slightly faster.');
+  } else if (mgL < 120) {
+    tips.push(`💧 Your water is ${classification} (${mgL} mg/L CaCO₃).`);
+    tips.push('   → Good for most ferments. Balanced mineral content for texture and flavour.');
+  } else if (mgL < 200) {
+    tips.push(`💧 Your water is ${classification} (${mgL} mg/L CaCO₃).`);
+    tips.push('   → Moderately hard — calcium helps keep vegetables crisp. Ideal for cucumber pickles.');
+  } else {
+    tips.push(`💧 Your water is ${classification} (${mgL} mg/L CaCO₃).`);
+    tips.push('   → Hard water is excellent for crisp ferments — calcium strengthens pectin in vegetable cell walls.');
+    tips.push('   → If your brine clouds quickly, it\'s just calcium precipitating — harmless.');
+  }
+  tips.push(`   → Source geology: ${note}.`);
+
+  return tips;
+}
+
 // ── Brine Calculator Helper ────────────────────────────────────────────
 
 /**

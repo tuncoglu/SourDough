@@ -316,16 +316,33 @@ export type FermentType =
   | 'radish-cauliflower'
   | 'custom';
 
-/** Salt crystal type — different densities give different tsp/tbsp weights. */
-export type SaltCrystal = 'fine-sea' | 'coarse-sea' | 'diamond-kosher' | 'morton-kosher' | 'pickling';
+/** Salt crystal type — different densities give different tsp/tbsp weights.
+ *  Includes US and UK common salt varieties. */
+export type SaltCrystal =
+  | 'fine-sea'
+  | 'coarse-sea'
+  | 'diamond-kosher'
+  | 'morton-kosher'
+  | 'pickling'
+  | 'maldon-flake'
+  | 'rock-salt'
+  | 'himalayan-pink'
+  | 'cornish-sea'
+  | 'table-salt';
 
-/** Density of each salt type in grams per teaspoon. */
+/** Density of each salt type in grams per teaspoon.
+ *  Measured by weight of a level tsp. Sources: manufacturer data, King Arthur Baking. */
 export const SALT_DENSITY_G_PER_TSP: Record<SaltCrystal, number> = {
   'fine-sea': 5.7,
   'coarse-sea': 4.8,
   'diamond-kosher': 2.8,
   'morton-kosher': 4.8,
   'pickling': 6.0,
+  'maldon-flake': 1.8,
+  'rock-salt': 4.5,
+  'himalayan-pink': 5.5,
+  'cornish-sea': 5.7,
+  'table-salt': 6.2,
 };
 
 /** Human-readable labels for salt types. */
@@ -335,7 +352,26 @@ export const SALT_LABELS: Record<SaltCrystal, string> = {
   'diamond-kosher': 'Diamond Crystal kosher',
   'morton-kosher': 'Morton kosher',
   'pickling': 'Pickling salt',
+  'maldon-flake': 'Maldon sea flakes',
+  'rock-salt': 'Rock salt (Saxa etc.)',
+  'himalayan-pink': 'Himalayan pink salt',
+  'cornish-sea': 'Cornish sea salt',
+  'table-salt': 'Table salt',
 };
+
+/** UK-specific salts shown first, then standard types. */
+export const SALT_TYPE_ORDER: SaltCrystal[] = [
+  'maldon-flake',
+  'rock-salt',
+  'cornish-sea',
+  'himalayan-pink',
+  'table-salt',
+  'fine-sea',
+  'coarse-sea',
+  'diamond-kosher',
+  'morton-kosher',
+  'pickling',
+];
 
 export interface FermentPreset {
   id: FermentType;

@@ -11,14 +11,13 @@ import { useLactoCalculator } from '@/src/hooks/useLactoCalculator';
 import { LactoResultCard } from '@/src/components/LactoResultCard';
 import { LactoTimeline } from '@/src/components/LactoTimeline';
 import { LactoAdvice } from '@/src/components/LactoAdvice';
+import { LocationBar } from '@/src/components/LocationBar';
 import { NumberInput } from '@/src/components/NumberInput';
 import { TempRow } from '@/src/components/TempRow';
 import { Colors, Spacing, FontSize, BorderRadius, useAppTheme, MaxWidth } from '@/src/theme';
 import { FERMENT_TYPE_ORDER } from '@/src/data/fermentPresets';
 import { VEGETABLES, VEG_CATEGORIES } from '@/src/data/vegetables';
-import { FermentType, SaltCrystal, SALT_LABELS } from '@/src/models/types';
-
-const SALT_TYPES: SaltCrystal[] = ['fine-sea', 'coarse-sea', 'diamond-kosher', 'morton-kosher', 'pickling'];
+import { FermentType, SALT_LABELS, SALT_TYPE_ORDER } from '@/src/models/types';
 
 export default function FermentsScreen() {
   const calc = useLactoCalculator();
@@ -27,6 +26,8 @@ export default function FermentsScreen() {
   const handleCalculate = useCallback(() => {
     calc.calculate();
   }, [calc.calculate]);
+
+  const locationSummary = calc.locationData?.summary ?? null;
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.cream }]} edges={['top']}>
@@ -43,6 +44,16 @@ export default function FermentsScreen() {
             Salt calculator & fermentation timeline
           </Text>
         </View>
+
+        {/* ── Location Bar ── */}
+        <LocationBar
+          summary={locationSummary}
+          loading={calc.locLoading}
+          error={calc.locError}
+          onRefresh={calc.onRefreshLocation}
+          showFallbackWarning={!calc.locLoading && !calc.locationData}
+          onPostcodeSubmit={calc.onPostcodeSubmit}
+        />
 
         {/* ── Ferment Type Picker ── */}
         <Text style={[styles.sectionLabel, { color: colors.espresso }]}>Style</Text>
@@ -84,7 +95,6 @@ export default function FermentsScreen() {
         {/* ── Vegetable / Fruit Picker ── */}
         <Text style={[styles.sectionLabel, { color: colors.espresso }]}>Vegetable or fruit</Text>
         <View style={[styles.vegPicker, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          {/* Current selection */}
           <View style={styles.currentVeg}>
             <Text style={styles.currentVegEmoji}>{calc.veg.emoji}</Text>
             <View style={styles.currentVegInfo}>
@@ -98,7 +108,6 @@ export default function FermentsScreen() {
             </View>
           </View>
 
-          {/* Category rows */}
           {VEG_CATEGORIES.map(({ key, label }) => {
             const items = VEGETABLES.filter((v) => v.category === key);
             if (items.length === 0) return null;
@@ -185,7 +194,7 @@ export default function FermentsScreen() {
             showsHorizontalScrollIndicator={false}
             style={styles.chipScroll}
           >
-            {SALT_TYPES.map((st) => {
+            {SALT_TYPE_ORDER.map((st) => {
               const active = calc.saltType === st;
               return (
                 <TouchableOpacity
@@ -218,6 +227,7 @@ export default function FermentsScreen() {
               label="Ambient"
               value={calc.ambientTemp}
               onChangeText={calc.setAmbientTemp}
+              isAuto={calc.isTempAuto}
             />
           </View>
         </View>
@@ -242,6 +252,18 @@ export default function FermentsScreen() {
               presetEmoji={calc.presetEmoji}
               presetName={calc.presetName}
             />
+
+            {/* Water hardness card */}
+            {calc.waterAdvice.length > 0 && (
+              <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Text style={[styles.cardTitle, { color: colors.espresso }]}>💧 Water</Text>
+                {calc.waterAdvice.map((line, i) => (
+                  <Text key={i} style={[styles.adviceLine, { color: colors.muted }]}>
+                    {line}
+                  </Text>
+                ))}
+              </View>
+            )}
           </View>
         )}
 
@@ -266,7 +288,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center' as any,
   },
   header: {
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   heading: {
     fontSize: FontSize.title,
@@ -422,6 +444,14 @@ const styles = StyleSheet.create({
   // Results
   results: {
     gap: Spacing.lg,
+  },
+  cardTitle: {
+    fontSize: FontSize.lg,
+    fontWeight: '700',
+  },
+  adviceLine: {
+    fontSize: FontSize.sm,
+    lineHeight: 20,
   },
   bottomPad: {
     height: 60,
