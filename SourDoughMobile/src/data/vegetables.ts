@@ -29,6 +29,8 @@ export interface VegEntry {
   /** Typical batch size in grams. */
   typicalWeight: number;
   notes?: string;
+  /** Research-backed note (2024–2026 findings). Shown when relevant. */
+  researchNote?: string;
 }
 
 // ── Ordered for display ─────────────────────────────────────────────────
@@ -57,6 +59,7 @@ export const VEGETABLES: VegEntry[] = [
     firmness: 'medium',
     typicalWeight: 1000,
     notes: 'The classic sauerkraut base. Reliable and forgiving.',
+    researchNote: 'Most-studied fermented vegetable. Clear 3-phase LAB succession: Enterobacteriaceae → Leuconostoc mesenteroides (days 1–3) → L. plantarum (day 4+).',
   },
   {
     id: 'red-cabbage',
@@ -83,6 +86,7 @@ export const VEGETABLES: VegEntry[] = [
     firmness: 'soft',
     typicalWeight: 800,
     notes: 'Classic kimchi base. High water content — wilts quickly with salt.',
+    researchNote: 'Kimchi has the most clinical evidence: 11 human trials showing reduced body weight, IBS symptoms, LDL cholesterol & fasting glucose. UC Davis trial (2026) ongoing.',
   },
   {
     id: 'savoy-cabbage',
@@ -103,12 +107,13 @@ export const VEGETABLES: VegEntry[] = [
     emoji: '🥗',
     category: 'leafy',
     waterContentPct: 92,
-    typicalBrineSaltPct: 5.0,
-    typicalDrySaltPct: 3.0,
+    typicalBrineSaltPct: 3.5,
+    typicalDrySaltPct: 2.5,
     speedFactor: 0.9,
     firmness: 'firm',
     typicalWeight: 500,
-    notes: 'Needs stronger brine (5%). Keeps its crunch beautifully.',
+    notes: 'Keeps its crunch beautifully. 3.5% brine is the sweet spot — firm but not overly salty.',
+    researchNote: '2024–2026 consensus: 3–5% brine favours L. plantarum dominance while suppressing enteric bacteria. Above 5% inhibits beneficial LAB.',
   },
   {
     id: 'broccoli',
@@ -122,6 +127,7 @@ export const VEGETABLES: VegEntry[] = [
     firmness: 'firm',
     typicalWeight: 400,
     notes: 'Stems ferment better than florets. Peel tough outer skin.',
+    researchNote: 'Chen et al. (2026): 35°C native LAB fermentation increased sulforaphane 44× (84,000 μg/kg). Blanched broccoli + warm ferment = anti-cancer functional food.',
   },
   {
     id: 'kohlrabi',
@@ -189,6 +195,7 @@ export const VEGETABLES: VegEntry[] = [
     firmness: 'firm',
     typicalWeight: 300,
     notes: 'High sugar = fast ferment. Earthy, vibrant. Beet kvass is the classic.',
+    researchNote: 'Wierzbicka & Janiszewska-Turak (2024): 1% salt retained the highest polyphenols and pigments. Lower salt = more bioactives, but narrower safety margin.',
   },
   {
     id: 'turnip',
@@ -243,6 +250,7 @@ export const VEGETABLES: VegEntry[] = [
     firmness: 'medium',
     typicalWeight: 500,
     notes: 'Kirby or gherkin varieties. A tannin leaf (grape/oak/horseradish) preserves crunch.',
+    researchNote: '2025 Zeng et al.: variable-temperature (25°C × 3 days → 5°C × 15 days) = better crunch, colour & aroma than constant warm ferment. CaCl₂: ¼ tsp per kg.',
   },
   {
     id: 'green-beans',
@@ -250,12 +258,12 @@ export const VEGETABLES: VegEntry[] = [
     emoji: '🫘',
     category: 'fruit-veg',
     waterContentPct: 90,
-    typicalBrineSaltPct: 5.0,
+    typicalBrineSaltPct: 4.0,
     typicalDrySaltPct: 3.0,
     speedFactor: 0.8,
     firmness: 'firm',
     typicalWeight: 400,
-    notes: 'Trim ends. Dilly beans are a classic. Needs 5% brine.',
+    notes: 'Trim ends. Dilly beans are a classic. 4% brine is the sweet spot.',
   },
   {
     id: 'asparagus',
@@ -418,6 +426,7 @@ export const VEGETABLES: VegEntry[] = [
     firmness: 'firm',
     typicalWeight: 300,
     notes: 'Use firm varieties (Granny Smith, Honeycrisp). Cinnamon stick and clove pair well.',
+    researchNote: '⚠️ Fruits are high-sugar — more prone to yeast and kahm pellicle. Ferment cool (≤20°C) and check daily. Kazachstania yeast can cause film but also inhibits pathogens (2026).',
   },
   {
     id: 'pear',

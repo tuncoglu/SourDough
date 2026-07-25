@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
+import { Colors, Spacing, FontSize, BorderRadius, useAppTheme, AppColors } from '../theme';
 import { FermentResults } from '../models/types';
 import { weightUnit } from '../lib/unitConversion';
 
@@ -90,7 +90,7 @@ function VolumeBadge({
 }: {
   value: number;
   unit: string;
-  colors: Record<string, string>;
+  colors: AppColors;
 }) {
   return (
     <View style={[volStyles.badge, { backgroundColor: '#F5EDE4' }]}>

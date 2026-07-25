@@ -11,6 +11,7 @@ import { useLactoCalculator } from '@/src/hooks/useLactoCalculator';
 import { LactoResultCard } from '@/src/components/LactoResultCard';
 import { LactoTimeline } from '@/src/components/LactoTimeline';
 import { LactoAdvice } from '@/src/components/LactoAdvice';
+import { LactoScience } from '@/src/components/LactoScience';
 import { LocationBar } from '@/src/components/LocationBar';
 import { NumberInput } from '@/src/components/NumberInput';
 import { Colors, Spacing, FontSize, BorderRadius, useAppTheme, MaxWidth } from '@/src/theme';
@@ -287,6 +288,12 @@ export default function FermentsScreen() {
                 ))}
               </View>
             )}
+
+            {/* Research context */}
+            <LactoScience
+              vegResearchNote={calc.veg.researchNote}
+              presetHealthNote={calc.presetHealthNote}
+            />
           </View>
         )}
 

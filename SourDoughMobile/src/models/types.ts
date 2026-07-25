@@ -389,6 +389,8 @@ export interface FermentPreset {
   tips?: string[];
   /** For brine method: recommended brine strength %. */
   brineStrength?: number;
+  /** Evidence-based health or research context for this ferment style. */
+  healthNote?: string;
 }
 
 export interface FermentInputs {

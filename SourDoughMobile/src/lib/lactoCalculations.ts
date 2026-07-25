@@ -169,42 +169,42 @@ export function buildLactoTimeline(estimatedDays: number, method: FermentMethod)
       : 'Salt mixed in. Pack tightly and apply a weight.',
   });
 
-  // Day 1 — lag phase
+  // Day 1 — lag phase: Enterobacteriaceae fade, Leuconostoc wakes up
   if (totalDays >= 1) {
     points.push({
       day: 1,
       label: 'Day 1 — Lag Phase',
-      description: 'Lactobacillus is waking up. Few visible changes. Keep at room temp, away from direct sun.',
+      description: 'Enterobacteriaceae from the vegetable surface fade as salt and anaerobic conditions take hold. Leuconostoc mesenteroides begins to wake up. Few visible changes. Keep at room temp, away from direct sun.',
     });
   }
 
-  // Day ~25% — early activity
+  // Day ~25% — early activity: Leuconostoc & Weissella dominate
   const earlyDay = Math.max(2, Math.round(totalDays * 0.25));
   if (earlyDay < totalDays && earlyDay > 1) {
     points.push({
       day: earlyDay,
-      label: `Day ${earlyDay} — Activity Begins`,
-      description: 'Bubbles appearing. Brine may become cloudy — this is good! A thin white film (kahm yeast) is harmless; scoop it off. Fuzzy mold = discard.',
+      label: `Day ${earlyDay} — Leuconostoc Phase`,
+      description: 'Bubbles appearing — CO₂ from heterofermentative Leuconostoc mesenteroides and Weissella species. Brine becomes cloudy (bacterial bloom — good!). A thin white film (kahm yeast, often Kazachstania) is harmless; scoop it off. Fuzzy mould = discard.',
     });
   }
 
-  // ~50% — half fermented
+  // ~50% — half fermented: transition to L. plantarum
   const midDay = Math.round(totalDays * 0.5);
   if (midDay > earlyDay && midDay < totalDays) {
     points.push({
       day: midDay,
-      label: `Day ${midDay} — Halfway`,
-      description: `pH is dropping (approaching ~${(6.5 - (6.5 - TARGET_PH) * 0.5).toFixed(1)}). Taste it — should be tangy but not fully sour yet.`,
+      label: `Day ${midDay} — L. plantarum Takes Over`,
+      description: `pH dropping (approaching ~${(6.5 - (6.5 - TARGET_PH) * 0.5).toFixed(1)}). Leuconostoc fades as acid-tolerant Lactiplantibacillus plantarum becomes dominant. Taste it — should be tangy but not fully sour yet.`,
     });
   }
 
-  // ~75% — nearly done
+  // ~75% — nearly done: L. plantarum & Pediococcus
   const lateDay = Math.round(totalDays * 0.75);
   if (lateDay > midDay && lateDay < totalDays) {
     points.push({
       day: lateDay,
       label: `Day ${lateDay} — Nearly Ready`,
-      description: `pH approaching ${TARGET_PH}. Taste: should be pleasantly sour. If you like it now, move to the fridge. If you want it tangier, give it a few more days.`,
+      description: `pH approaching ${TARGET_PH}. L. plantarum and Pediococcus dominate. Taste: should be pleasantly sour. If you like it now, move to the fridge. For more complexity, give it a few more days — cold maturation develops deeper flavour.`,
     });
   }
 
@@ -212,7 +212,7 @@ export function buildLactoTimeline(estimatedDays: number, method: FermentMethod)
   points.push({
     day: totalDays,
     label: `Day ${totalDays} — Complete`,
-    description: `Target pH ${TARGET_PH} reached. Fully fermented. Move to cold storage (fridge or cellar). The flavour will continue to develop slowly for weeks.`,
+    description: `Target pH ${TARGET_PH} reached. LAB community stable. Move to cold storage (fridge or cellar). Postbiotic compounds (GABA, phenyl-lactic acid, indole-3-lactic acid) continue to develop for weeks.`,
   });
 
   return points;
@@ -220,14 +220,17 @@ export function buildLactoTimeline(estimatedDays: number, method: FermentMethod)
 
 // ── Full Calculation Pipeline ──────────────────────────────────────────
 
-export function runLactoCalculations(inputs: FermentInputs): FermentResults {
+export function runLactoCalculations(
+  inputs: FermentInputs,
+  waterContentPct: number = 90,
+): FermentResults {
   const salt = calculateFermentSalt(
     inputs.vegWeight,
     inputs.waterAmount,
     inputs.saltPct,
     inputs.method,
     inputs.saltType,
-    inputs.vegWeight > 0 ? 90 : 0, // placeholder; real water content comes from preset
+    waterContentPct,
   );
 
   const duration = estimateFermentDuration(inputs.ambientTemp, 1.0); // speed factor applied at call site
@@ -264,18 +267,22 @@ export function lactoAdvice(
 ): string[] {
   const tips: string[] = [];
 
-  // Salt level guidance
-  if (saltPct < 2.0) {
-    tips.push(`⚠️ Salt is low at ${saltPct}%. Below 2% risks spoilage — mould and yeast may outcompete lactobacillus. Consider increasing to at least 2%.`);
+  // Salt level guidance — updated per 2024–2026 research
+  if (saltPct < 1.5) {
+    tips.push(`⚠️ Salt is very low at ${saltPct}%. Research shows 0.8–1.5% can work (maximises probiotics & polyphenols), but the safety margin is razor-thin — enteric bacteria may not be suppressed. Consider ≥1.5% for safety.`);
+  } else if (saltPct < 2.0) {
+    tips.push(`💡 Salt is moderate-low at ${saltPct}%. 2024 research shows 1.0–1.5% retains more polyphenols and probiotics, but below 2% requires extra care — check daily and keep everything submerged.`);
   } else if (saltPct > 5.0) {
-    tips.push(`🧂 Salt is high at ${saltPct}%. Fermentation will be very slow — some beneficial bacteria are inhibited above 5%.`);
+    tips.push(`🧂 Salt is high at ${saltPct}%. Fermentation will be very slow — beneficial LAB are inhibited above 5%. 2026 research: 3–5% is the sweet spot for L. plantarum dominance.`);
   }
 
-  // Temperature guidance
+  // Temperature guidance — updated per 2025–2026 research
   if (temp < 16) {
     tips.push(`❄️ Cool temperature (${temp}°C) — fermentation will be very slow. Consider a warmer spot if you want results in under 2 weeks.`);
-  } else if (temp > 28) {
-    tips.push(`🔥 Warm temperature (${temp}°C) — fermentation will be fast but may produce off-flavours or soft texture. Check daily.`);
+  } else if (temp > 30) {
+    tips.push(`🔥 Warm temperature (${temp}°C) — fermentation will be fast but may produce off-flavours or soft texture. Check daily. Above 30°C favours heterofermentative pathways (more CO₂, ethanol).`);
+  } else if (temp > 24) {
+    tips.push(`🌡️ Warm room temp (${temp}°C) — consider a variable-temperature strategy: ferment 3 days at room temp, then move to the fridge for cold maturation. 2025 research shows this preserves texture and develops more complex aroma.`);
   }
 
   // Method-specific
@@ -285,6 +292,9 @@ export function lactoAdvice(
   if (method === 'brine') {
     tips.push('🪨 Use a weight to keep everything submerged. Anything above the brine line will mould.');
   }
+
+  // Kahm yeast — updated with 2024–2026 research
+  tips.push('🦠 A thin white film (kahm yeast) is harmless — often Kazachstania or Pichia species. 2026 research: Kazachstania can actually inhibit pathogens but may soften texture. Skim it off. Fuzzy mould = discard immediately.');
 
   // General safety
   tips.push(`🛡️ Botulism cannot grow below pH ${SAFETY_PH}. Your ferment will be safe once it\'s tangy — typically by day ${Math.round(estimatedDays * 0.5)}–${Math.round(estimatedDays * 0.8)}.`);

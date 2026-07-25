@@ -46,6 +46,7 @@ export interface LactoCalculatorState {
   presetName: string;
   presetEmoji: string;
   tips: string[];
+  presetHealthNote?: string;
 
   // Location & water
   locationData: ReturnType<typeof useLocation>['data'];
@@ -171,7 +172,7 @@ export function useLactoCalculator(): LactoCalculatorState {
       ambientTemp: effectiveTemp,
     };
 
-    const baseResults = runLactoCalculations(baseInputs);
+    const baseResults = runLactoCalculations(baseInputs, veg.waterContentPct);
 
     // Now compute accurate temp based on the actual estimated duration
     const accurateTemp = computeFermentTemp(
@@ -221,6 +222,7 @@ export function useLactoCalculator(): LactoCalculatorState {
     presetName: preset.name,
     presetEmoji: preset.emoji,
     tips: preset.tips ?? [],
+    presetHealthNote: preset.healthNote,
     locationData,
     locLoading,
     locError,
