@@ -1,6 +1,5 @@
-import { SymbolView } from 'expo-symbols';
 import { Tabs } from 'expo-router';
-import { View, StyleSheet, type ColorValue } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 
 import { useBreakpoint } from '@/src/hooks/useBreakpoint';
 import { Sidebar } from '@/src/components/Sidebar';
@@ -14,17 +13,19 @@ function useTabBarStyle() {
   };
 }
 
-const TAB_ICON_SIZE = 26;
+const TAB_ICON_SIZE = 24;
 
-function TabIcon({ name, color }: { name: string; color: ColorValue }) {
-  return (
-    <SymbolView
-      name={{ ios: name, android: name, web: name } as any}
-      tintColor={color}
-      size={TAB_ICON_SIZE}
-    />
-  );
+function TabEmoji({ emoji }: { emoji: string }) {
+  return <Text style={{ fontSize: TAB_ICON_SIZE }}>{emoji}</Text>;
 }
+
+// Icons shared between sidebar (Sidebar.tsx) and tab bar — keep in sync.
+const TAB_ICONS = {
+  calculator: '🥖',
+  ferments: '🫙',
+  history: '📋',
+  settings: '⚙️',
+} as const;
 
 export default function TabLayout() {
   const { isDesktop } = useBreakpoint();
@@ -55,36 +56,28 @@ export default function TabLayout() {
               name="index"
               options={{
                 title: 'Calculator',
-                tabBarIcon: ({ color }) => (
-                  <TabIcon name="chart.bar.fill" color={color} />
-                ),
+                tabBarIcon: () => <TabEmoji emoji={TAB_ICONS.calculator} />,
               }}
             />
             <Tabs.Screen
               name="ferments"
               options={{
                 title: 'Ferments',
-                tabBarIcon: ({ color }) => (
-                  <TabIcon name="testtube.2" color={color} />
-                ),
+                tabBarIcon: () => <TabEmoji emoji={TAB_ICONS.ferments} />,
               }}
             />
             <Tabs.Screen
               name="history"
               options={{
                 title: 'History',
-                tabBarIcon: ({ color }) => (
-                  <TabIcon name="clock.arrow.circlepath" color={color} />
-                ),
+                tabBarIcon: () => <TabEmoji emoji={TAB_ICONS.history} />,
               }}
             />
             <Tabs.Screen
               name="settings"
               options={{
                 title: 'Settings',
-                tabBarIcon: ({ color }) => (
-                  <TabIcon name="gearshape.fill" color={color} />
-                ),
+                tabBarIcon: () => <TabEmoji emoji={TAB_ICONS.settings} />,
               }}
             />
           </Tabs>

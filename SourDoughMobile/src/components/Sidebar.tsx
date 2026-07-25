@@ -12,7 +12,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { path: '/', label: 'Calculator', icon: '🥖' },
   { path: '/ferments', label: 'Ferments', icon: '🫙' },
-  { path: '/history', label: 'History', icon: '📖' },
+  { path: '/history', label: 'History', icon: '📋' },
   { path: '/settings', label: 'Settings', icon: '⚙️' },
 ];
 
