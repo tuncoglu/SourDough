@@ -10,8 +10,8 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { path: '/', label: 'Calculator', icon: '🥖' },
-  { path: '/ferments', label: 'Ferments', icon: '🫙' },
+  { path: '/', label: 'Sourdough', icon: '🥖' },
+  { path: '/ferments', label: 'Lactofermentation', icon: '🫙' },
   { path: '/history', label: 'History', icon: '📋' },
   { path: '/settings', label: 'Settings', icon: '⚙️' },
 ];

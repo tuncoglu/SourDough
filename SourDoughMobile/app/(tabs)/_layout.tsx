@@ -55,14 +55,14 @@ export default function TabLayout() {
             <Tabs.Screen
               name="index"
               options={{
-                title: 'Calculator',
+                title: 'Sourdough',
                 tabBarIcon: () => <TabEmoji emoji={TAB_ICONS.calculator} />,
               }}
             />
             <Tabs.Screen
               name="ferments"
               options={{
-                title: 'Ferments',
+                title: 'Lacto',
                 tabBarIcon: () => <TabEmoji emoji={TAB_ICONS.ferments} />,
               }}
             />
