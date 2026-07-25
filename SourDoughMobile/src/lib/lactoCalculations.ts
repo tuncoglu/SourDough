@@ -12,6 +12,7 @@ import {
   SALT_DENSITY_G_PER_TSP,
   SALT_LABELS,
   LactoDayPoint,
+  HourlyPoint,
 } from '../models/types';
 
 // ── Physical Constants ─────────────────────────────────────────────────
@@ -323,8 +324,6 @@ export function waterHardnessFermentAdvice(hardness: { mgL: number; classificati
 }
 
 // ── Forecast Temperature for Fermentation ─────────────────────────────
-
-import { HourlyPoint } from '../models/types';
 
 export interface DailyTempSummary {
   day: string;
