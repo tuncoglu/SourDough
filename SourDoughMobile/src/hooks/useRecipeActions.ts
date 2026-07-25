@@ -51,6 +51,7 @@ interface ShareParams {
   results: CalculationResults;
   locationSummary: string;
   bakeInfo?: string;
+  unitSystem: import('../models/types').UnitSystem;
 }
 
 export function useRecipeActions() {
@@ -139,7 +140,7 @@ export function useRecipeActions() {
     const {
       blend, totalFlourWeight, hydration, starterWeight, saltPct,
       starterHydrationStr, oilPct, ambientTemp, waterTemp,
-      prefermentEnabled, prefermentFlourPct, results, locationSummary, bakeInfo,
+      prefermentEnabled, prefermentFlourPct, results, locationSummary, bakeInfo, unitSystem,
     } = params;
 
     const text = formatRecipeTextFromState(
@@ -156,6 +157,8 @@ export function useRecipeActions() {
       results,
       bakeInfo,
       unitSystem,
+      parseFloat(ambientTemp) || undefined,
+      parseFloat(waterTemp) || undefined,
     );
 
     try {

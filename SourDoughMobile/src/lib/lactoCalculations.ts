@@ -69,10 +69,13 @@ export function calculateFermentSalt(
 
   switch (method) {
     case 'brine': {
-      // Salt % is of water weight
+      // Salt % is of water weight (baker's percentage).
+      // True salinity = salt / (water + salt) — the brine %.
       saltGrams = waterAmount * (saltPct / 100);
       totalBrineGrams = waterAmount + saltGrams;
-      effectiveSalinity = saltPct;
+      effectiveSalinity = totalBrineGrams > 0
+        ? (saltGrams / totalBrineGrams) * 100
+        : saltPct;
       break;
     }
     case 'dry': {
@@ -223,6 +226,7 @@ export function buildLactoTimeline(estimatedDays: number, method: FermentMethod)
 export function runLactoCalculations(
   inputs: FermentInputs,
   waterContentPct: number = 90,
+  speedFactor: number = 1.0,
 ): FermentResults {
   const salt = calculateFermentSalt(
     inputs.vegWeight,
@@ -233,7 +237,7 @@ export function runLactoCalculations(
     waterContentPct,
   );
 
-  const duration = estimateFermentDuration(inputs.ambientTemp, 1.0); // speed factor applied at call site
+  const duration = estimateFermentDuration(inputs.ambientTemp, speedFactor);
 
   const brineLabel =
     inputs.method === 'brine'

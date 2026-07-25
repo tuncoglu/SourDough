@@ -81,18 +81,19 @@ export function useCalculatorInputs(): CalculatorInputs {
   const [starterTemp, setStarterTemp] = useState('22');
   const [oilPct, setOilPct] = useState('0');
 
-  // Deferred values for smooth typing
+  // Deferred values for smooth typing — defer blend bar and weight recalc
   const deferredMixRows = useDeferredValue(mixRows);
 
-  // Derived
+  // Derived — both use deferred rows so the blend bar and total weight
+  // don't recalculate on every keystroke.
   const totalFlourWeight = useMemo(
     () => deferredMixRows.reduce((sum, r) => sum + (parseFloat(r.grams) || 0), 0),
     [deferredMixRows],
   );
 
   const blend = useMemo(
-    () => buildBlendFromRows(mixRows.map((r) => ({ flour: r.flour, grams: parseFloat(r.grams) || 0 }))),
-    [mixRows],
+    () => buildBlendFromRows(deferredMixRows.map((r) => ({ flour: r.flour, grams: parseFloat(r.grams) || 0 }))),
+    [deferredMixRows],
   );
 
   // Flour mix handlers

@@ -14,23 +14,6 @@ const USER_AGENT = 'SourDough/3.0 (JustDoughIt)';
 // Nominatim rate limit: 1 req/s (polite use policy)
 let lastNominatimCall = 0;
 
-async function httpGet(url: string, timeoutMs = 8000): Promise<any> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: { 'User-Agent': USER_AGENT },
-    });
-    if (!response.ok) return null;
-    return response.json();
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 /**
  * Fetch with exponential backoff retry on network errors and 5xx responses.
  * Does NOT retry on 4xx (client errors).

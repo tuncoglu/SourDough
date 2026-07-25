@@ -54,12 +54,13 @@ export function useRecipePreset(): RecipePresetState & RecipePresetActions {
     setStarterWeight: (v: string) => void,
     setSaltPct: (v: string) => void,
   ) => {
-    // Detect if user has modified fields away from the PREVIOUS preset's defaults
+    // Detect if user has modified fields away from the PREVIOUS preset's defaults.
+    // Starter weight depends on total flour weight (varies per recipe), so we cannot
+    // trivially reverse it — always preserve the user's starter value on preset switch.
     const prevPreset = selectedPreset;
     const userCustomizedHydration = !prevPreset ||
       parseFloat(currentHydration) !== prevPreset.dough.typicalHydration;
-    const userCustomizedStarter = !prevPreset ||
-      parseFloat(currentStarterWeight) !== Math.round(parseFloat(currentStarterWeight) / prevPreset.dough.typicalInoculation * 100) / 100;
+    const userCustomizedStarter = prevPreset !== null; // always preserve starter edits
     const userCustomizedSalt = !prevPreset ||
       parseFloat(currentSaltPct) !== prevPreset.dough.typicalSalt;
     const userCustomizedOil = !prevPreset ||

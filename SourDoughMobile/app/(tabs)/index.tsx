@@ -40,7 +40,7 @@ function buildManualHardness(mgL: number): WaterHardness {
 
 export default function CalculatorScreen() {
   const { isDesktop } = useBreakpoint();
-  const { colors } = useAppTheme();
+  const { colors, unitSystem } = useAppTheme();
   const { editRecipeId } = useLocalSearchParams<{ editRecipeId?: string }>();
 
   // ── Hooks ──────────────────────────────────────────────────────────────
@@ -179,6 +179,7 @@ export default function CalculatorScreen() {
       results: calc.results,
       locationSummary: inputs.locationData?.summary ?? '📍 Unknown location',
       bakeInfo,
+      unitSystem,
     });
   }, [inputs, preset, calc.results, actions]);
 
@@ -245,7 +246,7 @@ export default function CalculatorScreen() {
   // ═══════════════════════════════════════════════════════════════════════
   //  RENDER
   // ═══════════════════════════════════════════════════════════════════════
-  const inputPanels = (
+  const inputPanels = React.useMemo(() => (
     <>
       {/* Daily Recommendation */}
       {recommendation && (
@@ -471,9 +472,30 @@ export default function CalculatorScreen() {
         )}
       </TouchableOpacity>
     </>
-  );
+  ), [
+    recommendation, dismissRec,
+    preset.breadType, preset.selectedPreset, preset.oilPct, preset.showOil,
+    preset.prefermentEnabled, preset.prefermentFlourPct, preset.handlePresetSelect,
+    preset.setPrefermentEnabled, preset.setPrefermentFlourPct,
+    inputs.mixRows, inputs.totalFlourWeight, inputs.hydration, inputs.starterWeight,
+    inputs.saltPct, inputs.handleAddFlour, inputs.handleRemoveFlour,
+    inputs.handleUpdateFlour, inputs.handleUpdateFlourGrams,
+    inputs.setHydration, inputs.setStarterWeight, inputs.setSaltPct,
+    inputs.ambientTemp, inputs.flourTemp, inputs.waterTemp, inputs.starterTemp,
+    inputs.locationData, inputs.setAmbientTemp, inputs.setFlourTemp,
+    inputs.setWaterTemp, inputs.setStarterTemp,
+    starter.starterFlourLabel, starter.feedFlourGrams, starter.feedWaterGrams,
+    starter.feedLogging, starter.expanded, starter.lastFed, starter.hoursSince,
+    starter.recentFeedings, starter.status, starter.setStarterFlourLabel,
+    starter.setFeedFlourGrams, starter.setFeedWaterGrams, starter.setExpanded,
+    starter.handleFeedNow, starter.handleFridgeIn, starter.handleFridgeOut,
+    starter.refresh,
+    planByReadyEnabled, readyByHour, readyByMinute,
+    coldProofEnabled, coldProofHours, coldProofTemp,
+    doCalculate, calc.calculating,
+  ]);
 
-  const resultsPanel = calc.results && (
+  const resultsPanel = React.useMemo(() => calc.results && (
     <ResultsSection
       results={calc.results}
       blend={inputs.blend}
@@ -490,7 +512,12 @@ export default function CalculatorScreen() {
       onShare={handleShare}
       readyByResult={readyByResult}
     />
-  );
+  ), [
+    calc.results, inputs.blend, inputs.totalFlourWeight, starter.starterFlourLabel,
+    preset.prefermentEnabled, preset.selectedPreset,
+    inputs.flourTemp, inputs.ambientTemp, inputs.waterTemp, inputs.starterTemp,
+    actions.saving, handleSave, handleShare, readyByResult,
+  ]);
 
   // ═══════════════════════════════════════════════════════════════════════
   //  LAYOUT

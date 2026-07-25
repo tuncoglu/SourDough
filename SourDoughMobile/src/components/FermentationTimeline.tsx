@@ -272,10 +272,10 @@ function DynamicProfileTable({ profile }: { profile: DynamicFermentation['profil
           <Text style={textColRate}>{pt.rate}×</Text>
           <View style={styles.colProgress}>
             <View style={styles.barContainer}>
+              <View style={styles.barBg} />
               <View
                 style={[styles.barFill, { width: `${pt.progress}%` as any }]}
               />
-              <View style={styles.barBg} />
               <Text style={styles.barLabel}>{pt.progress}%</Text>
             </View>
           </View>

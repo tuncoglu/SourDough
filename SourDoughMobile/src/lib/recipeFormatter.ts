@@ -22,6 +22,8 @@ export function formatRecipeText(recipe: SavedRecipe, unitSystem: UnitSystem = '
     inputs.preferment,
     results,
     unitSystem,
+    inputs.ambientTemp,
+    inputs.waterTemp,
   );
   return lines.join('\n');
 }
@@ -41,6 +43,8 @@ export function formatRecipeTextFromState(
   results: CalculationResults,
   bakeInfo?: string,
   unitSystem: UnitSystem = 'metric',
+  ambientTemp?: number,
+  waterTemp?: number,
 ): string {
   const lines = buildSharedLines(
     locationSummary,
@@ -56,6 +60,8 @@ export function formatRecipeTextFromState(
       : undefined,
     results,
     unitSystem,
+    ambientTemp,
+    waterTemp,
   );
 
   if (bakeInfo) {
@@ -79,6 +85,8 @@ function buildSharedLines(
   preferment: { type: 'poolish' | 'biga'; flourPct: number; hydration: number } | undefined,
   results: CalculationResults,
   unitSystem: UnitSystem,
+  ambientTemp?: number,
+  waterTemp?: number,
 ): string[] {
   const wu = weightUnit(unitSystem);
   const lines: string[] = [
@@ -123,10 +131,12 @@ function buildSharedLines(
   lines.push('');
   lines.push('🌡  Temperatures');
   lines.push(`  FDT: ${formatTemp(results.fdt, unitSystem)} (${results.tempZone})`);
-  lines.push(`  Ambient: ${formatTemp(results.fdt, unitSystem)}`); // note: fdt is used as proxy — see note below
-  // FIXME: ambient/water temp aren't in CalculationResults — they're in RecipeInputs.
-  // For the state-based formatter, the caller should pass these explicitly.
-  // For now, we use what we have.
+  if (ambientTemp !== undefined) {
+    lines.push(`  Ambient: ${formatTemp(ambientTemp, unitSystem)}`);
+  }
+  if (waterTemp !== undefined) {
+    lines.push(`  Water: ${formatTemp(waterTemp, unitSystem)}`);
+  }
 
   lines.push('');
   lines.push('⏱️  Fermentation');

@@ -172,7 +172,7 @@ export function useLactoCalculator(): LactoCalculatorState {
       ambientTemp: effectiveTemp,
     };
 
-    const baseResults = runLactoCalculations(baseInputs, veg.waterContentPct);
+    const baseResults = runLactoCalculations(baseInputs, veg.waterContentPct, veg.speedFactor);
 
     // Now compute accurate temp based on the actual estimated duration
     const accurateTemp = computeFermentTemp(
