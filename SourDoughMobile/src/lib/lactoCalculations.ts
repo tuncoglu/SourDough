@@ -322,13 +322,89 @@ export function waterHardnessFermentAdvice(hardness: { mgL: number; classificati
   return tips;
 }
 
+// ── Forecast Temperature for Fermentation ─────────────────────────────
+
+import { HourlyPoint } from '../models/types';
+
+export interface DailyTempSummary {
+  day: string;
+  high: number;
+  low: number;
+  avg: number;
+}
+
+export interface FermentTempResult {
+  effectiveTemp: number;
+  dailyTemps: DailyTempSummary[];
+  source: 'forecast' | 'current' | 'fallback';
+  summary: string;
+}
+
+/**
+ * Compute effective fermentation temperature from an hourly forecast.
+ * Averages temps over the expected ferment duration. Repeats last day's
+ * pattern when forecast doesn't cover the full period.
+ */
+export function computeFermentTemp(
+  hourlyForecast: HourlyPoint[] | null,
+  currentTemp: number | null,
+  estimatedDays: number,
+): FermentTempResult {
+  if (!hourlyForecast || hourlyForecast.length === 0) {
+    const t = currentTemp ?? 22;
+    return {
+      effectiveTemp: t,
+      dailyTemps: [{ day: 'Today', high: t, low: t, avg: t }],
+      source: currentTemp != null ? 'current' : 'fallback',
+      summary: currentTemp != null
+        ? `Using current temperature: ${t}°C`
+        : `No weather data — using default ${t}°C`,
+    };
+  }
+
+  const dayMap = new Map<string, number[]>();
+  for (const point of hourlyForecast) {
+    const date = new Date(point.datetime);
+    const key = date.toISOString().split('T')[0]!;
+    if (!dayMap.has(key)) dayMap.set(key, []);
+    dayMap.get(key)!.push(point.tempC);
+  }
+
+  const days = Array.from(dayMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  const dailyTemps: DailyTempSummary[] = [];
+  const allTemps: number[] = [];
+  const neededDays = Math.max(1, Math.ceil(estimatedDays));
+
+  for (let i = 0; i < neededDays; i++) {
+    const dayData = i < days.length ? days[i]! : ['repeat', days[days.length - 1]![1]] as [string, number[]];
+    const temps = dayData[1];
+    const high = Math.round(Math.max(...temps) * 10) / 10;
+    const low = Math.round(Math.min(...temps) * 10) / 10;
+    const avg = Math.round((temps.reduce((s, t) => s + t, 0) / temps.length) * 10) / 10;
+
+    const dayLabel = i === 0 ? 'Today'
+      : i === 1 ? 'Tomorrow'
+      : new Date(Date.now() + i * 86400000).toLocaleDateString('en-GB', { weekday: 'short' });
+
+    dailyTemps.push({ day: dayLabel, high, low, avg });
+    allTemps.push(...temps);
+  }
+
+  const effectiveTemp = Math.round((allTemps.reduce((s, t) => s + t, 0) / allTemps.length) * 10) / 10;
+  const firstDay = dailyTemps[0]!;
+
+  const summary = estimatedDays <= 1
+    ? `Today: ${firstDay.high}°C / ${firstDay.low}°C`
+    : `${effectiveTemp}°C avg over ${estimatedDays.toFixed(1)} days (${firstDay.high}°C / ${firstDay.low}°C today)`;
+
+  return { effectiveTemp, dailyTemps, source: 'forecast', summary };
+}
+
 // ── Brine Calculator Helper ────────────────────────────────────────────
 
 /**
  * Given a jar volume (ml) and vegetable weight, estimate how much water
  * is needed to fill the remaining space for a brine ferment.
- *
- * Assumes veg displaces roughly its weight in ml (vegetables are ~1 g/ml).
  */
 export function estimateWaterForJar(
   jarVolumeMl: number,

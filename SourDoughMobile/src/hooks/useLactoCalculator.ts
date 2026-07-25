@@ -8,6 +8,9 @@ import {
   lactoAdvice,
   estimateFermentDuration,
   waterHardnessFermentAdvice,
+  computeFermentTemp,
+  DailyTempSummary,
+  FermentTempResult,
 } from '../lib/lactoCalculations';
 import { useLocation } from './useLocation';
 
@@ -33,8 +36,11 @@ export interface LactoCalculatorState {
   waterAmount: string;
   saltPct: string;
   saltType: SaltCrystal;
-  ambientTemp: string;
-  isTempAuto: boolean;
+
+  // Temperature (auto-detected from weather)
+  effectiveTemp: number;
+  tempResult: FermentTempResult | null;
+  dailyTemps: DailyTempSummary[];
 
   // Preset
   presetName: string;
@@ -49,7 +55,7 @@ export interface LactoCalculatorState {
   onPostcodeSubmit: (postcode: string) => void;
   hardness: WaterHardness | null;
 
-  // Results (null until calculated)
+  // Results
   results: FermentResults | null;
   timeline: LactoDayPoint[];
   advice: string[];
@@ -63,11 +69,9 @@ export interface LactoCalculatorState {
   setWaterAmount: (v: string) => void;
   setSaltPct: (v: string) => void;
   setSaltType: (t: SaltCrystal) => void;
-  setAmbientTemp: (v: string) => void;
   calculate: () => void;
 }
 
-/** Fallback hardness when no location data is available. */
 const FALLBACK_HARDNESS: WaterHardness = {
   mgL: 120,
   classification: 'moderately soft',
@@ -84,8 +88,6 @@ export function useLactoCalculator(): LactoCalculatorState {
   const [waterAmount, setWaterAmount] = useState('500');
   const [saltPct, setSaltPct] = useState('2.0');
   const [saltType, setSaltType] = useState<SaltCrystal>('maldon-flake');
-  const [ambientTemp, setAmbientTemp] = useState('22');
-  const [isTempAuto, setIsTempAuto] = useState(false);
   const [showResults, setShowResults] = useState(false);
 
   const [results, setResults] = useState<FermentResults | null>(null);
@@ -99,19 +101,19 @@ export function useLactoCalculator(): LactoCalculatorState {
   const method = preset.method;
   const hardness = locationData?.hardness ?? null;
 
-  // Auto-fill ambient temp from location detection
-  useEffect(() => {
-    if (locationData?.ambientTemp != null) {
-      setAmbientTemp(String(locationData.ambientTemp));
-      setIsTempAuto(true);
-    }
+  // Compute temperature from forecast in real time
+  const tempResult = useMemo(() => {
+    // First pass: rough estimate to know how many days to forecast for
+    const roughDays = 7; // default rough estimate
+    return computeFermentTemp(
+      locationData?.hourlyForecast ?? null,
+      locationData?.ambientTemp ?? null,
+      roughDays,
+    );
   }, [locationData]);
 
-  // Clear auto flag when user manually edits temp
-  const handleSetAmbientTemp = useCallback((v: string) => {
-    setAmbientTemp(v);
-    setIsTempAuto(false);
-  }, []);
+  const effectiveTemp = tempResult.effectiveTemp;
+  const dailyTemps = tempResult.dailyTemps;
 
   // When preset changes, update method + default veg + salt%
   const selectPreset = useCallback((type: FermentType) => {
@@ -154,24 +156,32 @@ export function useLactoCalculator(): LactoCalculatorState {
     const vegW = parseFloat(vegWeight) || 0;
     const waterW = parseFloat(waterAmount) || 0;
     const salt = parseFloat(saltPct) || 2.0;
-    const temp = parseFloat(ambientTemp) || 22;
 
     if (vegW <= 0) return;
     if (method === 'brine' && waterW <= 0) return;
 
-    const inputs: FermentInputs = {
+    // Recompute temp with the actual estimated days (first pass with rough)
+    const baseInputs: FermentInputs = {
       fermentType,
       method,
       vegWeight: vegW,
       waterAmount: waterW,
       saltPct: salt,
       saltType,
-      ambientTemp: temp,
+      ambientTemp: effectiveTemp,
     };
 
-    const baseResults = runLactoCalculations(inputs);
+    const baseResults = runLactoCalculations(baseInputs);
 
-    // Override duration with the veg-specific speed factor
+    // Now compute accurate temp based on the actual estimated duration
+    const accurateTemp = computeFermentTemp(
+      locationData?.hourlyForecast ?? null,
+      locationData?.ambientTemp ?? null,
+      baseResults.estimatedDays,
+    );
+    const temp = accurateTemp.effectiveTemp;
+
+    // Recalculate with accurate temp
     const duration = estimateFermentDuration(temp, veg.speedFactor);
     const finalResults: FermentResults = {
       ...baseResults,
@@ -194,7 +204,7 @@ export function useLactoCalculator(): LactoCalculatorState {
     setAdvice(lactoAdvice(method, salt, temp, finalResults.estimatedDays));
     setWaterAdvice(waterHardnessFermentAdvice(h));
     setShowResults(true);
-  }, [vegWeight, waterAmount, saltPct, ambientTemp, saltType, fermentType, method, veg, hardness]);
+  }, [vegWeight, waterAmount, saltPct, saltType, fermentType, method, veg, hardness, effectiveTemp, locationData]);
 
   return {
     fermentType,
@@ -205,8 +215,9 @@ export function useLactoCalculator(): LactoCalculatorState {
     waterAmount,
     saltPct,
     saltType,
-    ambientTemp,
-    isTempAuto,
+    effectiveTemp,
+    tempResult,
+    dailyTemps,
     presetName: preset.name,
     presetEmoji: preset.emoji,
     tips: preset.tips ?? [],
@@ -227,7 +238,6 @@ export function useLactoCalculator(): LactoCalculatorState {
     setWaterAmount,
     setSaltPct,
     setSaltType,
-    setAmbientTemp: handleSetAmbientTemp,
     calculate,
   };
 }

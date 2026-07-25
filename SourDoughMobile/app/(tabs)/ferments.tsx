@@ -13,7 +13,6 @@ import { LactoTimeline } from '@/src/components/LactoTimeline';
 import { LactoAdvice } from '@/src/components/LactoAdvice';
 import { LocationBar } from '@/src/components/LocationBar';
 import { NumberInput } from '@/src/components/NumberInput';
-import { TempRow } from '@/src/components/TempRow';
 import { Colors, Spacing, FontSize, BorderRadius, useAppTheme, MaxWidth } from '@/src/theme';
 import { FERMENT_TYPE_ORDER } from '@/src/data/fermentPresets';
 import { VEGETABLES, VEG_CATEGORIES } from '@/src/data/vegetables';
@@ -54,6 +53,39 @@ export default function FermentsScreen() {
           showFallbackWarning={!calc.locLoading && !calc.locationData}
           onPostcodeSubmit={calc.onPostcodeSubmit}
         />
+
+        {/* ── Temperature Forecast ── */}
+        {calc.dailyTemps.length > 0 && (
+          <View style={[styles.tempCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.tempTitle, { color: colors.espresso }]}>
+              🌡 Fermentation temperature
+            </Text>
+            <View style={styles.tempDays}>
+              {calc.dailyTemps.slice(0, 5).map((d, i) => (
+                <View key={i} style={styles.tempDay}>
+                  <Text style={[styles.tempDayLabel, { color: colors.muted }]}>{d.day}</Text>
+                  <Text style={[styles.tempDayHigh, { color: colors.espresso }]}>{d.high}°</Text>
+                  <View style={[styles.tempBar, { backgroundColor: colors.border }]}>
+                    <View
+                      style={[
+                        styles.tempBarFill,
+                        {
+                          backgroundColor: d.avg > 24 ? colors.hot : d.avg > 20 ? colors.olive : d.avg > 16 ? colors.cool : colors.cold,
+                          height: `${Math.max(8, Math.min(100, ((d.avg - 10) / 20) * 100))}%`,
+                        },
+                      ]}
+                    />
+                  </View>
+                  <Text style={[styles.tempDayLow, { color: colors.lightText }]}>{d.low}°</Text>
+                </View>
+              ))}
+            </View>
+            <Text style={[styles.tempSummary, { color: colors.lightText }]}>
+              {calc.tempResult?.summary ?? 'Using weather forecast for accurate timing'}
+              {calc.tempResult?.source === 'fallback' && ' — enable location for local temps'}
+            </Text>
+          </View>
+        )}
 
         {/* ── Ferment Type Picker ── */}
         <Text style={[styles.sectionLabel, { color: colors.espresso }]}>Style</Text>
@@ -221,15 +253,6 @@ export default function FermentsScreen() {
               );
             })}
           </ScrollView>
-
-          <View style={styles.tempSection}>
-            <TempRow
-              label="Ambient"
-              value={calc.ambientTemp}
-              onChangeText={calc.setAmbientTemp}
-              isAuto={calc.isTempAuto}
-            />
-          </View>
         </View>
 
         {/* ── Calculate ── */}
@@ -303,6 +326,59 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: Spacing.sm,
     marginTop: Spacing.sm,
+  },
+
+  // Temperature forecast card
+  tempCard: {
+    borderWidth: 1,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  tempTitle: {
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+    marginBottom: Spacing.sm,
+  },
+  tempDays: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  tempDay: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+  },
+  tempDayLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  tempDayHigh: {
+    fontSize: FontSize.xs,
+    fontWeight: '700',
+  },
+  tempBar: {
+    width: '100%',
+    height: 28,
+    borderRadius: 4,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  tempBarFill: {
+    width: '100%',
+    borderRadius: 4,
+    minHeight: 4,
+  },
+  tempDayLow: {
+    fontSize: 11,
+  },
+  tempSummary: {
+    fontSize: FontSize.xs,
+    textAlign: 'center',
+    paddingTop: Spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
   },
 
   // Style chips
@@ -423,9 +499,6 @@ const styles = StyleSheet.create({
   saltChipText: {
     fontSize: FontSize.xs,
     fontWeight: '600',
-  },
-  tempSection: {
-    marginTop: Spacing.sm,
   },
 
   // Calculate
