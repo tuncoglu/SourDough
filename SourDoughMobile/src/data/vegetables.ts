@@ -1,0 +1,553 @@
+/**
+ * Vegetable & fruit catalogue for lacto-fermentation.
+ *
+ * Each entry carries the physical properties needed for accurate
+ * salt and timeline calculations: water content, firmness,
+ * recommended salt percentages, and fermentation speed factor.
+ *
+ * Sources: USDA FoodData Central, Katz "The Art of Fermentation",
+ * Shockey "Fermented Vegetables".
+ */
+
+export type VegCategory = 'leafy' | 'root' | 'fruit-veg' | 'allium' | 'pepper' | 'fruit' | 'other';
+
+export interface VegEntry {
+  id: string;
+  name: string;
+  emoji: string;
+  category: VegCategory;
+  /** Typical water content (%). Affects brine release in dry salting. */
+  waterContentPct: number;
+  /** Recommended salt % for brine method (relative to water weight). */
+  typicalBrineSaltPct: number;
+  /** Recommended salt % for dry/mash method (relative to veg weight). */
+  typicalDrySaltPct: number;
+  /** Fermentation speed relative to cabbage baseline (1.0). */
+  speedFactor: number;
+  /** Firmness affects brine strength: firmer veg needs stronger brine. */
+  firmness: 'soft' | 'medium' | 'firm';
+  /** Typical batch size in grams. */
+  typicalWeight: number;
+  notes?: string;
+}
+
+// ── Ordered for display ─────────────────────────────────────────────────
+
+export const VEG_CATEGORIES: { key: VegCategory; label: string }[] = [
+  { key: 'leafy', label: '🥬 Leafy & Brassicas' },
+  { key: 'root', label: '🥕 Roots & Tubers' },
+  { key: 'fruit-veg', label: '🥒 Fruit Vegetables' },
+  { key: 'allium', label: '🧅 Alliums' },
+  { key: 'pepper', label: '🌶️ Peppers' },
+  { key: 'fruit', label: '🍎 Fruits' },
+  { key: 'other', label: '🥗 Other' },
+];
+
+export const VEGETABLES: VegEntry[] = [
+  // ── Leafy & Brassicas ──
+  {
+    id: 'green-cabbage',
+    name: 'Green Cabbage',
+    emoji: '🥬',
+    category: 'leafy',
+    waterContentPct: 92,
+    typicalBrineSaltPct: 2.5,
+    typicalDrySaltPct: 2.0,
+    speedFactor: 1.0,
+    firmness: 'medium',
+    typicalWeight: 1000,
+    notes: 'The classic sauerkraut base. Reliable and forgiving.',
+  },
+  {
+    id: 'red-cabbage',
+    name: 'Red Cabbage',
+    emoji: '🟣',
+    category: 'leafy',
+    waterContentPct: 90,
+    typicalBrineSaltPct: 2.5,
+    typicalDrySaltPct: 2.0,
+    speedFactor: 1.0,
+    firmness: 'firm',
+    typicalWeight: 800,
+    notes: 'Slightly firmer than green. Beautiful colour, stains everything.',
+  },
+  {
+    id: 'napa-cabbage',
+    name: 'Napa Cabbage',
+    emoji: '🥬',
+    category: 'leafy',
+    waterContentPct: 95,
+    typicalBrineSaltPct: 2.5,
+    typicalDrySaltPct: 2.5,
+    speedFactor: 1.6,
+    firmness: 'soft',
+    typicalWeight: 800,
+    notes: 'Classic kimchi base. High water content — wilts quickly with salt.',
+  },
+  {
+    id: 'savoy-cabbage',
+    name: 'Savoy Cabbage',
+    emoji: '🥬',
+    category: 'leafy',
+    waterContentPct: 91,
+    typicalBrineSaltPct: 2.5,
+    typicalDrySaltPct: 2.0,
+    speedFactor: 1.0,
+    firmness: 'medium',
+    typicalWeight: 800,
+    notes: 'Crinkled leaves hold texture well. Mild, sweet flavour.',
+  },
+  {
+    id: 'cauliflower',
+    name: 'Cauliflower',
+    emoji: '🥗',
+    category: 'leafy',
+    waterContentPct: 92,
+    typicalBrineSaltPct: 5.0,
+    typicalDrySaltPct: 3.0,
+    speedFactor: 0.9,
+    firmness: 'firm',
+    typicalWeight: 500,
+    notes: 'Needs stronger brine (5%). Keeps its crunch beautifully.',
+  },
+  {
+    id: 'broccoli',
+    name: 'Broccoli',
+    emoji: '🥦',
+    category: 'leafy',
+    waterContentPct: 89,
+    typicalBrineSaltPct: 4.0,
+    typicalDrySaltPct: 3.0,
+    speedFactor: 0.9,
+    firmness: 'firm',
+    typicalWeight: 400,
+    notes: 'Stems ferment better than florets. Peel tough outer skin.',
+  },
+  {
+    id: 'kohlrabi',
+    name: 'Kohlrabi',
+    emoji: '🫙',
+    category: 'leafy',
+    waterContentPct: 91,
+    typicalBrineSaltPct: 4.0,
+    typicalDrySaltPct: 2.5,
+    speedFactor: 1.0,
+    firmness: 'firm',
+    typicalWeight: 400,
+    notes: 'Peel, slice thin. Crisp and mild — great in mixed ferments.',
+  },
+
+  // ── Roots & Tubers ──
+  {
+    id: 'carrot',
+    name: 'Carrot',
+    emoji: '🥕',
+    category: 'root',
+    waterContentPct: 88,
+    typicalBrineSaltPct: 3.0,
+    typicalDrySaltPct: 2.0,
+    speedFactor: 1.1,
+    firmness: 'firm',
+    typicalWeight: 400,
+    notes: 'The beginner\'s ferment. Sweet, crunchy, and forgiving. Great with ginger.',
+  },
+  {
+    id: 'daikon',
+    name: 'Daikon Radish',
+    emoji: '🫙',
+    category: 'root',
+    waterContentPct: 95,
+    typicalBrineSaltPct: 3.0,
+    typicalDrySaltPct: 2.5,
+    speedFactor: 1.3,
+    firmness: 'medium',
+    typicalWeight: 500,
+    notes: 'Mild, fast-fermenting. Classic in kimchi and Vietnamese pickles.',
+  },
+  {
+    id: 'red-radish',
+    name: 'Red Radish',
+    emoji: '🫙',
+    category: 'root',
+    waterContentPct: 95,
+    typicalBrineSaltPct: 4.0,
+    typicalDrySaltPct: 3.0,
+    speedFactor: 1.2,
+    firmness: 'medium',
+    typicalWeight: 300,
+    notes: 'Turns the brine pink. Milder when fermented than raw.',
+  },
+  {
+    id: 'beetroot',
+    name: 'Beetroot',
+    emoji: '🫙',
+    category: 'root',
+    waterContentPct: 88,
+    typicalBrineSaltPct: 2.0,
+    typicalDrySaltPct: 2.0,
+    speedFactor: 1.8,
+    firmness: 'firm',
+    typicalWeight: 300,
+    notes: 'High sugar = fast ferment. Earthy, vibrant. Beet kvass is the classic.',
+  },
+  {
+    id: 'turnip',
+    name: 'Turnip',
+    emoji: '🫙',
+    category: 'root',
+    waterContentPct: 92,
+    typicalBrineSaltPct: 3.5,
+    typicalDrySaltPct: 2.5,
+    speedFactor: 1.1,
+    firmness: 'firm',
+    typicalWeight: 400,
+    notes: 'Mild, slightly peppery. Middle Eastern pink turnip pickles are iconic.',
+  },
+  {
+    id: 'ginger',
+    name: 'Ginger',
+    emoji: '🫚',
+    category: 'root',
+    waterContentPct: 79,
+    typicalBrineSaltPct: 2.5,
+    typicalDrySaltPct: 3.0,
+    speedFactor: 1.4,
+    firmness: 'firm',
+    typicalWeight: 100,
+    notes: 'Slice thin. Use young ginger for tenderness. Adds zing to any ferment.',
+  },
+  {
+    id: 'sweet-potato',
+    name: 'Sweet Potato',
+    emoji: '🍠',
+    category: 'root',
+    waterContentPct: 77,
+    typicalBrineSaltPct: 3.0,
+    typicalDrySaltPct: 2.5,
+    speedFactor: 1.5,
+    firmness: 'firm',
+    typicalWeight: 400,
+    notes: 'High sugar = fast ferment. Slice thin for quicker results. Grated is great for fermented slaws.',
+  },
+
+  // ── Fruit Vegetables ──
+  {
+    id: 'pickling-cucumber',
+    name: 'Pickling Cucumber',
+    emoji: '🥒',
+    category: 'fruit-veg',
+    waterContentPct: 96,
+    typicalBrineSaltPct: 3.5,
+    typicalDrySaltPct: 3.0,
+    speedFactor: 1.0,
+    firmness: 'medium',
+    typicalWeight: 500,
+    notes: 'Kirby or gherkin varieties. A tannin leaf (grape/oak/horseradish) preserves crunch.',
+  },
+  {
+    id: 'green-beans',
+    name: 'Green Beans',
+    emoji: '🫘',
+    category: 'fruit-veg',
+    waterContentPct: 90,
+    typicalBrineSaltPct: 5.0,
+    typicalDrySaltPct: 3.0,
+    speedFactor: 0.8,
+    firmness: 'firm',
+    typicalWeight: 400,
+    notes: 'Trim ends. Dilly beans are a classic. Needs 5% brine.',
+  },
+  {
+    id: 'asparagus',
+    name: 'Asparagus',
+    emoji: '🫙',
+    category: 'fruit-veg',
+    waterContentPct: 93,
+    typicalBrineSaltPct: 4.0,
+    typicalDrySaltPct: 3.0,
+    speedFactor: 1.0,
+    firmness: 'medium',
+    typicalWeight: 300,
+    notes: 'Snap off woody ends. Stand upright in jar — tips are delicate.',
+  },
+  {
+    id: 'okra',
+    name: 'Okra',
+    emoji: '🫙',
+    category: 'fruit-veg',
+    waterContentPct: 90,
+    typicalBrineSaltPct: 4.0,
+    typicalDrySaltPct: 3.0,
+    speedFactor: 1.0,
+    firmness: 'medium',
+    typicalWeight: 300,
+    notes: 'Keeps its crunch. Add a grape leaf to reduce sliminess.',
+  },
+  {
+    id: 'green-tomato',
+    name: 'Green Tomato',
+    emoji: '🍅',
+    category: 'fruit-veg',
+    waterContentPct: 93,
+    typicalBrineSaltPct: 3.5,
+    typicalDrySaltPct: 2.5,
+    speedFactor: 1.1,
+    firmness: 'medium',
+    typicalWeight: 500,
+    notes: 'End-of-season classic. Firm green tomatoes only — ripe ones turn to mush.',
+  },
+  {
+    id: 'zucchini',
+    name: 'Zucchini / Courgette',
+    emoji: '🥒',
+    category: 'fruit-veg',
+    waterContentPct: 95,
+    typicalBrineSaltPct: 3.5,
+    typicalDrySaltPct: 3.0,
+    speedFactor: 1.0,
+    firmness: 'soft',
+    typicalWeight: 400,
+    notes: 'High water content — slice thick or it goes soft. Better in mixed ferments.',
+  },
+
+  // ── Alliums ──
+  {
+    id: 'onion',
+    name: 'Onion',
+    emoji: '🧅',
+    category: 'allium',
+    waterContentPct: 89,
+    typicalBrineSaltPct: 3.0,
+    typicalDrySaltPct: 2.5,
+    speedFactor: 1.2,
+    firmness: 'medium',
+    typicalWeight: 300,
+    notes: 'Mellows beautifully when fermented. Slice thin. Red onions are prettiest.',
+  },
+  {
+    id: 'garlic',
+    name: 'Garlic',
+    emoji: '🧄',
+    category: 'allium',
+    waterContentPct: 59,
+    typicalBrineSaltPct: 3.0,
+    typicalDrySaltPct: 3.0,
+    speedFactor: 1.0,
+    firmness: 'firm',
+    typicalWeight: 100,
+    notes: 'Fermented garlic in honey is a cult favourite. Cloves may turn blue/green — harmless enzymatic reaction.',
+  },
+  {
+    id: 'shallot',
+    name: 'Shallot',
+    emoji: '🧅',
+    category: 'allium',
+    waterContentPct: 80,
+    typicalBrineSaltPct: 3.0,
+    typicalDrySaltPct: 2.5,
+    speedFactor: 1.1,
+    firmness: 'medium',
+    typicalWeight: 200,
+    notes: 'Sweeter than onions. Great in mixed ferments.',
+  },
+  {
+    id: 'leek',
+    name: 'Leek',
+    emoji: '🫙',
+    category: 'allium',
+    waterContentPct: 83,
+    typicalBrineSaltPct: 3.0,
+    typicalDrySaltPct: 2.5,
+    speedFactor: 1.0,
+    firmness: 'medium',
+    typicalWeight: 300,
+    notes: 'Clean thoroughly between layers. Mild, delicate flavour.',
+  },
+
+  // ── Peppers ──
+  {
+    id: 'jalapeno',
+    name: 'Jalapeño',
+    emoji: '🌶️',
+    category: 'pepper',
+    waterContentPct: 92,
+    typicalBrineSaltPct: 3.0,
+    typicalDrySaltPct: 3.0,
+    speedFactor: 1.2,
+    firmness: 'firm',
+    typicalWeight: 200,
+    notes: 'Slice into rings or ferment whole (pierce first). Great brine for nachos.',
+  },
+  {
+    id: 'habanero',
+    name: 'Habanero',
+    emoji: '🌶️',
+    category: 'pepper',
+    waterContentPct: 88,
+    typicalBrineSaltPct: 3.0,
+    typicalDrySaltPct: 3.0,
+    speedFactor: 1.3,
+    firmness: 'firm',
+    typicalWeight: 100,
+    notes: 'Classic hot sauce base. Blend post-ferment. WEAR GLOVES.',
+  },
+  {
+    id: 'bell-pepper',
+    name: 'Bell Pepper',
+    emoji: '🫑',
+    category: 'pepper',
+    waterContentPct: 94,
+    typicalBrineSaltPct: 3.0,
+    typicalDrySaltPct: 2.5,
+    speedFactor: 1.1,
+    firmness: 'medium',
+    typicalWeight: 300,
+    notes: 'Sweet, mild. Slice into strips. Mixed colours look beautiful.',
+  },
+
+  // ── Fruits ──
+  {
+    id: 'apple',
+    name: 'Apple',
+    emoji: '🍎',
+    category: 'fruit',
+    waterContentPct: 86,
+    typicalBrineSaltPct: 2.0,
+    typicalDrySaltPct: 2.0,
+    speedFactor: 1.3,
+    firmness: 'firm',
+    typicalWeight: 300,
+    notes: 'Use firm varieties (Granny Smith, Honeycrisp). Cinnamon stick and clove pair well.',
+  },
+  {
+    id: 'pear',
+    name: 'Pear',
+    emoji: '🍐',
+    category: 'fruit',
+    waterContentPct: 84,
+    typicalBrineSaltPct: 2.0,
+    typicalDrySaltPct: 2.0,
+    speedFactor: 1.3,
+    firmness: 'soft',
+    typicalWeight: 300,
+    notes: 'Use slightly underripe pears. Star anise and vanilla bean are great aromatics.',
+  },
+  {
+    id: 'plum',
+    name: 'Plum',
+    emoji: '🫙',
+    category: 'fruit',
+    waterContentPct: 87,
+    typicalBrineSaltPct: 2.0,
+    typicalDrySaltPct: 2.0,
+    speedFactor: 1.4,
+    firmness: 'soft',
+    typicalWeight: 300,
+    notes: 'Ferment whole (pierced) or halved. Goes well with rosemary or thyme.',
+  },
+  {
+    id: 'peach',
+    name: 'Peach',
+    emoji: '🍑',
+    category: 'fruit',
+    waterContentPct: 89,
+    typicalBrineSaltPct: 2.0,
+    typicalDrySaltPct: 2.0,
+    speedFactor: 1.4,
+    firmness: 'soft',
+    typicalWeight: 300,
+    notes: 'Slightly underripe peaches hold shape better. Basil and vanilla complement.',
+  },
+  {
+    id: 'pineapple',
+    name: 'Pineapple',
+    emoji: '🍍',
+    category: 'fruit',
+    waterContentPct: 86,
+    typicalBrineSaltPct: 2.0,
+    typicalDrySaltPct: 2.0,
+    speedFactor: 1.6,
+    firmness: 'medium',
+    typicalWeight: 300,
+    notes: 'Ferments fast. Great for tepache (with piloncillo and spices), but lacto-fermented pineapple chunks are delicious in salsas.',
+  },
+  {
+    id: 'mango',
+    name: 'Mango',
+    emoji: '🥭',
+    category: 'fruit',
+    waterContentPct: 83,
+    typicalBrineSaltPct: 2.0,
+    typicalDrySaltPct: 2.0,
+    speedFactor: 1.5,
+    firmness: 'soft',
+    typicalWeight: 200,
+    notes: 'Use slightly underripe. Goes great with chilli and lime zest.',
+  },
+
+  // ── Other ──
+  {
+    id: 'celery',
+    name: 'Celery',
+    emoji: '🫙',
+    category: 'other',
+    waterContentPct: 95,
+    typicalBrineSaltPct: 3.5,
+    typicalDrySaltPct: 2.5,
+    speedFactor: 0.9,
+    firmness: 'firm',
+    typicalWeight: 300,
+    notes: 'Stringy — peel the outer ribs. Great in giardiniera mix.',
+  },
+  {
+    id: 'fennel',
+    name: 'Fennel',
+    emoji: '🫙',
+    category: 'other',
+    waterContentPct: 90,
+    typicalBrineSaltPct: 3.0,
+    typicalDrySaltPct: 2.5,
+    speedFactor: 1.0,
+    firmness: 'firm',
+    typicalWeight: 300,
+    notes: 'Slice thin. Anise flavour mellows. Pairs with citrus zest.',
+  },
+  {
+    id: 'corn',
+    name: 'Sweetcorn',
+    emoji: '🌽',
+    category: 'other',
+    waterContentPct: 76,
+    typicalBrineSaltPct: 3.0,
+    typicalDrySaltPct: 2.5,
+    speedFactor: 1.2,
+    firmness: 'firm',
+    typicalWeight: 300,
+    notes: 'Use fresh kernels cut from the cob. Smoky, sweet result.',
+  },
+];
+
+// ── Lookup helpers ──────────────────────────────────────────────────────
+
+const vegMap = new Map<string, VegEntry>();
+for (const v of VEGETABLES) {
+  vegMap.set(v.id, v);
+}
+
+export function findVeg(id: string): VegEntry {
+  return vegMap.get(id) ?? VEGETABLES[0]!;
+}
+
+/** Get all veg for a given category. */
+export function vegByCategory(cat: VegCategory): VegEntry[] {
+  return VEGETABLES.filter((v) => v.category === cat);
+}
+
+/** Get all veg sorted by name within category. */
+export function allVegByCategory(): { cat: VegCategory; label: string; items: VegEntry[] }[] {
+  return VEG_CATEGORIES.map(({ key, label }) => ({
+    cat: key,
+    label,
+    items: VEGETABLES.filter((v) => v.category === key),
+  }));
+}

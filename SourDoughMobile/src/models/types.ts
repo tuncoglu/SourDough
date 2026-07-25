@@ -299,3 +299,88 @@ export interface RecipePreset {
   /** Label for a single unit: "loaf", "baguette", "pizza", "piece", etc. */
   unitLabel: string;
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// Lacto-Fermentation Types
+// ═══════════════════════════════════════════════════════════════════════
+
+export type FermentMethod = 'dry' | 'brine' | 'mash';
+
+export type FermentType =
+  | 'sauerkraut'
+  | 'kimchi'
+  | 'dill-pickles'
+  | 'carrot-sticks'
+  | 'hot-sauce'
+  | 'beet-kvass'
+  | 'radish-cauliflower'
+  | 'custom';
+
+/** Salt crystal type — different densities give different tsp/tbsp weights. */
+export type SaltCrystal = 'fine-sea' | 'coarse-sea' | 'diamond-kosher' | 'morton-kosher' | 'pickling';
+
+/** Density of each salt type in grams per teaspoon. */
+export const SALT_DENSITY_G_PER_TSP: Record<SaltCrystal, number> = {
+  'fine-sea': 5.7,
+  'coarse-sea': 4.8,
+  'diamond-kosher': 2.8,
+  'morton-kosher': 4.8,
+  'pickling': 6.0,
+};
+
+/** Human-readable labels for salt types. */
+export const SALT_LABELS: Record<SaltCrystal, string> = {
+  'fine-sea': 'Fine sea salt',
+  'coarse-sea': 'Coarse sea salt',
+  'diamond-kosher': 'Diamond Crystal kosher',
+  'morton-kosher': 'Morton kosher',
+  'pickling': 'Pickling salt',
+};
+
+export interface FermentPreset {
+  id: FermentType;
+  name: string;
+  emoji: string;
+  description: string;
+  method: FermentMethod;
+  typicalSaltPct: number;       // 2–5%
+  saltPctMin: number;
+  saltPctMax: number;
+  typicalVegWeight: number;     // grams — typical batch size
+  speedFactor: number;          // 1.0 = baseline (sauerkraut); higher = faster
+  /** Vegetables with high water content release their own brine in dry salting. */
+  waterContentPct: number;      // typical water content of the vegetable
+  tips?: string[];
+  /** For brine method: recommended brine strength %. */
+  brineStrength?: number;
+}
+
+export interface FermentInputs {
+  fermentType: FermentType;
+  method: FermentMethod;
+  vegWeight: number;            // grams
+  waterAmount: number;          // grams (brine method only)
+  saltPct: number;              // salt % (relative to veg for dry, water for brine)
+  saltType: SaltCrystal;
+  ambientTemp: number;          // °C
+}
+
+export interface FermentResults {
+  saltGrams: number;
+  saltTeaspoons: number;
+  saltTablespoons: number;
+  totalBrineGrams: number;      // water + salt (brine method only, 0 for dry)
+  effectiveSalinity: number;    // final brine % accounting for veg water (dry method)
+  estimatedDays: number;        // days to completion at current temp
+  estimatedDaysMin: number;     // range: early taste
+  estimatedDaysMax: number;     // range: fully sour
+  targetPH: number;             // 4.0
+  brineStrengthDisplay: string; // e.g. "3.5% brine"
+  saltLabel: string;
+}
+
+export interface LactoDayPoint {
+  day: number;
+  label: string;
+  description: string;
+}

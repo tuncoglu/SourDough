@@ -61,6 +61,15 @@ export default function TabLayout() {
               }}
             />
             <Tabs.Screen
+              name="ferments"
+              options={{
+                title: 'Ferments',
+                tabBarIcon: ({ color }) => (
+                  <TabIcon name="testtube.2" color={color} />
+                ),
+              }}
+            />
+            <Tabs.Screen
               name="history"
               options={{
                 title: 'History',
