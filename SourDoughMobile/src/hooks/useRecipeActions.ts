@@ -154,6 +154,7 @@ export function useRecipeActions() {
       parseFloat(oilPct) || undefined,
       prefermentEnabled ? 'poolish' : undefined,
       prefermentEnabled ? parseFloat(prefermentFlourPct) || undefined : undefined,
+      prefermentEnabled ? 100 : undefined, // poolish = 100% hydration (biga support TBD)
       results,
       bakeInfo,
       unitSystem,

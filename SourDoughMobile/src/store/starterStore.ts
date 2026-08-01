@@ -37,6 +37,15 @@ export async function getLastFeeding(): Promise<StarterFeeding | null> {
   return feedings.length > 0 ? feedings[0] : null;
 }
 
+/** Update an existing feeding by id (merges fields). */
+export async function updateFeeding(id: string, patch: Partial<StarterFeeding>): Promise<void> {
+  const feedings = await loadFeedings();
+  const idx = feedings.findIndex((f) => f.id === id);
+  if (idx === -1) return;
+  feedings[idx] = { ...feedings[idx], ...patch };
+  await AsyncStorage.setItem(FEEDINGS_KEY, JSON.stringify(feedings));
+}
+
 /** Delete a feeding by id */
 export async function deleteFeeding(id: string): Promise<void> {
   const feedings = await loadFeedings();

@@ -58,6 +58,10 @@ export const TARGET_HOURS = 4.0;
 /** Integration time step for dynamic fermentation model (hours). 15 min. */
 export const DT = 0.25;
 
+/** Maximum integration steps before giving up (100h at DT=0.25 = 400 steps).
+ *  Beyond this the estimate is meaningless — fermentation would take >4 days. */
+const MAX_STEPS = 400;
+
 /** Proof time ≈ 60% of bulk fermentation duration.
  *  Empirical observation (Hammelman, "Bread") — the shaped loaf proofs
  *  faster than bulk because the dough is warmer and more active after folds. */
@@ -114,13 +118,15 @@ export function calculateIngredients(
   let prefermentWater = 0;
   let prefermentTotal = 0;
   if (preferment && preferment.flourPct > 0) {
-    prefermentFlour = totalFlour * (preferment.flourPct / 100);
+    // Guard against pct > 100 which would make bowlFlour negative
+    const effectivePct = Math.min(preferment.flourPct, 100);
+    prefermentFlour = totalFlour * (effectivePct / 100);
     prefermentWater = prefermentFlour * (preferment.hydration / 100);
     prefermentTotal = prefermentFlour + prefermentWater;
   }
 
   // Bowl flour: fresh flour minus what's in the pre-ferment
-  const bowlFlour = freshFlour - prefermentFlour;
+  const bowlFlour = Math.max(0, freshFlour - prefermentFlour);
 
   const waterTotal = (hydrationPct / 100.0) * totalFlour;
   // Added water = total water – water in starter – water in pre-ferment
@@ -135,6 +141,7 @@ export function calculateIngredients(
 
   return {
     freshFlour: round1(freshFlour),
+    bowlFlour: round1(bowlFlour),
     flourFromStarter: round1(starterFlour),
     totalFlour: round1(totalFlour),
     addedWater: round1(addedWater),
@@ -248,7 +255,7 @@ export function estimateDynamicFermentation(
   const forecast = hourlyForecast.slice(startIdx);
   const lastTemp = forecast[forecast.length - 1].tempC;
   let lastTime = new Date(forecast[forecast.length - 1].datetime);
-  while (forecast.length < 200) {
+  while (forecast.length < MAX_STEPS) {
     lastTime = new Date(lastTime.getTime() + 3600000);
     forecast.push({ datetime: lastTime.toISOString(), tempC: lastTemp });
   }
@@ -256,6 +263,7 @@ export function estimateDynamicFermentation(
   let doughTemp = fdt;
   let progress = 0.0;
   let steps = 0;
+  let converged = false;
   const profile: FermentationProfilePoint[] = [];
   let peakRate = 0.0;
   let ambientSum = 0.0;
@@ -291,7 +299,11 @@ export function estimateDynamicFermentation(
       lastLoggedHour = t.getHours();
     }
 
-    if (progress >= TARGET_HOURS) break;
+    if (progress >= TARGET_HOURS) {
+      converged = true;
+      break;
+    }
+    if (steps >= MAX_STEPS) break;
   }
 
   const bulkHours = steps * DT;
@@ -304,6 +316,7 @@ export function estimateDynamicFermentation(
     profile: profile.slice(0, 25),
     peakRate: round1(peakRate),
     avgAmbient,
+    converged,
   };
 }
 
@@ -505,6 +518,7 @@ export function estimateColdProof(
      profile: profile.slice(0, 32), // allow more rows with cold phase
      peakRate: round1(peakRate),
      avgAmbient,
+     converged: baseProfile.converged,
    };
 }
 
@@ -587,6 +601,11 @@ export function runAllCalculations(
         ...dynamicFerment,
         totalHours: Math.round((dynamicFerment.bulkHours + proofHours) * 2) / 2,
       };
+    }
+
+    // Warn if the forecast window wasn't long enough for the model to converge
+    if (dynamicFerment && !dynamicFerment.converged) {
+      warnings.push('⚠️ Fermentation estimate did not converge within the forecast window. The actual time may be longer than shown.');
     }
   }
 

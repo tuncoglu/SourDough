@@ -53,7 +53,7 @@ export function FlourBlendCard({
           <View style={styles.pickerWrap}>
             <FlourPicker
               value={row.flour.label}
-              onSelect={(f: any) => onUpdateFlour(row.key, f)}
+              onSelect={(f) => onUpdateFlour(row.key, f)}
             />
           </View>
           <NumberInput

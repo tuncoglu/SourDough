@@ -231,6 +231,7 @@ const desktopStyles = StyleSheet.create({
     color: Colors.muted,
   },
   backdrop: {
+    // web-only: 'fixed' not in RN's position type ('absolute'|'relative')
     position: 'fixed' as any,
     top: 0,
     left: 0,
@@ -253,9 +254,9 @@ const desktopStyles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
     shadowRadius: 12,
-    width: '100%' as any,
+    width: '100%' as const,
     maxWidth: 640,
-    maxHeight: '80%' as any,
+    maxHeight: '80%' as const,
     padding: Spacing.lg,
   },
   popoverTitle: {
@@ -273,7 +274,7 @@ const desktopStyles = StyleSheet.create({
     gap: Spacing.sm,
   },
   card: {
-    width: '31%' as any,
+    width: '31%' as const,
     backgroundColor: Colors.card,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -320,7 +321,7 @@ const desktopStyles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: BorderRadius.sm,
-    textTransform: 'uppercase' as any,
+    textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   difficultyMedium: {

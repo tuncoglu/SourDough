@@ -13,11 +13,6 @@ export interface MixRow {
   grams: string;
 }
 
-let _mixKeyCounter = 0;
-function nextMixKey(): string {
-  return `flour_${_mixKeyCounter++}`;
-}
-
 export interface CalculatorInputs {
   // Flour mix
   mixRows: MixRow[];
@@ -67,6 +62,12 @@ export interface CalculatorInputs {
 export function useCalculatorInputs(): CalculatorInputs {
   const { data: locationData, loading: locLoading, error: locError, detect, refineWithPostcode } = useLocation();
 
+  // Instance-scoped counter survives Fast Refresh (no module-level mutable state)
+  const mixKeyCounter = useRef(0);
+  const nextMixKey = useCallback((): string => {
+    return `flour_${mixKeyCounter.current++}`;
+  }, []);
+
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
   const [mixRows, setMixRows] = useState<MixRow[]>([
     { key: nextMixKey(), flour: findFlour(DEFAULT_SETTINGS.defaultFlourType), grams: String(DEFAULT_SETTINGS.defaultFlourWeight) },
@@ -80,6 +81,11 @@ export function useCalculatorInputs(): CalculatorInputs {
   const [waterTemp, setWaterTemp] = useState('18');
   const [starterTemp, setStarterTemp] = useState('22');
   const [oilPct, setOilPct] = useState('0');
+
+  // Track whether user has manually edited any field — prevents GPS/settings
+  // auto-fill from overwriting user input on slow async resolution.
+  const userInteractedRef = useRef(false);
+  const markInteracted = useCallback(() => { userInteractedRef.current = true; }, []);
 
   // Deferred values for smooth typing — defer blend bar and weight recalc
   const deferredMixRows = useDeferredValue(mixRows);
@@ -112,7 +118,7 @@ export function useCalculatorInputs(): CalculatorInputs {
       }
       return [...updated, { key: nextMixKey(), flour: findFlour('Generic: Bread Flour'), grams: newGrams }];
     });
-  }, []);
+  }, [nextMixKey]);
 
   const handleRemoveFlour = useCallback((key: string) => {
     setMixRows((prev) => {
@@ -129,16 +135,21 @@ export function useCalculatorInputs(): CalculatorInputs {
     setMixRows((prev) => prev.map((r) => (r.key === key ? { ...r, grams } : r)));
   }, []);
 
-  // Load settings on mount
+  // Load settings on mount (skip overwrite if user has already interacted)
+  const settingsLoadedRef = useRef(false);
   useEffect(() => {
     getSettings().then((s) => {
+      if (settingsLoadedRef.current) return;
+      settingsLoadedRef.current = true;
       setSettings(s);
-      setMixRows([{ key: nextMixKey(), flour: findFlour(s.defaultFlourType), grams: String(s.defaultFlourWeight) }]);
-      setHydration(String(s.defaultHydration));
-      setSaltPct(String(s.defaultSaltPct));
-      setStarterHydrationStr(String(s.defaultStarterHydration));
+      if (!userInteractedRef.current) {
+        setMixRows([{ key: nextMixKey(), flour: findFlour(s.defaultFlourType), grams: String(s.defaultFlourWeight) }]);
+        setHydration(String(s.defaultHydration));
+        setSaltPct(String(s.defaultSaltPct));
+        setStarterHydrationStr(String(s.defaultStarterHydration));
+      }
     });
-  }, []);
+  }, [nextMixKey]);
 
   // Reload settings on focus (for water hardness override)
   const didMountRef = useRef(false);
@@ -156,16 +167,24 @@ export function useCalculatorInputs(): CalculatorInputs {
     }, [settings.waterHardnessOverride]),
   );
 
-  // Pre-fill temps when location detected
+  // Pre-fill temps when location detected — only once, don't overwrite user edits
+  const gpsAutoFillDoneRef = useRef(false);
   useEffect(() => {
-    if (locationData) {
+    if (locationData && !gpsAutoFillDoneRef.current && !userInteractedRef.current) {
       const auto = getAutoTemps(locationData.ambientTemp, locationData.waterTemp);
       setAmbientTemp(String(auto.ambientTemp));
       setFlourTemp(String(auto.flourTemp));
       setWaterTemp(String(auto.waterTemp));
       setStarterTemp(String(auto.starterTemp));
+      gpsAutoFillDoneRef.current = true;
     }
-  }, [locationData]);
+  }, [locationData, markInteracted]);
+
+  // Wrapped setters that mark user interaction (prevents GPS/settings auto-overwrite)
+  const wrapSet = useCallback(<T,>(setter: (v: T) => void) => (v: T) => {
+    userInteractedRef.current = true;
+    setter(v);
+  }, []);
 
   return {
     mixRows,
@@ -191,14 +210,14 @@ export function useCalculatorInputs(): CalculatorInputs {
     handleRemoveFlour,
     handleUpdateFlour,
     handleUpdateFlourGrams,
-    setHydration,
-    setStarterWeight,
-    setSaltPct,
-    setStarterHydrationStr,
-    setOilPct,
-    setAmbientTemp,
-    setFlourTemp,
-    setWaterTemp,
-    setStarterTemp,
+    setHydration: wrapSet(setHydration),
+    setStarterWeight: wrapSet(setStarterWeight),
+    setSaltPct: wrapSet(setSaltPct),
+    setStarterHydrationStr: wrapSet(setStarterHydrationStr),
+    setOilPct: wrapSet(setOilPct),
+    setAmbientTemp: wrapSet(setAmbientTemp),
+    setFlourTemp: wrapSet(setFlourTemp),
+    setWaterTemp: wrapSet(setWaterTemp),
+    setStarterTemp: wrapSet(setStarterTemp),
   };
 }

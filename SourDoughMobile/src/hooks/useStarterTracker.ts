@@ -4,6 +4,7 @@ import {
   getStarterFlour,
   setStarterFlour as persistStarterFlour,
   logFeeding,
+  updateFeeding,
   generateFeedingId,
   getLastFeeding,
   loadFeedings,
@@ -47,7 +48,10 @@ export function useStarterTracker(): StarterTrackerState & StarterTrackerActions
   const [hoursSince, setHoursSince] = useState('');
   const [recentFeedings, setRecentFeedings] = useState<StarterFeeding[]>([]);
 
-  const status = useMemo(() => computeStarterStatus(lastFed), [lastFed, hoursSince]);
+  // Separate tick for status recomputation — avoids coupling the useMemo to a
+  // display string whose value happens to change every minute.
+  const [statusTick, setStatusTick] = useState(0);
+  const status = useMemo(() => computeStarterStatus(lastFed), [lastFed, statusTick]);
 
   const refresh = useCallback(async () => {
     const lf = await getLastFeeding();
@@ -108,11 +112,11 @@ export function useStarterTracker(): StarterTrackerState & StarterTrackerActions
       Alert.alert('Already fridged', 'Starter is already in the fridge.');
       return;
     }
-    const updated = { ...lastFed, fridgeAt: new Date().toISOString() };
-    await logFeeding(updated);
+    const fridgeAt = new Date().toISOString();
+    await updateFeeding(lastFed.id, { fridgeAt });
+    const updated = { ...lastFed, fridgeAt };
     setLastFed(updated);
-    await refresh();
-  }, [lastFed, refresh]);
+  }, [lastFed]);
 
   const handleFridgeOut = useCallback(async () => {
     if (!lastFed) return;
@@ -124,11 +128,11 @@ export function useStarterTracker(): StarterTrackerState & StarterTrackerActions
       Alert.alert('Already out', 'Starter is already out of the fridge.');
       return;
     }
-    const updated = { ...lastFed, outOfFridgeAt: new Date().toISOString() };
-    await logFeeding(updated);
+    const outOfFridgeAt = new Date().toISOString();
+    await updateFeeding(lastFed.id, { outOfFridgeAt });
+    const updated = { ...lastFed, outOfFridgeAt };
     setLastFed(updated);
-    await refresh();
-  }, [lastFed, refresh]);
+  }, [lastFed]);
 
   // Load persisted preferences on mount
   useEffect(() => {
@@ -148,12 +152,13 @@ export function useStarterTracker(): StarterTrackerState & StarterTrackerActions
     return () => sub.remove();
   }, []);
 
-  // Update "hours since" every minute
+  // Update "hours since" and status tick every minute
   useEffect(() => {
     if (appState !== 'active' || !lastFed) return;
     const t = setInterval(() => {
       const diff = Date.now() - new Date(lastFed.timestamp).getTime();
       setHoursSince((diff / 3600000).toFixed(1));
+      setStatusTick((n) => n + 1);
     }, 60000);
     return () => clearInterval(t);
   }, [appState, lastFed]);

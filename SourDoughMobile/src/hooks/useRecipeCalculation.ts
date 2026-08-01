@@ -8,7 +8,6 @@ import {
 } from '../models/types';
 import { runAllCalculations, getBlendProtein } from '../lib/calculations';
 import { classifyHardness } from '../data/ukWaterHardness';
-import { findFlour } from '../lib/flourSearch';
 import type { LocationData } from '../lib/location';
 
 function buildManualHardness(mgL: number): WaterHardness {
@@ -107,7 +106,10 @@ export function useRecipeCalculation() {
 
     setCalculating(true);
 
-    const flour = findFlour(blend[0]?.label ?? 'Generic: Bread Flour');
+    // Use the first blend entry's product number directly (avoid re-looking up via findFlour)
+    const firstEntry = blend[0];
+    const productNo = firstEntry?.productNumber ?? '-';
+    const firstEntryProtein = firstEntry?.protein ?? 12.5;
     const manualHw = waterHardnessOverride || 0;
     const hardness: WaterHardness = (!isNaN(manualHw) && manualHw > 0)
       ? buildManualHardness(manualHw)
@@ -120,7 +122,7 @@ export function useRecipeCalculation() {
     const flourType = blend.length === 1
       ? blend[0].label
       : blend.map((e) => `${Math.round(e.percentage)}% ${e.label.replace(/\s*\([^)]*\)$/, '')}`).join(' + ');
-    const flourProtein = blend.length > 1 ? getBlendProtein(blend) : flour.protein;
+    const flourProtein = blend.length > 1 ? getBlendProtein(blend) : firstEntryProtein;
 
     const prefConfig = prefermentEnabled
       ? { type: 'poolish' as const, flourPct: parseFloat(prefermentFlourPct) || 30, hydration: 100 }
@@ -134,7 +136,7 @@ export function useRecipeCalculation() {
         flourWeight: fw,
         flourType,
         flourProtein,
-        flourProductNo: flour.productNumber,
+        flourProductNo: productNo,
         flourBlend: blend,
         hydration: hyd,
         starterWeight: sw,

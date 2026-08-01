@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import * as ExpoLocation from 'expo-location';
 import { LocationData, detectAll } from '../lib/location';
 import { geocodePostcode } from '../lib/api';
@@ -9,6 +9,10 @@ export function useLocation() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [postcode, setPostcode] = useState<string>('');
+
+  // Ref to avoid rebuilding detect() every time postcode changes
+  const postcodeRef = useRef(postcode);
+  postcodeRef.current = postcode;
 
   const detect = useCallback(async () => {
     setLoading(true);
@@ -28,7 +32,7 @@ export function useLocation() {
       const result = await detectAll(
         pos.coords.latitude,
         pos.coords.longitude,
-        postcode || undefined,
+        postcodeRef.current || undefined,
         null,
       );
 
@@ -42,7 +46,7 @@ export function useLocation() {
     } finally {
       setLoading(false);
     }
-  }, [postcode]);
+  }, []);
 
   const refineWithPostcode = useCallback(async (pc: string, countryCode: string = '') => {
     setLoading(true);

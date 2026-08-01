@@ -92,7 +92,10 @@ export interface RecipeInputs {
 
 // ── Ingredient Results ─────────────────────────────────────────────────
 export interface IngredientResults {
+  /** @deprecated The original scalar flour input. Use bowlFlour for actual bowl weight. */
   freshFlour: number;
+  /** Flour going into the bowl: freshFlour minus preferment flour (if any). */
+  bowlFlour: number;
   flourFromStarter: number;
   totalFlour: number;
   addedWater: number;
@@ -124,6 +127,8 @@ export interface DynamicFermentation {
   profile: FermentationProfilePoint[];
   peakRate: number;
   avgAmbient: number;
+  /** True if the model reached TARGET_HOURS within the forecast window. */
+  converged: boolean;
 }
 
 // ── Temperature Zone ───────────────────────────────────────────────────

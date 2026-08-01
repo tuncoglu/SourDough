@@ -40,6 +40,7 @@ export function formatRecipeTextFromState(
   oilPct: number | undefined,
   prefermentType: string | undefined,
   prefermentFlourPct: number | undefined,
+  prefermentHydration: number | undefined,
   results: CalculationResults,
   bakeInfo?: string,
   unitSystem: UnitSystem = 'metric',
@@ -56,7 +57,7 @@ export function formatRecipeTextFromState(
     saltPct,
     oilPct,
     prefermentType && prefermentFlourPct
-      ? { type: 'poolish' as const, flourPct: prefermentFlourPct, hydration: 100 }
+      ? { type: (prefermentType === 'biga' ? 'biga' : 'poolish') as 'poolish' | 'biga', flourPct: prefermentFlourPct, hydration: prefermentHydration ?? 100 }
       : undefined,
     results,
     unitSystem,

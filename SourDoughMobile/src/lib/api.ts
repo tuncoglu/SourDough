@@ -11,6 +11,12 @@ const OPEN_METEO_ARCHIVE = 'https://archive-api.open-meteo.com/v1/archive';
 const NOMINATIM_BASE = 'https://nominatim.openstreetmap.org';
 const USER_AGENT = 'SourDough/3.0 (JustDoughIt)';
 
+/** Parsed JSON from an external API — shape varies by endpoint and is not
+ *  statically knowable. `any` access is intentional here; callers do
+ *  null-safe optional chaining (e.g. `data?.current?.temperature_2m`). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ApiJson = Record<string, any> | null;
+
 // Nominatim rate limit: 1 req/s (polite use policy)
 let lastNominatimCall = 0;
 
@@ -23,7 +29,7 @@ async function fetchWithRetry(
   timeoutMs = 8000,
   maxRetries = 2,
   baseDelayMs = 1000,
-): Promise<any> {
+): Promise<ApiJson> {
   let lastError: unknown = null;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -71,7 +77,7 @@ async function fetchWithRetry(
 }
 
 /** Throttle Nominatim calls to respect 1 req/s rate limit. */
-async function nominatimGet(url: string, timeoutMs = 8000): Promise<any> {
+async function nominatimGet(url: string, timeoutMs = 8000): Promise<ApiJson> {
   const now = Date.now();
   const wait = Math.max(0, 1100 - (now - lastNominatimCall));
   if (wait > 0) {

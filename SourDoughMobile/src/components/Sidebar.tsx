@@ -3,8 +3,10 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-nati
 import { useRouter, usePathname } from 'expo-router';
 import { Colors, Spacing, FontSize, BorderRadius, MaxWidth, useAppTheme } from '../theme';
 
+type AppRoute = '/' | '/ferments' | '/history' | '/settings';
+
 interface NavItem {
-  path: string;
+  path: AppRoute;
   label: string;
   icon: string;
 }
@@ -21,7 +23,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const { colors, isDark } = useAppTheme();
 
-  const isActive = (path: string) => {
+  const isActive = (path: AppRoute) => {
     if (path === '/') return pathname === '/';
     return pathname.startsWith(path);
   };
@@ -46,7 +48,7 @@ export function Sidebar() {
                 styles.navItem,
                 active && { backgroundColor: isDark ? '#3D3530' : '#F5EDE4' },
               ]}
-              onPress={() => router.push(item.path as any)}
+              onPress={() => router.push(item.path)}
               activeOpacity={0.6}
             >
               <Text style={styles.navIcon}>{item.icon}</Text>

@@ -220,6 +220,7 @@ const styles = StyleSheet.create({
     transform: [{ rotate: '180deg' }],
   },
   backdrop: {
+    // web-only: 'fixed' not in RN's position type ('absolute'|'relative')
     position: 'fixed' as any,
     top: 0,
     left: 0,
@@ -242,9 +243,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
     shadowRadius: 12,
-    width: '100%' as any,
+    width: '100%' as const,
     maxWidth: 480,
-    maxHeight: '80%' as any,
+    maxHeight: '80%' as const,
   },
   modal: {
     flex: 1,

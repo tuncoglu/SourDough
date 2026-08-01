@@ -182,20 +182,13 @@ export function useLactoCalculator(): LactoCalculatorState {
     );
     const temp = accurateTemp.effectiveTemp;
 
-    // Recalculate with accurate temp
+    // Recalculate with accurate temp (salinity unchanged — already correct from baseResults)
     const duration = estimateFermentDuration(temp, veg.speedFactor);
     const finalResults: FermentResults = {
       ...baseResults,
       estimatedDays: duration.days,
       estimatedDaysMin: duration.daysMin,
       estimatedDaysMax: duration.daysMax,
-      effectiveSalinity: (() => {
-        const saltG = baseResults.saltGrams;
-        if (method === 'brine') return salt;
-        const releasedWater = vegW * (veg.waterContentPct / 100) * (method === 'mash' ? 1.0 : 0.7);
-        const total = releasedWater + saltG;
-        return total > 0 ? Math.round((saltG / total) * 1000) / 10 : salt;
-      })(),
     };
 
     const h = hardness ?? FALLBACK_HARDNESS;

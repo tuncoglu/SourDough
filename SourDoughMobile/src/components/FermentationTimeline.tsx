@@ -274,7 +274,7 @@ function DynamicProfileTable({ profile }: { profile: DynamicFermentation['profil
             <View style={styles.barContainer}>
               <View style={styles.barBg} />
               <View
-                style={[styles.barFill, { width: `${pt.progress}%` as any }]}
+                style={[styles.barFill, { width: `${pt.progress}%` }]}
               />
               <Text style={styles.barLabel}>{pt.progress}%</Text>
             </View>
