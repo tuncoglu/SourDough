@@ -22,21 +22,21 @@ const CARDS: LandingCard[] = [
     title: 'Sourdough Bread',
     description:
       'Recipe builder with flour blends, hydration targets, and temperature-adjusted fermentation timelines.',
-    route: '/',
+    route: '/(tabs)',
   },
   {
     emoji: '🥛',
     title: 'Yogurt',
     description:
       'Starter culture calculator with 10 heirloom cultures, milk types, incubation timeline, and yield estimates.',
-    route: '/yogurt',
+    route: '/(tabs)/yogurt',
   },
   {
     emoji: '🫙',
     title: 'Lacto-Fermentation',
     description:
       'Salt calculator for sauerkraut, kimchi, pickles, hot sauce, and more — with day-by-day pH timeline.',
-    route: '/ferments',
+    route: '/(tabs)/ferments',
   },
 ];
 
@@ -87,7 +87,7 @@ export default function LandingScreen() {
         {/* Footer */}
         <View style={[styles.footer, { borderTopColor: colors.border }]}>
           <TouchableOpacity
-            onPress={() => router.push('/history')}
+            onPress={() => router.push('/(tabs)/history')}
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel="View saved recipe history"
@@ -97,7 +97,7 @@ export default function LandingScreen() {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => router.push('/settings')}
+            onPress={() => router.push('/(tabs)/settings')}
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel="Open settings"

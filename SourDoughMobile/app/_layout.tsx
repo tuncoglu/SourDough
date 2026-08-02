@@ -12,7 +12,7 @@ export function ErrorBoundary({ error, retry }: { error: Error; retry: () => voi
 }
 
 export const unstable_settings = {
-  initialRouteName: 'landing',
+  initialRouteName: 'index',
 };
 
 SplashScreen.preventAutoHideAsync();
@@ -51,7 +51,7 @@ function RootLayoutNav() {
 
   return (
     <Stack>
-      <Stack.Screen name="landing" options={{ headerShown: false }} />
+      <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen
         name="recipe/[id]"
