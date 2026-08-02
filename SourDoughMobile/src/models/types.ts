@@ -336,7 +336,11 @@ export type SaltCrystal =
   | 'table-salt';
 
 /** Density of each salt type in grams per teaspoon.
- *  Measured by weight of a level tsp. Sources: manufacturer data, King Arthur Baking. */
+ *  Measured by weight of a level tsp. Sources: manufacturer data, King Arthur Baking.
+ *
+ *  NOTE: Actual density varies ±15-20% depending on measurement method
+ *  (scooped vs spoon-and-level), humidity, and crystal size.
+ *  Volume-to-weight conversions are approximations — weighing is more accurate. */
 export const SALT_DENSITY_G_PER_TSP: Record<SaltCrystal, number> = {
   'fine-sea': 5.7,
   'coarse-sea': 4.8,
@@ -417,6 +421,7 @@ export interface FermentResults {
   estimatedDays: number;        // days to completion at current temp
   estimatedDaysMin: number;     // range: early taste
   estimatedDaysMax: number;     // range: fully sour
+  tempCapped: boolean;          // true when ambient temp exceeds reliable Q10 range
   targetPH: number;             // 4.0
   brineStrengthDisplay: string; // e.g. "3.5% brine"
   saltLabel: string;
@@ -433,6 +438,8 @@ export interface LactoDayPoint {
 // ═══════════════════════════════════════════════════════════════════════
 
 export type YogurtCultureType = 'thermophilic' | 'mesophilic';
+
+export type StarterSource = 'sachet' | 'previous-batch';
 
 export type YogurtType =
   | 'bulgarian'
@@ -488,21 +495,25 @@ export interface YogurtInputs {
   milkId: string;
   milkLitres: number;
   incubationTempC: number;
+  starterSource: StarterSource;
   sachetCount: number;
+  previousBatchGrams?: number;  // grams of previous-batch yogurt used as starter
   preHeatEnabled: boolean;
 }
 
 export interface YogurtResults {
   milkGrams: number;
-  sachetCount: number;
-  starterRatioDisplay: string;     // e.g. "1 sachet per 2L"
+  starterSource: StarterSource;
+  sachetCount: number;              // 0 when using previous-batch
+  previousBatchGrams: number;       // 0 when using sachets
+  starterRatioDisplay: string;      // e.g. "1 sachet per 2L" or "30g per L"
   incubationHours: number;
   incubationHoursMin: number;
   incubationHoursMax: number;
-  estimatedYieldGrams: number;     // accounts for evaporation loss (~5%)
+  estimatedYieldGrams: number;      // accounts for evaporation loss (~3%)
   estimatedYieldLitres: number;
-  estimatedServings: number;       // based on 150g serving
-  effectiveTemp: number;
+  estimatedServings: number;        // based on 150g serving
+  tempCapped: boolean;
 }
 
 export interface YogurtStepPoint {

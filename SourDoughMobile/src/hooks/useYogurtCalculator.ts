@@ -7,6 +7,7 @@ import {
   YogurtResults,
   YogurtStepPoint,
   MilkEntry,
+  StarterSource,
 } from '../models/types';
 import { YOGURT_CULTURES, YOGURT_TYPE_ORDER, MILK_TYPES, findMilk, DEFAULT_MILK_ID } from '../data/yogurtCultures';
 import {
@@ -28,7 +29,9 @@ export interface YogurtCalculatorState {
   milkId: string;
   milk: MilkEntry;
   milkLitres: string;
+  starterSource: StarterSource;
   sachetCount: string;
+  previousBatchGrams: string;
   preHeatEnabled: boolean;
 
   // Temperature
@@ -69,6 +72,8 @@ export interface YogurtCalculatorState {
   selectMilk: (id: string) => void;
   setMilkLitres: (v: string) => void;
   setSachetCount: (v: string) => void;
+  setStarterSource: (v: StarterSource) => void;
+  setPreviousBatchGrams: (v: string) => void;
   setPreHeatEnabled: (v: boolean) => void;
   calculate: () => void;
 }
@@ -79,7 +84,9 @@ export function useYogurtCalculator(): YogurtCalculatorState {
   const [yogurtType, setYogurtType] = useState<YogurtType>('bulgarian');
   const [milkId, setMilkId] = useState(DEFAULT_MILK_ID);
   const [milkLitres, setMilkLitres] = useState('2');
+  const [starterSource, setStarterSource] = useState<StarterSource>('sachet');
   const [sachetCount, setSachetCount] = useState('1');
+  const [previousBatchGrams, setPreviousBatchGrams] = useState('60'); // 30g/L × 2L default
   const [preHeatEnabled, setPreHeatEnabled] = useState(true);
   const [showResults, setShowResults] = useState(false);
 
@@ -117,7 +124,9 @@ export function useYogurtCalculator(): YogurtCalculatorState {
     const p = YOGURT_CULTURES[type]!;
     setYogurtType(type);
     setShowResults(false);
+    setStarterSource('sachet');
     setSachetCount(String(calculateSachets(p.typicalMilkLitres, p.starterRatio)));
+    setPreviousBatchGrams(String(p.typicalMilkLitres * 30)); // 30g per litre
     setMilkLitres(String(p.typicalMilkLitres));
     // Enable pre-heat by default for thermophilic, disable for mesophilic
     setPreHeatEnabled(p.type === 'thermophilic');
@@ -129,11 +138,12 @@ export function useYogurtCalculator(): YogurtCalculatorState {
     setShowResults(false);
   }, []);
 
-  // Auto-update sachet count when milk volume changes
+  // Auto-update sachet count / previous-batch grams when milk volume changes
   useEffect(() => {
     const litres = parseFloat(milkLitres) || 0;
     if (litres > 0 && preset) {
       setSachetCount(String(calculateSachets(litres, preset.starterRatio)));
+      setPreviousBatchGrams(String(litres * 30)); // 30g per litre (≈2 tbsp/L)
     }
   }, [milkLitres, preset]);
 
@@ -152,7 +162,9 @@ export function useYogurtCalculator(): YogurtCalculatorState {
       milkId,
       milkLitres: litres,
       incubationTempC: temp,
+      starterSource,
       sachetCount: sachets,
+      previousBatchGrams: parseFloat(previousBatchGrams) || undefined,
       preHeatEnabled,
     };
 
@@ -186,13 +198,15 @@ export function useYogurtCalculator(): YogurtCalculatorState {
 
       const finalResults: YogurtResults = {
         ...baseResults,
+        starterSource: baseResults.starterSource,
+        sachetCount: baseResults.sachetCount,
+        previousBatchGrams: baseResults.previousBatchGrams,
         incubationHours: incubation.hours,
         incubationHoursMin: incubation.hoursMin,
         incubationHoursMax: incubation.hoursMax,
         estimatedYieldGrams: yield_.estimatedYieldGrams,
         estimatedYieldLitres: yield_.estimatedYieldLitres,
         estimatedServings: yield_.estimatedServings,
-        effectiveTemp: finalTemp,
       };
 
       setResults(finalResults);
@@ -218,7 +232,9 @@ export function useYogurtCalculator(): YogurtCalculatorState {
     milkId,
     milk,
     milkLitres,
+    starterSource,
     sachetCount,
+    previousBatchGrams,
     preHeatEnabled,
     effectiveTemp,
     tempResult,
@@ -247,6 +263,8 @@ export function useYogurtCalculator(): YogurtCalculatorState {
     selectMilk,
     setMilkLitres,
     setSachetCount,
+    setStarterSource,
+    setPreviousBatchGrams,
     setPreHeatEnabled,
     calculate,
   };

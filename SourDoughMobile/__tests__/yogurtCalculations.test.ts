@@ -189,6 +189,7 @@ describe('runYogurtCalculations', () => {
     milkId: 'cow-whole',
     milkLitres: 2,
     incubationTempC: 42,
+    starterSource: 'sachet',
     sachetCount: 1,
     preHeatEnabled: true,
   };

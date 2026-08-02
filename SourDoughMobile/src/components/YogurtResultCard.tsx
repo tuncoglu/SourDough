@@ -57,12 +57,25 @@ export function YogurtResultCard({ results, cultureType, thickness, nutrition }:
       {/* Starter */}
       <View style={styles.divider}>
         <Text style={[styles.label, { color: colors.muted }]}>Starter</Text>
-        <Text style={[styles.value, { color: colors.espresso }]}>
-          {results.sachetCount} sachet{results.sachetCount > 1 ? 's' : ''}
-        </Text>
-        <Text style={[styles.range, { color: colors.lightText }]}>
-          {results.starterRatioDisplay}
-        </Text>
+        {results.starterSource === 'previous-batch' ? (
+          <>
+            <Text style={[styles.value, { color: colors.espresso }]}>
+              {results.previousBatchGrams}g
+            </Text>
+            <Text style={[styles.range, { color: colors.lightText }]}>
+              previous batch (~{Math.round(results.previousBatchGrams / 15)} tbsp)
+            </Text>
+          </>
+        ) : (
+          <>
+            <Text style={[styles.value, { color: colors.espresso }]}>
+              {results.sachetCount} sachet{results.sachetCount > 1 ? 's' : ''}
+            </Text>
+            <Text style={[styles.range, { color: colors.lightText }]}>
+              {results.starterRatioDisplay}
+            </Text>
+          </>
+        )}
       </View>
 
       {/* Culture type badge */}

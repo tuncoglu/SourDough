@@ -81,9 +81,13 @@ export function calculateFermentSalt(
     case 'dry': {
       // Salt % is of vegetable weight
       saltGrams = vegWeight * (saltPct / 100);
-      // Effective brine salinity after veg water is released
-      // Veg water released ≈ waterContentPct% of veg weight (some stays in the veg)
-      const releasedWater = vegWeight * (waterContentPct / 100) * 0.7; // ~70% of water is released
+      // Effective brine salinity after veg water is released.
+      // The 0.7 water-release factor is a weighted default. Actual release
+      // varies widely by vegetable (Katz, Shockey):
+      //   - Cabbage: 60–80% (thin leaves, high surface area)
+      //   - Carrots: 20–40% (dense, low surface area)
+      //   - Kale:   30–50% (fibrous, moderate release)
+      const releasedWater = vegWeight * (waterContentPct / 100) * 0.7;
       totalBrineGrams = releasedWater + saltGrams;
       effectiveSalinity = totalBrineGrams > 0
         ? (saltGrams / totalBrineGrams) * 100
@@ -116,12 +120,22 @@ export function calculateFermentSalt(
 
 // ── Fermentation Timeline ──────────────────────────────────────────────
 
+/** Maximum temperature (°C) at which the Q10 model is reliable.
+ * Above this, Leuconostoc is inhibited and LAB community composition
+ * shifts, so the simple Q10 prediction breaks down. */
+const MAX_EFFECTIVE_TEMP = 35.0;
+
 /**
  * Estimate fermentation duration based on temperature and speed factor.
  *
  * Uses the same Q10 model as the bread calculator:
- *   rate = speedFactor × Q10^((temp - BASE_TEMP) / 10)
+ *   rate = speedFactor × Q10^((effectiveTemp - BASE_TEMP) / 10)
  *   days = BASE_DAYS / rate
+ *
+ * Temperature is capped at MAX_EFFECTIVE_TEMP for the Q10 calculation.
+ * Above that, the estimate is linearly penalised (over 15°C overshoot
+ * toward 2× slower) to reflect LAB community shifts and Leuconostoc
+ * inhibition at higher temperatures.
  *
  * speedFactor accounts for different ferments:
  *   - sauerkraut/pickles: 1.0
@@ -132,9 +146,19 @@ export function calculateFermentSalt(
 export function estimateFermentDuration(
   temp: number,
   speedFactor: number = 1.0,
-): { days: number; daysMin: number; daysMax: number } {
-  const rate = speedFactor * Math.pow(Q10, (temp - BASE_TEMP) / 10);
-  const days = BASE_DAYS / rate;
+): { days: number; daysMin: number; daysMax: number; tempCapped: boolean } {
+  const tempCapped = temp > MAX_EFFECTIVE_TEMP;
+  const effectiveTemp = Math.min(temp, MAX_EFFECTIVE_TEMP);
+  const rate = speedFactor * Math.pow(Q10, (effectiveTemp - BASE_TEMP) / 10);
+  let days = BASE_DAYS / rate;
+
+  // If temp exceeds the effective cap, blend the estimate:
+  // linearly penalise over a 15°C overshoot window toward 2× slower.
+  if (tempCapped) {
+    const overshoot = temp - MAX_EFFECTIVE_TEMP;
+    const penalty = 1 + Math.min(overshoot / 15, 1); // max 2× penalty at +15°C
+    days *= penalty;
+  }
 
   // Range: ±30% for early taste / fully sour
   const daysMin = days * 0.6;
@@ -144,6 +168,7 @@ export function estimateFermentDuration(
     days: clampDays(days),
     daysMin: clampDays(daysMin),
     daysMax: clampDays(daysMax),
+    tempCapped,
   };
 }
 
@@ -255,6 +280,7 @@ export function runLactoCalculations(
     estimatedDays: duration.days,
     estimatedDaysMin: duration.daysMin,
     estimatedDaysMax: duration.daysMax,
+    tempCapped: duration.tempCapped,
     targetPH: TARGET_PH,
     brineStrengthDisplay: brineLabel,
     saltLabel: salt.saltLabel,

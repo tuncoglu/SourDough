@@ -16,7 +16,7 @@ import { YogurtScience } from '@/src/components/YogurtScience';
 import { LocationBar } from '@/src/components/LocationBar';
 import { NumberInput } from '@/src/components/NumberInput';
 import { Colors, Spacing, FontSize, BorderRadius, useAppTheme, MaxWidth } from '@/src/theme';
-import { YogurtType } from '@/src/models/types';
+import { YogurtType, StarterSource } from '@/src/models/types';
 import { MILK_TYPES } from '@/src/data/yogurtCultures';
 
 export default function YogurtScreen() {
@@ -239,18 +239,55 @@ export default function YogurtScreen() {
             </Text>
           </View>
 
-          <NumberInput
-            label="Sachets"
-            value={calc.sachetCount}
-            unit="pcs"
-            onChangeText={calc.setSachetCount}
-            placeholder="1"
-          />
-          <View style={styles.hintRow}>
-            <Text style={[styles.hintText, { color: colors.lightText }]}>
-              Auto-calculated: 1 sachet per {calc.cultureType === 'thermophilic' ? '2L' : '1L'} recommended
-            </Text>
+          {/* Starter source toggle */}
+          <View style={styles.toggleRow}>
+            <View style={styles.toggleLabel}>
+              <Text style={[styles.toggleTitle, { color: colors.espresso }]}>
+                Previous batch starter
+              </Text>
+              <Text style={[styles.toggleHint, { color: colors.lightText }]}>
+                Use yogurt from your last batch instead of freeze-dried sachets
+              </Text>
+            </View>
+            <Switch
+              value={calc.starterSource === 'previous-batch'}
+              onValueChange={(v) => calc.setStarterSource(v ? 'previous-batch' : 'sachet')}
+              trackColor={{ false: colors.disabledBg, true: colors.oliveLight }}
+              thumbColor={calc.starterSource === 'previous-batch' ? colors.olive : colors.disabled}
+            />
           </View>
+
+          {calc.starterSource === 'sachet' ? (
+            <>
+              <NumberInput
+                label="Sachets"
+                value={calc.sachetCount}
+                unit="pcs"
+                onChangeText={calc.setSachetCount}
+                placeholder="1"
+              />
+              <View style={styles.hintRow}>
+                <Text style={[styles.hintText, { color: colors.lightText }]}>
+                  Auto-calculated: 1 sachet per {calc.cultureType === 'thermophilic' ? '2L' : '1L'} recommended
+                </Text>
+              </View>
+            </>
+          ) : (
+            <>
+              <NumberInput
+                label="Starter"
+                value={calc.previousBatchGrams}
+                unit="g"
+                onChangeText={calc.setPreviousBatchGrams}
+                placeholder="60"
+              />
+              <View style={styles.hintRow}>
+                <Text style={[styles.hintText, { color: colors.lightText }]}>
+                  2 tbsp ≈ 30g per litre of milk. Use plain, unflavored yogurt.
+                </Text>
+              </View>
+            </>
+          )}
 
           {/* Pre-heat toggle */}
           <View style={styles.toggleRow}>

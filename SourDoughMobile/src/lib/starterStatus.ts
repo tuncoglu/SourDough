@@ -3,23 +3,24 @@
  *
  * Real-world workflow:
  *   1. Feed starter → sits on counter, activates over 4–8h
- *   2. Into fridge → metabolism slows ~10× at 4°C (Q10 model)
+ *   2. Into fridge → metabolism slows ~15–20× at 4°C (empirically measured)
  *   3. Out of fridge → needs ~3h warmup to reach full activity again
  *   4. At peak → use in recipe, then feed and repeat
  */
 import { StarterFeeding, StarterStatus } from '../models/types';
 
-/** Fridge temperature for the metabolic slowdown model. */
-const FRIDGE_TEMP = 4;
-
-/** Q10 coefficient — rate change per 10°C. */
-const Q10 = 2.5;
-
-/** Reference counter temperature. */
-const COUNTER_TEMP = 22;
-
-/** How much metabolic activity slows in the fridge vs counter. */
-const FRIDGE_RATE = Math.pow(Q10, (FRIDGE_TEMP - COUNTER_TEMP) / 10); // ≈ 0.05
+/**
+ * How much metabolic activity slows in the fridge vs counter.
+ *
+ * The simple Q10 model (Q10≈2.5) gives ~0.19 (19%) for 4°C vs 22°C, which is
+ * far too fast — real starter metabolism at 4°C is only ~5–8% of the counter
+ * rate because microbial enzymes hit a minimum-activity floor near 0°C
+ * (Arrhenius breakpoint).
+ *
+ * Empirically, 1 week at 4°C ≈ 10–12 counter-hours, so we hardcode ~0.06.
+ * Reference: Gänzle et al. (2019) sourdough microbiota; Hammelman "Bread".
+ */
+const FRIDGE_RATE = 0.06;
 
 /** Hours after coming out of fridge before starter reaches full activity. */
 const FRIDGE_WARMUP_HOURS = 3;

@@ -13,6 +13,7 @@ import {
   YogurtStepPoint,
   MilkEntry,
   MilkFatLevel,
+  StarterSource,
 } from '../models/types';
 
 // ── Physical Constants ─────────────────────────────────────────────────
@@ -20,7 +21,14 @@ import {
 /** Milk density in grams per ml (whole milk ≈1.03 kg/L). */
 const MILK_DENSITY_G_PER_ML = 1.03;
 
-/** Estimated evaporation loss during incubation (%). */
+/**
+ * Estimated evaporation loss during incubation (%).
+ *
+ * Sealed yogurt makers lose virtually no moisture (~0%); uncovered oven
+ * methods can lose 5–10% during a long incubation. This 3% is a middle
+ * ground for covered-but-not-sealed setups (e.g. jars with loose lids or
+ * a towel-covered pot). Reference: Tamime & Robinson (2007).
+ */
 const EVAPORATION_LOSS_PCT = 3;
 
 /** Standard yogurt serving size in grams. */
@@ -96,18 +104,30 @@ export function estimateIncubation(
   temp: number,
   cultureType: YogurtCultureType,
   typicalHours: number,
-): { hours: number; hoursMin: number; hoursMax: number } {
+  tempMaxC?: number,
+): { hours: number; hoursMin: number; hoursMax: number; tempCapped: boolean } {
   const baseTemp = cultureType === 'thermophilic'
     ? BASE_TEMP_THERMOPHILIC
     : BASE_TEMP_MESOPHILIC;
 
-  const rate = Math.pow(Q10, (temp - baseTemp) / 10);
-  const hours = typicalHours / rate;
+  const maxTemp = tempMaxC ?? (cultureType === 'thermophilic' ? 48 : 30);
+  const cappedTemp = Math.min(temp, maxTemp);
+  const rate = Math.pow(Q10, (cappedTemp - baseTemp) / 10);
+  let hours = typicalHours / rate;
+  let tempCapped = false;
+
+  if (temp > maxTemp) {
+    // Linear penalty from 0 at the cap to 1 at cap+10°C
+    const penalty = Math.min(1, (temp - maxTemp) / 10);
+    hours = hours * (1 - penalty) + MAX_HOURS * penalty;
+    tempCapped = true;
+  }
 
   return {
     hours: clampHours(hours),
     hoursMin: clampHours(hours * 0.75),
     hoursMax: clampHours(hours * 1.5),
+    tempCapped,
   };
 }
 
@@ -268,17 +288,24 @@ export function runYogurtCalculations(
     inputs.incubationTempC,
     inputs.cultureType,
     culture.typicalHours,
+    culture.tempMaxC,
   );
 
   const yield_ = estimateYield(inputs.milkLitres, culture.thickness);
 
-  const starterDisplay = culture.starterRatio >= 1
-    ? `${culture.starterRatio} sachet${culture.starterRatio > 1 ? 's' : ''} per L`
-    : `1 sachet per ${Math.round(1 / culture.starterRatio)}L`;
+  const isPreviousBatch = inputs.starterSource === 'previous-batch';
+
+  const starterDisplay = isPreviousBatch
+    ? `${inputs.previousBatchGrams ?? 30}g per L (≈2 tbsp)`
+    : culture.starterRatio >= 1
+      ? `${culture.starterRatio} sachet${culture.starterRatio > 1 ? 's' : ''} per L`
+      : `1 sachet per ${Math.round(1 / culture.starterRatio)}L`;
 
   return {
     milkGrams,
-    sachetCount: inputs.sachetCount,
+    starterSource: inputs.starterSource,
+    sachetCount: isPreviousBatch ? 0 : inputs.sachetCount,
+    previousBatchGrams: isPreviousBatch ? (inputs.previousBatchGrams ?? 30) : 0,
     starterRatioDisplay: starterDisplay,
     incubationHours: incubation.hours,
     incubationHoursMin: incubation.hoursMin,
@@ -286,7 +313,7 @@ export function runYogurtCalculations(
     estimatedYieldGrams: yield_.estimatedYieldGrams,
     estimatedYieldLitres: yield_.estimatedYieldLitres,
     estimatedServings: yield_.estimatedServings,
-    effectiveTemp: inputs.incubationTempC,
+    tempCapped: incubation.tempCapped,
   };
 }
 

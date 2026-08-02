@@ -34,13 +34,6 @@ const BASE_FERMENTATION_HOURS = 4.0;
 /** Minimum feasible fermentation time (hours) regardless of conditions. */
 const MIN_FERMENTATION_HOURS = 2.0;
 
-/** Additional hours per °C below baseline (cold dough). */
-const ADD_TIME_PER_DEGREE_BELOW = 0.5;
-
-/** Subtracted hours per °C above baseline (warm dough).
- *  Asymmetric — cooling speeds up less than warming slows down. */
-const SUB_TIME_PER_DEGREE_ABOVE = 0.25;
-
 /** Thermal time constant (hours) — how fast dough temperature drifts
  *  toward ambient. ~1.5 h for a typical 1–2 kg dough mass. */
 export const TAU = 1.5;
@@ -77,12 +70,47 @@ export {
 } from './blendUtils';
 
 // ── FDT Calculation ────────────────────────────────────────────────────
+/**
+ * Calculate Final Dough Temperature (FDT).
+ *
+ * When ingredient weights are provided, computes a mass- and heat-capacity-
+ * weighted average. Specific heats (J/g·°C): flour ≈ 1.8, water ≈ 4.18,
+ * starter ≈ 3.0. Reference: Gisslen 9th ed., Calvel "Le Goût du Pain".
+ *
+ * Without weights, falls back to a simple arithmetic average for backward
+ * compatibility.
+ */
 export function calculateFDT(
   flourTemp: number,
   waterTemp: number,
   ambientTemp: number,
   starterTemp: number,
+  flourWeight?: number,
+  waterWeight?: number,
+  starterWeight?: number,
 ): number {
+  if (
+    flourWeight !== undefined &&
+    waterWeight !== undefined &&
+    starterWeight !== undefined &&
+    flourWeight + waterWeight + starterWeight > 0
+  ) {
+    // Specific heats (J/g·°C)
+    const CP_FLOUR = 1.8;
+    const CP_WATER = 4.18;
+    const CP_STARTER = 3.0;
+
+    const numerator =
+      flourWeight * CP_FLOUR * flourTemp +
+      waterWeight * CP_WATER * waterTemp +
+      starterWeight * CP_STARTER * starterTemp;
+    const denominator =
+      flourWeight * CP_FLOUR + waterWeight * CP_WATER + starterWeight * CP_STARTER;
+
+    return numerator / denominator;
+  }
+
+  // Fallback: simple arithmetic average
   return (flourTemp + waterTemp + ambientTemp + starterTemp) / 4.0;
 }
 
@@ -169,22 +197,20 @@ export function estimateFermentation(
   // Inoculation factor: more starter = faster (time ∝ 1/√(inoc%))
   const inocRate = Math.sqrt(inoculationPct / 20.0);
   // Hydration factor: wetter dough = faster (rate ∝ (hyd% / 70)^0.6)
+  // Reference: Hammelman "Bread", Gisslen 9th ed.
   const hydRate = Math.pow(hydrationPct / 70.0, 0.6);
   // Flour factor: wholemeal/rye/spelt ferment faster than white
   const flourFactor = resolveFermentFactor(flour);
   const baseHours = BASE_FERMENTATION_HOURS / (inocRate * hydRate * flourFactor);
 
-  const delta = fdt - BASE_FERMENTATION_TEMP;
-  let hours: number;
-  if (delta < 0) {
-    hours = baseHours + Math.abs(delta) * ADD_TIME_PER_DEGREE_BELOW;
-  } else {
-    hours = baseHours - delta * SUB_TIME_PER_DEGREE_ABOVE;
-  }
+  // Q10 temperature adjustment — consistent with dynamic model
+  const rateMultiplier = Math.pow(Q10, (fdt - T_BASE) / 10.0);
+  let hours = baseHours / rateMultiplier;
   hours = Math.max(hours, MIN_FERMENTATION_HOURS / Math.max(inocRate, 0.5));
   const hoursRounded = Math.round(hours * 2) / 2;
 
   // Build note
+  const delta = fdt - BASE_FERMENTATION_TEMP;
   let inocNote = '';
   if (inoculationPct > 30) {
     inocNote = ` ${inoculationPct.toFixed(0)}% inoculation speeds things up.`;
@@ -227,14 +253,23 @@ export function estimateDynamicFermentation(
 
   // Inoculation + hydration + flour multipliers
   const inocRate = Math.sqrt(inoculationPct / 20.0);
+  // Hydration factor: wetter dough = faster (rate ∝ (hyd% / 70)^0.6)
+  // Reference: Hammelman "Bread", Gisslen 9th ed.
   const hydRate = Math.pow(hydrationPct / 70.0, 0.6);
   const flourFactor = resolveFermentFactor(flour);
   const baseRate = inocRate * hydRate * flourFactor;
 
-  // Vitality factor: starter weakens linearly from 12h to 24h post-feeding
+  // Vitality factor: triangular peak model (Gänzle et al., 2019)
+  // 0h=0.85 → peak 1.0 at 6h → 0.7 at 24h → floor 0.65 after 24h
   let vitalityFactor = 1.0;
-  if (starterHoursSinceFed !== undefined && starterHoursSinceFed > 12) {
-    vitalityFactor = Math.max(0.7, 1.0 - (starterHoursSinceFed - 12) / 12 * 0.3);
+  if (starterHoursSinceFed !== undefined) {
+    if (starterHoursSinceFed <= 6) {
+      vitalityFactor = 0.85 + (0.15 / 6) * starterHoursSinceFed;
+    } else if (starterHoursSinceFed <= 24) {
+      vitalityFactor = 1.0 - (0.3 / 18) * (starterHoursSinceFed - 6);
+    } else {
+      vitalityFactor = 0.65;
+    }
   }
   const adjustedBaseRate = baseRate * vitalityFactor;
 
@@ -251,13 +286,20 @@ export function estimateDynamicFermentation(
     }
   }
 
-  // Slice from current hour, then extend linearly if it runs out
+  // Slice from current hour, then extend by repeating the last 24h to
+  // preserve day/night temperature cycles.
   const forecast = hourlyForecast.slice(startIdx);
-  const lastTemp = forecast[forecast.length - 1].tempC;
-  let lastTime = new Date(forecast[forecast.length - 1].datetime);
-  while (forecast.length < MAX_STEPS) {
-    lastTime = new Date(lastTime.getTime() + 3600000);
-    forecast.push({ datetime: lastTime.toISOString(), tempC: lastTemp });
+  if (forecast.length > 0) {
+    const cycleLen = Math.min(forecast.length, 24);
+    const cycle = forecast.slice(forecast.length - cycleLen);
+    let lastTime = new Date(forecast[forecast.length - 1].datetime);
+    while (forecast.length < MAX_STEPS) {
+      lastTime = new Date(lastTime.getTime() + 3600000);
+      forecast.push({
+        datetime: lastTime.toISOString(),
+        tempC: cycle[((forecast.length - hourlyForecast.slice(startIdx).length) % cycleLen) % cycle.length].tempC,
+      });
+    }
   }
 
   let doughTemp = fdt;
@@ -461,6 +503,14 @@ export function waterHardnessAdvice(hardness: WaterHardness): string[] {
  * slow rate (Q10 model extended downward).
  *
  * At 4°C, rate ≈ 0.05–0.08× baseline — primarily acetic acid production.
+ *
+ * NOTE: This model uses a uniform Q10 coefficient (≈2.5) across all
+ * temperatures. In reality, yeast (S. cerevisiae) and lactic acid bacteria
+ * respond differently to cold: below 10°C, yeast metabolism slows more
+ * sharply than LAB, shifting the balance toward bacterial (especially acetic
+ * acid) activity. The uniform Q10 model does not capture this differential
+ * temperature response — the estimated rate is a composite average that
+ * may understate the shift toward acetic character in cold proofing.
  */
 export function estimateColdProof(
   baseProfile: DynamicFermentation,
@@ -529,13 +579,6 @@ export function runAllCalculations(
   hardness: WaterHardness,
   warnings: string[] = [],
 ): CalculationResults {
-  const fdt = calculateFDT(
-    inputs.flourTemp,
-    inputs.waterTemp,
-    inputs.ambientTemp,
-    inputs.starterTemp,
-  );
-
   const ingredients = calculateIngredients(
     inputs.flourWeight,
     inputs.hydration,
@@ -544,6 +587,16 @@ export function runAllCalculations(
     inputs.starterHydration,
     inputs.oilPct,
     inputs.preferment,
+  );
+
+  const fdt = calculateFDT(
+    inputs.flourTemp,
+    inputs.waterTemp,
+    inputs.ambientTemp,
+    inputs.starterTemp,
+    ingredients.bowlFlour,
+    ingredients.addedWater,
+    inputs.starterWeight,
   );
 
   // Build fresh flour blend (synthesize from legacy scalar if needed)
@@ -613,7 +666,7 @@ export function runAllCalculations(
     fdt,
     ingredients.starterPct,
     inputs.hydration,
-    dynamicFerment?.totalHours,
+    dynamicFerment?.bulkHours,
     totalBlend,
     inputs.oilPct,
   );
