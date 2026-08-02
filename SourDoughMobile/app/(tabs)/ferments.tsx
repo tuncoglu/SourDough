@@ -69,7 +69,16 @@ export default function FermentsScreen() {
               🌡 Fermentation temperature
             </Text>
             <View style={styles.tempDays}>
-              {calc.dailyTemps.slice(0, 5).map((d, i) => (
+              {calc.dailyTemps.slice(0, 5).map((d, i, arr) => {
+                // Show only actual forecast days — stop before repeated data
+                if (i > 0 && d.high === arr[i - 1].high && d.low === arr[i - 1].low) return null;
+                const dayColor = d.avg > 24 ? colors.hot : d.avg > 20 ? colors.olive : d.avg > 16 ? colors.cool : colors.cold;
+                const allHigh = Math.max(...arr.slice(0, 5).map(x => x.high));
+                const allLow = Math.min(...arr.slice(0, 5).map(x => x.low));
+                const range = allHigh - allLow || 1;
+                const topPct = ((allHigh - d.high) / range) * 100;
+                const heightPct = ((d.high - d.low) / range) * 100;
+                return (
                 <View key={i} style={styles.tempDay}>
                   <Text style={[styles.tempDayLabel, { color: colors.muted }]}>{d.day}</Text>
                   <Text style={[styles.tempDayHigh, { color: colors.espresso }]}>{d.high}°</Text>
@@ -78,15 +87,17 @@ export default function FermentsScreen() {
                       style={[
                         styles.tempBarFill,
                         {
-                          backgroundColor: d.avg > 24 ? colors.hot : d.avg > 20 ? colors.olive : d.avg > 16 ? colors.cool : colors.cold,
-                          height: `${Math.max(8, Math.min(100, ((d.avg - 10) / 20) * 100))}%`,
+                          backgroundColor: dayColor,
+                          top: `${topPct}%`,
+                          height: `${Math.max(8, heightPct)}%`,
                         },
                       ]}
                     />
                   </View>
                   <Text style={[styles.tempDayLow, { color: colors.lightText }]}>{d.low}°</Text>
                 </View>
-              ))}
+                );
+              })}
             </View>
             <Text style={[styles.tempSummary, { color: colors.lightText, borderTopColor: colors.border }]}>
               {calc.tempResult?.summary ?? 'Using weather forecast for accurate timing'}
@@ -347,10 +358,12 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 4,
     overflow: 'hidden',
-    justifyContent: 'flex-end',
+    position: 'relative',
   },
   tempBarFill: {
-    width: '100%',
+    position: 'absolute',
+    left: 0,
+    right: 0,
     borderRadius: 4,
     minHeight: 4,
   },
