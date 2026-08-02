@@ -22,21 +22,21 @@ const CARDS: LandingCard[] = [
     title: 'Sourdough Bread',
     description:
       'Recipe builder with flour blends, hydration targets, and temperature-adjusted fermentation timelines.',
-    route: '/(tabs)',
+    route: '/',
   },
   {
     emoji: '🥛',
     title: 'Yogurt',
     description:
       'Starter culture calculator with 10 heirloom cultures, milk types, incubation timeline, and yield estimates.',
-    route: '/(tabs)/yogurt',
+    route: '/yogurt',
   },
   {
     emoji: '🫙',
     title: 'Lacto-Fermentation',
     description:
       'Salt calculator for sauerkraut, kimchi, pickles, hot sauce, and more — with day-by-day pH timeline.',
-    route: '/(tabs)/ferments',
+    route: '/ferments',
   },
 ];
 
@@ -65,7 +65,7 @@ export default function LandingScreen() {
             <TouchableOpacity
               key={card.route}
               style={[cardStyleLg, styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => router.push(card.route as any)}
+              onPress={() => router.push(card.route)}
               activeOpacity={0.7}
               accessibilityRole="button"
               accessibilityLabel={`${card.title}: ${card.description}`}
@@ -87,7 +87,7 @@ export default function LandingScreen() {
         {/* Footer */}
         <View style={[styles.footer, { borderTopColor: colors.border }]}>
           <TouchableOpacity
-            onPress={() => router.push('/(tabs)/history')}
+            onPress={() => router.push('/history')}
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel="View saved recipe history"
@@ -97,7 +97,7 @@ export default function LandingScreen() {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => router.push('/(tabs)/settings')}
+            onPress={() => router.push('/settings')}
             activeOpacity={0.7}
             accessibilityRole="button"
             accessibilityLabel="Open settings"
