@@ -153,7 +153,7 @@ export default function HistoryScreen() {
             accessibilityRole="button"
             accessibilityState={{ selected: activeFilter === chip.key }}
           >
-            <Text style={[styles.chipText, { color: activeFilter === chip.key ? '#FFFFFF' : colors.muted }]}>
+            <Text style={[styles.chipText, { color: activeFilter === chip.key ? colors.white : colors.muted }]}>
               {chip.label}
             </Text>
           </TouchableOpacity>

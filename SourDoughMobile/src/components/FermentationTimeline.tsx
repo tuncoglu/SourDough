@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
 import { formatTempValue, formatTemp } from '../lib/unitConversion';
 import { DynamicFermentation, RecipePreset } from '../models/types';
-import { PROOF_FRACTION } from '../lib/calculations';
+import { PROOF_FRACTION, computeProcessHours } from '../lib/calculations';
 
 interface Props {
   dynamic?: DynamicFermentation | null;
@@ -19,27 +19,6 @@ function formatClockTime(date: Date): string {
   return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
-/**
- * Compute the full process time from NOW until bread is out of the oven.
- * Includes: autolyse (before bulk), bulk ferment, bench rest, shaping,
- * proof, scoring, and bake.
- *
- * Folds happen during bulk fermentation so they don't add extra time.
- */
-function fullProcessHours(fermentHours: number, preset: RecipePreset | null | undefined): number {
-  const proofHours = fermentHours * PROOF_FRACTION;
-  if (!preset || preset.id === 'custom') return fermentHours + proofHours;
-  const { process, bake } = preset;
-  return (
-    process.autolyseMinutes / 60 +
-    fermentHours +
-    process.benchRestMinutes / 60 +
-    5 / 60 +  // shaping
-    proofHours +
-    1 / 60 +  // scoring
-    bake.bakeTimeMinutes / 60
-  );
-}
 
 export function FermentationTimeline({
   dynamic,
@@ -53,7 +32,7 @@ export function FermentationTimeline({
   const fermentHours = dynamic?.bulkHours ?? staticHours;
   const totalFermentHours = dynamic?.totalHours ?? staticHours;
   const proofHours = fermentHours * PROOF_FRACTION;
-  const totalProcessHours = fullProcessHours(fermentHours, preset);
+  const totalProcessHours = computeProcessHours(fermentHours, preset);
 
   const readyTime = new Date(now.getTime() + totalProcessHours * 3600000);
 
@@ -176,21 +155,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 2,
-  },
-  col: {
-    fontSize: FontSize.xs,
-  },
-  colHour: {
-    width: 48,
-    fontWeight: '600',
-  },
-  colTemp: {
-    width: 44,
-    textAlign: 'right',
-  },
-  colRate: {
-    width: 44,
-    textAlign: 'right',
   },
   colProgress: {
     flex: 1,

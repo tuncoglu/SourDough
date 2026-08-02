@@ -8,7 +8,7 @@ import {
   FlourBlendEntry,
 } from '../models/types';
 import { saveRecipe, generateRecipeId } from '../store/recipeStore';
-import { getBlendProtein, buildFlourTypeLabel } from '../lib/blendUtils';
+import { getBlendProtein, buildFlourTypeLabel, buildPrefermentConfig, POOLISH_HYDRATION, BIGA_HYDRATION } from '../lib/blendUtils';
 import { formatRecipeTextFromState } from '../lib/recipeFormatter';
 import { copyToClipboard } from '../lib/clipboard';
 import { useAppTheme } from '../theme';
@@ -80,7 +80,7 @@ export function useRecipeActions() {
     const shyd = parseFloat(starterHydrationStr);
     const oil = parseFloat(oilPct) || 0;
     const prefConfig = prefermentEnabled
-      ? { type: (prefermentType || 'poolish') as 'poolish' | 'biga', flourPct: parseFloat(prefermentFlourPct) || 30, hydration: prefermentType === 'biga' ? 55 : 100 }
+      ? buildPrefermentConfig(prefermentType, prefermentFlourPct)
       : undefined;
 
     const recipe: SavedRecipe = {
@@ -158,7 +158,7 @@ export function useRecipeActions() {
       parseFloat(oilPct) || undefined,
       prefermentEnabled ? (prefermentType || 'poolish') : undefined,
       prefermentEnabled ? parseFloat(prefermentFlourPct) || undefined : undefined,
-      prefermentEnabled ? (prefermentType === 'biga' ? 55 : 100) : undefined,
+      prefermentEnabled ? (prefermentType === 'biga' ? BIGA_HYDRATION : POOLISH_HYDRATION) : undefined,
       results,
       bakeInfo,
       unitSystem,

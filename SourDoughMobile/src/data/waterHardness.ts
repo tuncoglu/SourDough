@@ -1,5 +1,6 @@
 import { WaterHardness } from '../models/types';
 import { lookupUkPostcodeHardness, classifyHardness } from './ukWaterHardness';
+import { FALLBACK_HARDNESS, buildManualHardness } from '../lib/hardnessUtils';
 
 /**
  * Water hardness by country/region (mg/L CaCO₃ → classification).
@@ -103,12 +104,6 @@ const REGION_MAP: Record<string, Record<string, string>> = {
   },
 };
 
-const FALLBACK_HARDNESS: WaterHardness = {
-  mgL: 120,
-  classification: 'moderately soft',
-  note: 'Unknown — assuming moderate',
-  key: 'fallback',
-};
 
 export function lookupWaterHardness(
   countryCode: string,
@@ -118,12 +113,7 @@ export function lookupWaterHardness(
 ): WaterHardness {
   // Manual override takes absolute priority
   if (manualOverride != null && manualOverride > 0) {
-    return {
-      mgL: manualOverride,
-      classification: classifyHardness(manualOverride),
-      note: 'Manual override — user-supplied value',
-      key: 'manual',
-    };
+    return buildManualHardness(manualOverride);
   }
 
   // UK postcode-level lookup

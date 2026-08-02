@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
-import type { AppColors } from '../theme';
 import { formatWeight, formatWeightValue, weightUnit } from '../lib/unitConversion';
+import { shortenLabel } from '../lib/blendUtils';
 import { IngredientResults as IngredientResultsType, FlourBlendEntry } from '../models/types';
 
 interface Props {
@@ -19,6 +19,16 @@ interface Props {
 
 export function IngredientResults({ ingredients, blend, totalFlourWeight, starterFlourType, prefermentType, typicalUnitGrams, unitLabel }: Props) {
   const { unitSystem, colors } = useAppTheme();
+
+  function renderRow(label: string, value: string, note: string | null, bold?: boolean) {
+    return (
+      <View style={styles.row} key={label}>
+        <Text style={[styles.label, bold && styles.bold, { color: colors.espresso }]}>{label}</Text>
+        <Text style={[styles.value, bold && styles.bold, { color: colors.espresso }]}>{value}</Text>
+        {note && <Text style={[styles.note, { color: colors.muted }]}>{note}</Text>}
+      </View>
+    );
+  }
   const showBlend = blend && blend.length > 1 && totalFlourWeight;
   const wu = weightUnit(unitSystem);
 
@@ -34,7 +44,7 @@ export function IngredientResults({ ingredients, blend, totalFlourWeight, starte
             return (
               <View style={styles.row} key={entry.label}>
                 <Text style={[styles.label, { color: colors.espresso }]}>
-                  {entry.label.replace(/\s*\([^)]*\)$/, '')}
+                  {shortenLabel(entry.label)}
                 </Text>
                 <Text style={[styles.value, { color: colors.espresso }]}>{formatWeight(grams, unitSystem)}</Text>
                 <Text style={[styles.note, { color: colors.muted }]}>{Math.round(entry.percentage)}%</Text>
@@ -51,12 +61,12 @@ export function IngredientResults({ ingredients, blend, totalFlourWeight, starte
           </View>
         </>
       ) : (
-        renderRow('Flour', formatWeight(ingredients.freshFlour, unitSystem), null, false, colors)
+        renderRow('Flour', formatWeight(ingredients.freshFlour, unitSystem), null)
       )}
 
-      {renderRow('Water', formatWeight(ingredients.addedWater, unitSystem), null, false, colors)}
+      {renderRow('Water', formatWeight(ingredients.addedWater, unitSystem), null)}
       {renderRow('Starter', formatWeight(ingredients.starterTotal, unitSystem),
-        `(${ingredients.starterPct.toFixed(0)}% of total flour)`, false, colors)}
+        `(${ingredients.starterPct.toFixed(0)}% of total flour)`)}
       <View style={[styles.subRow, { borderLeftColor: colors.border, borderTopColor: colors.border }]}>
         <Text style={[styles.subLabel, { color: colors.muted }]}>flour in starter</Text>
         <Text style={[styles.subValue, { color: colors.muted }]}>
@@ -92,9 +102,9 @@ export function IngredientResults({ ingredients, blend, totalFlourWeight, starte
 
       {/* Oil */}
       {ingredients.oil > 0 &&
-        renderRow('Oil / Fat', formatWeight(ingredients.oil, unitSystem), null, false, colors)}
+        renderRow('Oil / Fat', formatWeight(ingredients.oil, unitSystem), null)}
 
-      {renderRow('Salt', formatWeight(ingredients.salt, unitSystem), null, false, colors)}
+      {renderRow('Salt', formatWeight(ingredients.salt, unitSystem), null)}
 
       <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
@@ -134,22 +144,6 @@ export function IngredientResults({ ingredients, blend, totalFlourWeight, starte
             );
           })()
         : null}
-    </View>
-  );
-}
-
-function renderRow(
-  label: string,
-  value: string,
-  note: string | null,
-  bold?: boolean,
-  colors?: AppColors,
-) {
-  return (
-    <View style={styles.row} key={label}>
-      <Text style={[styles.label, bold && styles.bold, { color: colors?.espresso }]}>{label}</Text>
-      <Text style={[styles.value, bold && styles.bold, { color: colors?.espresso }]}>{value}</Text>
-      {note && <Text style={[styles.note, { color: colors?.muted }]}>{note}</Text>}
     </View>
   );
 }

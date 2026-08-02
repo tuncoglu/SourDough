@@ -7,7 +7,7 @@ import {
   RecipePreset,
 } from '../models/types';
 import { runAllCalculations } from '../lib/calculations';
-import { getBlendProtein, buildFlourTypeLabel } from '../lib/blendUtils';
+import { getBlendProtein, buildFlourTypeLabel, buildPrefermentConfig } from '../lib/blendUtils';
 import { resolveHardness } from '../lib/hardnessUtils';
 import type { LocationData } from '../lib/location';
 
@@ -113,7 +113,7 @@ export function useRecipeCalculation() {
     const flourProtein = blend.length > 1 ? getBlendProtein(blend) : firstEntryProtein;
 
     const prefConfig = prefermentEnabled
-      ? { type: (prefermentType || 'poolish') as 'poolish' | 'biga', flourPct: parseFloat(prefermentFlourPct) || 30, hydration: prefermentType === 'biga' ? 55 : 100 }
+      ? buildPrefermentConfig(prefermentType, prefermentFlourPct)
       : undefined;
 
     const coldH = coldProofEnabled ? (parseFloat(coldProofHours) || 0) : 0;

@@ -62,9 +62,7 @@ export function getBlend(inputs: RecipeInputs): FlourBlendEntry[] {
 export function getBlendDisplayLabel(inputs: RecipeInputs): string {
   const blend = getBlend(inputs);
   if (blend.length === 1) return blend[0].label;
-  return blend
-    .map((e) => `${e.percentage.toFixed(0)}% ${shortenLabel(e.label)}`)
-    .join(' + ');
+  return buildFlourTypeLabel(blend);
 }
 
 /** Build a FlourBlendEntry array from a list of gram-weighted rows. */
@@ -237,3 +235,23 @@ export const CATEGORY_COLORS: Record<FlourCategory, string> = {
   'Malt & Brewing': '#7B6040',
   'Generic': '#BFB5AD',
 };
+
+// ── Pre-ferment Helpers ─────────────────────────────────────────────────
+
+export const POOLISH_HYDRATION = 100;
+export const BIGA_HYDRATION = 55;
+
+/** Build a pre-ferment config object from user inputs. */
+export function buildPrefermentConfig(
+  prefermentType?: 'poolish' | 'biga',
+  prefermentFlourPct?: string,
+): { type: 'poolish' | 'biga'; flourPct: number; hydration: number } | undefined {
+  if (!prefermentFlourPct) return undefined;
+  const flourPct = parseFloat(prefermentFlourPct);
+  if (isNaN(flourPct) || flourPct <= 0) return undefined;
+  return {
+    type: prefermentType || 'poolish',
+    flourPct,
+    hydration: prefermentType === 'biga' ? BIGA_HYDRATION : POOLISH_HYDRATION,
+  };
+}

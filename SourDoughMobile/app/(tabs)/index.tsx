@@ -51,9 +51,7 @@ export default function CalculatorScreen() {
   const actions = useRecipeActions();
 
   // ── H1: Location fallback → Settings (water hardness override) ───────
-  const openSettingsForHardness = useCallback(() => {
-    router.push('/settings');
-  }, [router]);
+  const prefermentType = prefermentType;
 
   const { recommendation, dismiss: dismissRec } = useDailyRecommendation(
     inputs.ambientTemp, preset.breadType,
@@ -106,8 +104,7 @@ export default function CalculatorScreen() {
   const [coldProofHours, setColdProofHours] = React.useState('12');
   const [coldProofTemp, setColdProofTemp] = React.useState('4');
 
-  // ── D2: Stale-results detection ───────────────────────────────────────
-  const [inputsDirty, setInputsDirty] = React.useState(false);
+  // ── D2: Stale-results detection (derived, no extra render) ──────────────
   const calculatedSignature = React.useRef<string | null>(null);
   const inputSignature = [
     inputs.hydration, inputs.starterWeight, inputs.saltPct,
@@ -117,11 +114,7 @@ export default function CalculatorScreen() {
     coldProofEnabled, coldProofHours, coldProofTemp,
     inputs.locationData?.summary,
   ].join('|');
-  useEffect(() => {
-    if (calculatedSignature.current !== null && inputSignature !== calculatedSignature.current) {
-      setInputsDirty(true);
-    }
-  }, [inputSignature]);
+  const inputsDirty = calculatedSignature.current !== null && inputSignature !== calculatedSignature.current;
 
   // ── Derived ───────────────────────────────────────────────────────────
   const displaySummary = !inputs.locationData ? null
@@ -132,7 +125,6 @@ export default function CalculatorScreen() {
   // ── Calculate ─────────────────────────────────────────────────────────
   const doCalculate = useCallback(() => {
     calculatedSignature.current = inputSignature;
-    setInputsDirty(false);
     calc.doCalculate({
       blend: inputs.blend,
       totalFlourWeight: inputs.totalFlourWeight,
@@ -148,7 +140,7 @@ export default function CalculatorScreen() {
       starterFlourLabel: starter.starterFlourLabel,
       prefermentEnabled: preset.prefermentEnabled,
       prefermentFlourPct: preset.prefermentFlourPct,
-      prefermentType: preset.selectedPreset?.dough.preferment?.type,
+      prefermentType: prefermentType,
       breadType: preset.breadType,
       locationData: inputs.locationData,
       waterHardnessOverride: inputs.settings.waterHardnessOverride || 0,
@@ -177,7 +169,7 @@ export default function CalculatorScreen() {
       starterFlourLabel: starter.starterFlourLabel,
       prefermentEnabled: preset.prefermentEnabled,
       prefermentFlourPct: preset.prefermentFlourPct,
-      prefermentType: preset.selectedPreset?.dough.preferment?.type,
+      prefermentType: prefermentType,
       breadType: preset.breadType,
       results: calc.results,
       locationSummary: inputs.locationData?.summary ?? '📍 Unknown location',
@@ -202,7 +194,7 @@ export default function CalculatorScreen() {
       waterTemp: inputs.waterTemp,
       prefermentEnabled: preset.prefermentEnabled,
       prefermentFlourPct: preset.prefermentFlourPct,
-      prefermentType: preset.selectedPreset?.dough.preferment?.type,
+      prefermentType: prefermentType,
       results: calc.results,
       locationSummary: inputs.locationData?.summary ?? '📍 Unknown location',
       bakeInfo,
@@ -222,7 +214,7 @@ export default function CalculatorScreen() {
 
     // Pre-ferment lead time (poolish ~12h, biga ~16h)
     if (preset.prefermentEnabled) {
-      const prefermentHours = preset.selectedPreset?.dough.preferment?.type === 'biga' ? 16 : 12;
+      const prefermentHours = prefermentType === 'biga' ? 16 : 12;
       totalMinutes += prefermentHours * 60;
     }
 
@@ -254,7 +246,7 @@ export default function CalculatorScreen() {
     const breakdownParts: string[] = [];
     // Pre-ferment first in the breakdown
     if (preset.prefermentEnabled) {
-      const prefH = preset.selectedPreset?.dough.preferment?.type === 'biga' ? 16 : 12;
+      const prefH = prefermentType === 'biga' ? 16 : 12;
       breakdownParts.push(`pre-ferment ~${prefH}h`);
     }
     breakdownParts.push(`bulk ferment ~${fermentHours.toFixed(1)}h`);
@@ -597,7 +589,7 @@ export default function CalculatorScreen() {
         blend={inputs.blend}
         totalFlourWeight={inputs.totalFlourWeight}
         starterFlourLabel={starter.starterFlourLabel}
-        preferredType={preset.selectedPreset?.dough.preferment?.type}
+        preferredType={prefermentType}
         selectedPreset={preset.selectedPreset}
         flourTemp={inputs.flourTemp}
         ambientTemp={inputs.ambientTemp}
@@ -638,7 +630,7 @@ export default function CalculatorScreen() {
           error={inputs.locError}
           onRefresh={inputs.onRefreshLocation}
           showFallbackWarning={!inputs.locLoading && !inputs.locationData}
-          onTapFallback={openSettingsForHardness}
+          onTapFallback={() => router.push('/settings')}
           onPostcodeSubmit={inputs.onPostcodeSubmit}
         />
       )}
@@ -671,7 +663,7 @@ export default function CalculatorScreen() {
                 error={inputs.locError}
                 onRefresh={inputs.onRefreshLocation}
                 showFallbackWarning={!inputs.locLoading && !inputs.locationData}
-                onTapFallback={openSettingsForHardness}
+                onTapFallback={() => router.push('/settings')}
                 onPostcodeSubmit={inputs.onPostcodeSubmit}
               />
             )}

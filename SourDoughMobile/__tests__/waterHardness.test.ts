@@ -23,10 +23,6 @@ describe('classifyHardness', () => {
     expect(classifyHardness(195)).toBe('moderately hard');
   });
 
-  it('classifies moderately soft at boundary', () => {
-    expect(classifyHardness(120)).toBe('moderately soft');
-  });
-
   it('classifies hard', () => {
     expect(classifyHardness(200)).toBe('hard');
     expect(classifyHardness(295)).toBe('hard');

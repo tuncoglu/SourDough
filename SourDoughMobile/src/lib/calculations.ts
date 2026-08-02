@@ -63,6 +63,30 @@ const MAX_STEPS = 400;
  *  0.25× (Forkish-style short proof) to 1.0× (Tartine-style long proof). */
 export const PROOF_FRACTION = 0.6;
 
+// ── Shared Rate Modifiers ───────────────────────────────────────────────
+
+/**
+ * Vitality factor for starter age. Triangular heuristic model:
+ * 0h=0.85 → peak 1.0 at 6h → 0.7 at 24h → floor 0.65 after 24h.
+ */
+export function computeVitalityFactor(starterHoursSinceFed?: number): number {
+  if (starterHoursSinceFed === undefined) return 1.0;
+  if (starterHoursSinceFed <= 6) return 0.85 + (0.15 / 6) * starterHoursSinceFed;
+  if (starterHoursSinceFed <= 24) return 1.0 - (0.3 / 18) * (starterHoursSinceFed - 6);
+  return 0.65;
+}
+
+/**
+ * Fermentation rate penalty for oil/fat content.
+ * Fat coats gluten strands and slows yeast activity.
+ */
+export function computeOilRate(oilPct?: number): number {
+  const oil = oilPct ?? 0;
+  if (oil >= 10) return 0.85;
+  if (oil >= 5) return 0.92;
+  return 1.0;
+}
+
 // Flour ferment factors, blend utilities, and protein calculation
 // are now in ../lib/blendUtils.ts — re-exported here for backward compat.
 export {
@@ -221,21 +245,8 @@ export function estimateFermentation(
   // Flour factor: wholemeal/rye/spelt ferment faster than white
   const flourFactor = resolveFermentFactor(flour);
 
-  // Vitality factor: triangular peak model (heuristic, not from a specific study)
-  // 0h=0.85 → peak 1.0 at 6h → 0.7 at 24h → floor 0.65 after 24h
-  let vitalityFactor = 1.0;
-  if (starterHoursSinceFed !== undefined) {
-    if (starterHoursSinceFed <= 6) {
-      vitalityFactor = 0.85 + (0.15 / 6) * starterHoursSinceFed;
-    } else if (starterHoursSinceFed <= 24) {
-      vitalityFactor = 1.0 - (0.3 / 18) * (starterHoursSinceFed - 6);
-    } else {
-      vitalityFactor = 0.65;
-    }
-  }
-
-  // Fat penalty: oil coats gluten strands and slows yeast activity
-  const oilRate = (oilPct ?? 0) >= 10 ? 0.85 : (oilPct ?? 0) >= 5 ? 0.92 : 1.0;
+  const vitalityFactor = computeVitalityFactor(starterHoursSinceFed);
+  const oilRate = computeOilRate(oilPct);
   const baseHours = BASE_FERMENTATION_HOURS / (inocRate * hydRate * flourFactor * vitalityFactor * oilRate);
 
   // Q10 temperature adjustment — consistent with dynamic model
@@ -297,21 +308,8 @@ export function estimateDynamicFermentation(
   const flourFactor = resolveFermentFactor(flour);
   const baseRate = inocRate * hydRate * flourFactor;
 
-  // Vitality factor: triangular peak model (heuristic, not from a specific study)
-  // 0h=0.85 → peak 1.0 at 6h → 0.7 at 24h → floor 0.65 after 24h
-  let vitalityFactor = 1.0;
-  if (starterHoursSinceFed !== undefined) {
-    if (starterHoursSinceFed <= 6) {
-      vitalityFactor = 0.85 + (0.15 / 6) * starterHoursSinceFed;
-    } else if (starterHoursSinceFed <= 24) {
-      vitalityFactor = 1.0 - (0.3 / 18) * (starterHoursSinceFed - 6);
-    } else {
-      vitalityFactor = 0.65;
-    }
-  }
-
-  // Fat penalty: oil coats gluten strands and slows yeast activity
-  const oilRate = (oilPct ?? 0) >= 10 ? 0.85 : (oilPct ?? 0) >= 5 ? 0.92 : 1.0;
+  const vitalityFactor = computeVitalityFactor(starterHoursSinceFed);
+  const oilRate = computeOilRate(oilPct);
   const adjustedBaseRate = baseRate * vitalityFactor * oilRate;
 
   if (hourlyForecast.length < 2) return null;
