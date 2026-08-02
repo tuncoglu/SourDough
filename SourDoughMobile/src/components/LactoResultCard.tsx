@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Spacing, FontSize, BorderRadius, useAppTheme, AppColors } from '../theme';
+import { Spacing, FontSize, BorderRadius, useAppTheme, AppColors, cardStyleLg } from '../theme';
 import { FermentResults } from '../models/types';
 import { weightUnit } from '../lib/unitConversion';
 
@@ -18,7 +18,7 @@ export function LactoResultCard({ results, method }: Props) {
     : `${results.saltGrams} g`;
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <View style={[cardStyleLg, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <Text style={[styles.title, { color: colors.espresso }]}>🧂 Salt</Text>
 
       {/* Salt weight */}
@@ -121,12 +121,6 @@ const volStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    gap: Spacing.sm,
-  },
   title: {
     fontSize: FontSize.lg,
     fontWeight: '700',

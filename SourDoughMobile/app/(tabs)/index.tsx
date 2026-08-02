@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Spacing, FontSize, BorderRadius, useAppTheme } from '../../src/theme';
+import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyle, sectionTitleStyle } from '../../src/theme';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { buildSummary } from '../../src/lib/location';
 import { PROOF_FRACTION } from '../../src/lib/calculations';
@@ -313,8 +313,8 @@ export default function CalculatorScreen() {
       )}
 
       {/* Recipe Type */}
-      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={[styles.cardTitle, { color: colors.muted }]}>RECIPE TYPE</Text>
+      <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={[sectionTitleStyle, { color: colors.muted }]}>RECIPE TYPE</Text>
         <RecipeTypePicker
           selected={preset.breadType}
           onSelect={(p) => preset.handlePresetSelect(
@@ -352,8 +352,8 @@ export default function CalculatorScreen() {
 
       {/* Pre-ferment */}
       {preset.prefermentEnabled && (
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.cardTitle, { color: colors.muted }]}>PRE-FERMENT</Text>
+        <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[sectionTitleStyle, { color: colors.muted }]}>PRE-FERMENT</Text>
           <Text style={[styles.cardHint, { color: colors.muted }]}>
             Pre-ferment flour is subtracted from the bowl flour. Its water is accounted for in total hydration.
           </Text>
@@ -390,7 +390,7 @@ export default function CalculatorScreen() {
       {/* Ready-By Planner */}
       {!planByReadyEnabled ? (
         <TouchableOpacity
-          style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+          style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => setPlanByReadyEnabled(true)}
           activeOpacity={0.7}
           accessibilityLabel="Plan by ready time. Tell us when you want your bread ready."
@@ -406,9 +406,9 @@ export default function CalculatorScreen() {
           </View>
         </TouchableOpacity>
       ) : (
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={readyStyles.headerRow}>
-            <Text style={[styles.cardTitle, { color: colors.muted }]}>🕐  READY-BY PLANNER</Text>
+            <Text style={[sectionTitleStyle, { color: colors.muted }]}>🕐  READY-BY PLANNER</Text>
             <TouchableOpacity
               onPress={() => setPlanByReadyEnabled(false)}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -455,7 +455,7 @@ export default function CalculatorScreen() {
       {/* Cold Proof (collapsible) */}
       {!coldProofEnabled ? (
         <TouchableOpacity
-          style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+          style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => setColdProofEnabled(true)}
           activeOpacity={0.7}
           accessibilityLabel="Cold proof. Add a fridge proofing phase."
@@ -473,9 +473,9 @@ export default function CalculatorScreen() {
           </View>
         </TouchableOpacity>
       ) : (
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={readyStyles.headerRow}>
-            <Text style={[styles.cardTitle, { color: colors.muted }]}>❄️  COLD PROOF</Text>
+            <Text style={[sectionTitleStyle, { color: colors.muted }]}>❄️  COLD PROOF</Text>
             <TouchableOpacity
               onPress={() => setColdProofEnabled(false)}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -694,14 +694,6 @@ const layoutStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-    borderRadius: BorderRadius.md, padding: Spacing.md, marginBottom: Spacing.md,
-  },
-  cardTitle: {
-    fontSize: FontSize.xs, fontWeight: '700',
-    letterSpacing: 0.5, marginBottom: Spacing.sm,
-  },
   cardHint: { fontSize: FontSize.xs, marginBottom: Spacing.sm, lineHeight: 16 },
   calcBtn: {
     borderRadius: BorderRadius.md,

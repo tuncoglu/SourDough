@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
+import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyle, sectionTitleStyle } from '../theme';
 import { formatTempValue, formatTemp } from '../lib/unitConversion';
 import { DynamicFermentation, RecipePreset } from '../models/types';
 import { PROOF_FRACTION, computeProcessHours } from '../lib/calculations';
@@ -37,8 +37,8 @@ export function FermentationTimeline({
   const readyTime = new Date(now.getTime() + totalProcessHours * 3600000);
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <Text style={[styles.title, { color: colors.muted }]}>⏱️  Fermentation</Text>
+    <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Text style={[sectionTitleStyle, { color: colors.muted }]}>⏱️  Fermentation</Text>
 
       <View style={styles.summary}>
         {dynamic ? (
@@ -95,19 +95,6 @@ export function FermentationTimeline({
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    marginBottom: Spacing.md,
-  },
-  title: {
-    fontSize: FontSize.xs,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: Spacing.sm,
-  },
   summary: {
     marginBottom: Spacing.md,
   },

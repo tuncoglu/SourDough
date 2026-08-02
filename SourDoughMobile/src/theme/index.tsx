@@ -236,3 +236,38 @@ export const HitSlop = {
   left: 8,
   right: 8,
 } as const;
+
+// ── Shared Style Tokens ─────────────────────────────────────────────────
+
+/** Standard card — used across the bread calculator and settings. */
+export const cardStyle = {
+  borderWidth: 1,
+  borderRadius: BorderRadius.md,
+  padding: Spacing.md,
+  marginBottom: Spacing.md,
+} as const;
+
+/** Spacious card — used in yogurt and lacto-fermentation screens. */
+export const cardStyleLg = {
+  borderWidth: 1,
+  borderRadius: BorderRadius.lg,
+  padding: Spacing.lg,
+  marginBottom: Spacing.lg,
+} as const;
+
+/** Section title label — bread calculator card headings. */
+export const sectionTitleStyle = {
+  fontSize: FontSize.xs,
+  fontWeight: '700' as const,
+  textTransform: 'uppercase' as const,
+  letterSpacing: 0.5,
+  marginBottom: Spacing.sm,
+} as const;
+
+/** Generous hit slop for small icon-only buttons. */
+export const HitSlop = {
+  top: 8,
+  bottom: 8,
+  left: 8,
+  right: 8,
+} as const;

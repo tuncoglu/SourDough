@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
+import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyle, sectionTitleStyle } from '../theme';
 import { formatWeight } from '../lib/unitConversion';
 import { FlourPicker } from './FlourPicker';
 import { NumberInput } from './NumberInput';
@@ -45,8 +45,8 @@ export function FlourBlendCard({
 }: Props) {
   const { unitSystem, colors } = useAppTheme();
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <Text style={[styles.cardTitle, { color: colors.muted }]}>FLOUR & INGREDIENTS</Text>
+    <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Text style={[sectionTitleStyle, { color: colors.muted }]}>FLOUR & INGREDIENTS</Text>
 
       {mixRows.map((row, i) => (
         <View key={row.key} style={styles.mixRow}>
@@ -142,14 +142,6 @@ export function FlourBlendCard({
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-    borderRadius: BorderRadius.md, padding: Spacing.md, marginBottom: Spacing.md,
-  },
-  cardTitle: {
-    fontSize: FontSize.xs, fontWeight: '700',
-    letterSpacing: 0.5, marginBottom: Spacing.sm,
-  },
   mixRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.xs, gap: Spacing.xs },
   pickerWrap: { flex: 1 },
   removeBtn: {

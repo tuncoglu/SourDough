@@ -15,7 +15,7 @@ import { LactoAdvice } from '@/src/components/LactoAdvice';
 import { LactoScience } from '@/src/components/LactoScience';
 import { LocationBar } from '@/src/components/LocationBar';
 import { NumberInput } from '@/src/components/NumberInput';
-import { Spacing, FontSize, BorderRadius, useAppTheme, MaxWidth } from '@/src/theme';
+import { Spacing, FontSize, BorderRadius, useAppTheme, MaxWidth, cardStyleLg } from '@/src/theme';
 import { FERMENT_TYPE_ORDER } from '@/src/data/fermentPresets';
 import { VEGETABLES, VEG_CATEGORIES } from '@/src/data/vegetables';
 import { FermentType, SALT_LABELS, SALT_TYPE_ORDER } from '@/src/models/types';
@@ -195,7 +195,7 @@ export default function FermentsScreen() {
         </View>
 
         {/* ── Inputs ── */}
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[cardStyleLg, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <NumberInput
             label="Weight"
             value={calc.vegWeight}
@@ -291,8 +291,8 @@ export default function FermentsScreen() {
 
             {/* Water hardness card */}
             {calc.waterAdvice.length > 0 && (
-              <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={[styles.cardTitle, { color: colors.espresso }]}>💧 Water</Text>
+              <View style={[cardStyleLg, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Text style={[cardStyleLgTitle, { color: colors.espresso }]}>💧 Water</Text>
                 {calc.waterAdvice.map((line, i) => (
                   <Text key={i} style={[styles.adviceLine, { color: colors.muted }]}>
                     {line}
@@ -487,12 +487,7 @@ const styles = StyleSheet.create({
   },
 
   // Inputs
-  card: {
-    borderWidth: 1,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    gap: Spacing.xs,
-  },
+  cardGap: { gap: Spacing.xs },
   hintRow: {
     marginTop: -6,
     marginBottom: Spacing.xs,

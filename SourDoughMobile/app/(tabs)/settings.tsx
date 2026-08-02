@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Spacing, FontSize, BorderRadius, MaxWidth, useAppTheme } from '../../src/theme';
+import { Spacing, FontSize, BorderRadius, MaxWidth, useAppTheme, cardStyle, sectionTitleStyle } from '../../src/theme';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { UserSettings, DEFAULT_SETTINGS, ThemeMode, UnitSystem } from '../../src/models/types';
 import { getSettings, updateSettings } from '../../src/store/settingsCache';
@@ -76,8 +76,8 @@ export default function SettingsScreen() {
   const content = (
     <>
       {/* Defaults */}
-      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={[styles.cardTitle, { color: colors.muted }]}>DEFAULT VALUES</Text>
+      <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={[sectionTitleStyle, { color: colors.muted }]}>DEFAULT VALUES</Text>
         <Text style={[styles.description, { color: colors.muted }]}>
           These defaults are pre-filled when you open the calculator.
         </Text>
@@ -132,8 +132,8 @@ export default function SettingsScreen() {
       </View>
 
       {/* Water Hardness Override */}
-      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={[styles.cardTitle, { color: colors.muted }]}>WATER HARDNESS OVERRIDE (OPTIONAL)</Text>
+      <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={[sectionTitleStyle, { color: colors.muted }]}>WATER HARDNESS OVERRIDE (OPTIONAL)</Text>
         <Text style={[styles.description, { color: colors.muted }]}>
           Leave at 0 for auto-detect. Enter your local water hardness in mg/L CaCO₃{'\n'}
           (check your water company's website or use a test kit).
@@ -151,8 +151,8 @@ export default function SettingsScreen() {
       </View>
 
       {/* Theme */}
-      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={[styles.cardTitle, { color: colors.muted }]}>APPEARANCE</Text>
+      <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={[sectionTitleStyle, { color: colors.muted }]}>APPEARANCE</Text>
 
         <Text style={[styles.sectionLabel, { color: colors.muted }]}>Theme</Text>
         <View style={styles.themeRow}>
@@ -228,8 +228,8 @@ export default function SettingsScreen() {
       </View>
 
       {/* About */}
-      <View style={[styles.card, styles.aboutCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={[styles.cardTitle, { color: colors.muted }]}>ABOUT</Text>
+      <View style={[cardStyle, styles.aboutCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={[sectionTitleStyle, { color: colors.muted }]}>ABOUT</Text>
         <Text style={[styles.aboutText, { color: colors.espresso }]}>
           🥖 Just Dough It v3.0
         </Text>
@@ -295,19 +295,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     textAlign: 'center',
     marginBottom: Spacing.lg,
-  },
-  card: {
-    borderWidth: 1,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    marginBottom: Spacing.md,
-  },
-  cardTitle: {
-    fontSize: FontSize.xs,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: Spacing.sm,
   },
   description: {
     fontSize: FontSize.xs,

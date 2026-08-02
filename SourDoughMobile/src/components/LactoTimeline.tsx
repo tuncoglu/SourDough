@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
+import { Colors, Spacing, FontSize, BorderRadius, useAppTheme, cardStyleLg } from '../theme';
 import { LactoDayPoint, FermentResults } from '../models/types';
 
 interface Props {
@@ -12,7 +12,7 @@ export function LactoTimeline({ timeline, results }: Props) {
   const { colors } = useAppTheme();
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <View style={[cardStyleLg, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <Text style={[styles.title, { color: colors.espresso }]}>📅 Timeline</Text>
 
       {/* Summary */}
@@ -62,12 +62,6 @@ export function LactoTimeline({ timeline, results }: Props) {
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    gap: Spacing.sm,
-  },
   title: {
     fontSize: FontSize.lg,
     fontWeight: '700',

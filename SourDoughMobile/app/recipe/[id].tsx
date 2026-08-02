@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Spacing, FontSize, BorderRadius, useAppTheme } from '../../src/theme';
+import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyle, sectionTitleStyle } from '../../src/theme';
 import { formatTemp, formatWeight, formatWeightValue, weightUnit } from '../../src/lib/unitConversion';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { SavedRecipe, FlourBlendEntry } from '../../src/models/types';
@@ -89,8 +89,8 @@ export default function RecipeDetailScreen() {
   const showBlendDetail = blend.length > 1;
 
   const inputsCard = (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <Text style={[styles.cardTitle, { color: colors.muted }]}>📋  INPUTS</Text>
+    <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Text style={[sectionTitleStyle, { color: colors.muted }]}>📋  INPUTS</Text>
 
       {showBlendDetail ? (
         // Multi-flour breakdown
@@ -294,18 +294,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 60,
     fontSize: FontSize.lg,
-  },
-  card: {
-    borderWidth: 1,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    marginBottom: Spacing.md,
-  },
-  cardTitle: {
-    fontSize: FontSize.xs,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    marginBottom: Spacing.sm,
   },
   sectionLabel: {
     fontSize: FontSize.sm,

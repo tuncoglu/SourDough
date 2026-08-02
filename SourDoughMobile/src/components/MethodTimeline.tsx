@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
+import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyle, sectionTitleStyle } from '../theme';
 import { formatTemp } from '../lib/unitConversion';
 import { RecipePreset } from '../models/types';
 import { PROOF_FRACTION } from '../lib/calculations';
@@ -154,8 +154,8 @@ export function MethodTimeline({ preset, staticFermentHours, fermentAdvice }: Pr
   const steps = buildSteps(preset, staticFermentHours, unitSystem);
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <Text style={[styles.title, { color: colors.muted }]}>📝  Method</Text>
+    <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Text style={[sectionTitleStyle, { color: colors.muted }]}>📝  Method</Text>
       <Text style={[styles.subtitle, { color: colors.espresso }]}>
         {preset.emoji} {preset.name} · {preset.difficulty}
       </Text>
@@ -197,19 +197,6 @@ export function MethodTimeline({ preset, staticFermentHours, fermentAdvice }: Pr
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    marginBottom: Spacing.md,
-  },
-  title: {
-    fontSize: FontSize.xs,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: Spacing.xs,
-  },
   subtitle: {
     fontSize: FontSize.sm,
     fontWeight: '600',

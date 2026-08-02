@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius, useAppTheme, AppColors } from '../theme';
+import { Colors, Spacing, FontSize, BorderRadius, useAppTheme, AppColors, cardStyleLg } from '../theme';
 import { YogurtResults, YogurtCultureType } from '../models/types';
 import { weightUnit } from '../lib/unitConversion';
 
@@ -24,7 +24,7 @@ export function YogurtResultCard({ results, cultureType, thickness, nutrition }:
     : `${results.milkGrams} g`;
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <View style={[cardStyleLg, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <Text style={[styles.title, { color: colors.espresso }]}>🫙 Yield & Timing</Text>
 
       {/* Milk → Yogurt */}
@@ -105,12 +105,6 @@ export function YogurtResultCard({ results, cultureType, thickness, nutrition }:
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    gap: Spacing.xs,
-  },
   title: {
     fontSize: FontSize.lg,
     fontWeight: '700',

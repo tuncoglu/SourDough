@@ -16,7 +16,7 @@ import { YogurtAdvice } from '@/src/components/YogurtAdvice';
 import { YogurtScience } from '@/src/components/YogurtScience';
 import { LocationBar } from '@/src/components/LocationBar';
 import { NumberInput } from '@/src/components/NumberInput';
-import { Spacing, FontSize, BorderRadius, useAppTheme, MaxWidth } from '@/src/theme';
+import { Spacing, FontSize, BorderRadius, useAppTheme, MaxWidth, cardStyleLg } from '@/src/theme';
 import { YogurtType, StarterSource } from '@/src/models/types';
 import { MILK_TYPES } from '@/src/data/yogurtCultures';
 
@@ -236,7 +236,7 @@ export default function YogurtScreen() {
         </ScrollView>
 
         {/* ── Inputs ── */}
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[cardStyleLg, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <NumberInput
             label="Milk"
             value={calc.milkLitres}
@@ -350,8 +350,8 @@ export default function YogurtScreen() {
 
             {/* Water hardness card */}
             {calc.waterAdvice.length > 0 && (
-              <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={[styles.cardTitle, { color: colors.espresso }]}>💧 Water</Text>
+              <View style={[cardStyleLg, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Text style={[cardStyleLgTitle, { color: colors.espresso }]}>💧 Water</Text>
                 {calc.waterAdvice.map((line, i) => (
                   <Text key={i} style={[styles.adviceLine, { color: colors.muted }]}>
                     {line}
@@ -537,12 +537,7 @@ const styles = StyleSheet.create({
   },
 
   // Inputs
-  card: {
-    borderWidth: 1,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    gap: Spacing.xs,
-  },
+  cardGap: { gap: Spacing.xs },
   hintRow: {
     marginTop: -6,
     marginBottom: Spacing.xs,

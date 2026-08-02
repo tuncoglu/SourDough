@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
+import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyle, sectionTitleStyle } from '../theme';
 import { formatTemp, formatTempValue } from '../lib/unitConversion';
 import {
   CalculationResults,
@@ -101,8 +101,8 @@ export function ResultsSection({
       />
 
       {readyByResult && (
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.cardTitle, { color: colors.muted }]}>🕐  YOUR SCHEDULE</Text>
+        <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[sectionTitleStyle, { color: colors.muted }]}>🕐  YOUR SCHEDULE</Text>
           <View style={readyStyles.resultRow}>
             <View style={readyStyles.resultBlock}>
               <Text style={[readyStyles.resultLabel, { color: colors.muted }]}>Start mixing</Text>
@@ -161,14 +161,6 @@ export function ResultsSection({
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-    borderRadius: BorderRadius.md, padding: Spacing.md, marginBottom: Spacing.md,
-  },
-  cardTitle: {
-    fontSize: FontSize.xs, fontWeight: '700',
-    letterSpacing: 0.5, marginBottom: Spacing.sm,
-  },
   cardHint: { fontSize: FontSize.xs, lineHeight: 16 },
   fdtCard: {
     borderWidth: 1,

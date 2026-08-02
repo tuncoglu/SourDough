@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
+import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyle, sectionTitleStyle } from '../theme';
 import { formatWeight, formatWeightValue, weightUnit } from '../lib/unitConversion';
 import { shortenLabel } from '../lib/blendUtils';
 import { IngredientResults as IngredientResultsType, FlourBlendEntry } from '../models/types';
@@ -33,8 +33,8 @@ export function IngredientResults({ ingredients, blend, totalFlourWeight, starte
   const wu = weightUnit(unitSystem);
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <Text style={[styles.title, { color: colors.muted }]}>⚖️  Ingredients (put this in the bowl)</Text>
+    <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Text style={[sectionTitleStyle, { color: colors.muted }]}>⚖️  Ingredients (put this in the bowl)</Text>
 
       {showBlend ? (
         // Multi-flour breakdown
@@ -151,19 +151,6 @@ export function IngredientResults({ ingredients, blend, totalFlourWeight, starte
 const CARD_PADDING = Spacing.md;
 
 const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-    borderRadius: BorderRadius.md,
-    padding: CARD_PADDING,
-    marginBottom: Spacing.md,
-  },
-  title: {
-    fontSize: FontSize.xs,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: Spacing.sm,
-  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
