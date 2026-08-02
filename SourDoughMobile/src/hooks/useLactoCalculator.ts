@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { FermentType, FermentMethod, SaltCrystal, FermentInputs, FermentResults, LactoDayPoint, WaterHardness } from '../models/types';
 import { FERMENT_PRESETS, VEG_COMBOS } from '../data/fermentPresets';
 import { VEGETABLES, findVeg, VegEntry } from '../data/vegetables';
@@ -182,11 +183,11 @@ export function useLactoCalculator(): LactoCalculatorState {
   }, []);
 
   // Load water hardness override from settings
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     getSettings().then((s) => {
       setWaterHardnessOverride(s.waterHardnessOverride ?? 0);
     });
-  }, []);
+  }, []));
 
   const getHardness = useCallback((): WaterHardness => {
     if (waterHardnessOverride > 0) {

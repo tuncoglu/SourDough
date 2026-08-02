@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
   YogurtType,
   YogurtCultureType,
@@ -151,12 +152,11 @@ export function useYogurtCalculator(): YogurtCalculatorState {
     }
   }, [milkLitres, preset]);
 
-  // Load water hardness override from settings
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     getSettings().then((s) => {
       setWaterHardnessOverride(s.waterHardnessOverride ?? 0);
     });
-  }, []);
+  }, []));
 
   const resolveHardness = useCallback((): WaterHardness => {
     if (waterHardnessOverride > 0) {
