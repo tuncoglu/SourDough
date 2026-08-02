@@ -71,11 +71,11 @@ export default function YogurtScreen() {
               🌡 Ambient temperature
             </Text>
             <View style={styles.tempDays}>
-              {calc.dailyTemps.slice(0, 7).map((d, i, arr) => {
+              {calc.dailyTemps.slice(0, 10).map((d, i, arr) => {
                 if (i > 0 && d.high === arr[i - 1].high && d.low === arr[i - 1].low) return null;
                 const dayColor = d.avg > 28 ? colors.hot : d.avg > 24 ? colors.warm : d.avg > 20 ? colors.olive : d.avg > 16 ? colors.cool : colors.cold;
-                const allHigh = Math.max(...arr.slice(0, 7).map(x => x.high));
-                const allLow = Math.min(...arr.slice(0, 7).map(x => x.low));
+                const allHigh = Math.max(...arr.slice(0, 10).map(x => x.high));
+                const allLow = Math.min(...arr.slice(0, 10).map(x => x.low));
                 const range = allHigh - allLow || 1;
                 const topPct = ((allHigh - d.high) / range) * 100;
                 const heightPct = ((d.high - d.low) / range) * 100;

@@ -104,7 +104,7 @@ export async function fetchHourlyForecast(
   lat: number,
   lon: number,
 ): Promise<HourlyPoint[] | null> {
-  const url = `${OPEN_METEO_BASE}/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m&timezone=auto&forecast_days=10`;
+  const url = `${OPEN_METEO_BASE}/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m&timezone=auto&forecast_days=16`;
   const data = await fetchWithRetry(url, 10000);
   if (!data?.hourly) return null;
 

@@ -112,7 +112,7 @@ export function useYogurtCalculator(): YogurtCalculatorState {
 
   // Temperature from forecast
   const tempResult = useMemo(() => {
-    const roughDays = 1; // yogurt is hours, not days — use 1 day forecast
+    const roughDays = 7; // show full week of ambient temps
     return computeFermentTemp(
       locationData?.hourlyForecast ?? null,
       locationData?.ambientTemp ?? null,

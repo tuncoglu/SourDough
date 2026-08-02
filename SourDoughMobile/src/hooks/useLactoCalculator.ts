@@ -199,7 +199,7 @@ export function useLactoCalculator(): LactoCalculatorState {
   // Compute temperature from forecast in real time
   const tempResult = useMemo(() => {
     // First pass: rough estimate to know how many days to forecast for
-    const roughDays = 7; // default rough estimate
+    const roughDays = 14; // cover long ferments (up to 14 days)
     return computeFermentTemp(
       locationData?.hourlyForecast ?? null,
       locationData?.ambientTemp ?? null,
