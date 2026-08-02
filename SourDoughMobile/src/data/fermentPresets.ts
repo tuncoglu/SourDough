@@ -173,6 +173,217 @@ export const FERMENT_PRESETS: Record<string, FermentPreset> = {
   },
 };
 
+// ── Multi-Vegetable Combinations ─────────────────────────────────────────
+// Curated from authoritative fermentation literature:
+// Katz, "The Art of Fermentation"; Shockey, "Fermented Vegetables";
+// USDA Complete Guide; traditional regional practices.
+
+export interface VegCombo {
+  id: string;
+  name: string;
+  emoji: string;
+  description: string;
+  method: 'dry' | 'brine' | 'mash';
+  vegetables: { vegId: string; label: string; proportion: number }[]; // proportion 0–1, sums to 1
+  typicalSaltPct: number;
+  saltPctMin: number;
+  saltPctMax: number;
+  typicalTotalGrams: number;
+  tips: string[];
+  source: string; // citation
+}
+
+export const VEG_COMBOS: VegCombo[] = [
+  {
+    id: 'dill-pickles-classic',
+    name: 'Classic Dill Pickles',
+    emoji: '🥒',
+    description: 'Garlicky, dilly, crisp cucumber pickles. A tannin-rich leaf (grape, oak, or horseradish) keeps them crunchy.',
+    method: 'brine',
+    vegetables: [
+      { vegId: 'pickling-cucumber', label: 'Pickling cucumbers', proportion: 0.85 },
+      { vegId: 'garlic', label: 'Garlic cloves', proportion: 0.08 },
+      { vegId: 'dill', label: 'Fresh dill', proportion: 0.07 },
+    ],
+    typicalSaltPct: 3.5,
+    saltPctMin: 3.0,
+    saltPctMax: 5.0,
+    typicalTotalGrams: 800,
+    tips: [
+      'Add a grape leaf, oak leaf, or ¼ tsp calcium chloride per kg for maximum crunch.',
+      'Garlic cloves can be left whole — they mellow beautifully.',
+      'Mustard seeds and black peppercorns are classic additions.',
+      'Ferment 5–10 days at room temp, then move to the fridge.',
+    ],
+    source: 'Katz, "The Art of Fermentation"; Shockey, "Fermented Vegetables"',
+  },
+  {
+    id: 'giardiniera',
+    name: 'Giardiniera',
+    emoji: '🥗',
+    description: 'Italian mixed vegetable pickle — cauliflower, carrots, celery, and peppers in a tangy brine. The classic antipasto.',
+    method: 'brine',
+    vegetables: [
+      { vegId: 'cauliflower', label: 'Cauliflower', proportion: 0.35 },
+      { vegId: 'carrot', label: 'Carrot', proportion: 0.25 },
+      { vegId: 'celery', label: 'Celery', proportion: 0.15 },
+      { vegId: 'bell-pepper', label: 'Bell pepper', proportion: 0.15 },
+      { vegId: 'jalapeno', label: 'Jalapeño', proportion: 0.10 },
+    ],
+    typicalSaltPct: 3.5,
+    saltPctMin: 3.0,
+    saltPctMax: 5.0,
+    typicalTotalGrams: 1000,
+    tips: [
+      'Cut all vegetables to similar size for even fermentation.',
+      'Jalapeños add a gentle heat — add more for spicier giardiniera.',
+      'Ready in 7–10 days. Keeps for months refrigerated.',
+      'Excellent on sandwiches, antipasto platters, or chopped into tuna salad.',
+    ],
+    source: 'Shockey, "Fermented Vegetables"; traditional Italian',
+  },
+  {
+    id: 'carrot-jalapeno-garlic',
+    name: 'Carrot + Jalapeño + Garlic',
+    emoji: '🥕',
+    description: 'Sweet, spicy, and garlicky — the most popular mixed ferment. Carrot sticks with jalapeño heat and mellow fermented garlic.',
+    method: 'brine',
+    vegetables: [
+      { vegId: 'carrot', label: 'Carrot', proportion: 0.70 },
+      { vegId: 'jalapeno', label: 'Jalapeño', proportion: 0.18 },
+      { vegId: 'garlic', label: 'Garlic', proportion: 0.12 },
+    ],
+    typicalSaltPct: 3.0,
+    saltPctMin: 2.5,
+    saltPctMax: 4.0,
+    typicalTotalGrams: 600,
+    tips: [
+      'Cut carrots into uniform sticks so they ferment evenly.',
+      'Leave jalapeños whole (pierce once) for milder heat, or slice for spicier.',
+      'Garlic turns blue/green — harmless enzymatic reaction with acid.',
+      'Ready in 5–7 days. A perfect snack straight from the jar.',
+    ],
+    source: 'Shockey, "Fermented Vegetables"',
+  },
+  {
+    id: 'pineapple-habanero',
+    name: 'Pineapple + Habanero Hot Sauce',
+    emoji: '🍍',
+    description: 'Tropical heat — sweet pineapple and fiery habanero, fermented into a complex hot sauce. Blend after fermenting.',
+    method: 'mash',
+    vegetables: [
+      { vegId: 'pineapple', label: 'Pineapple', proportion: 0.55 },
+      { vegId: 'habanero', label: 'Habanero', proportion: 0.25 },
+      { vegId: 'garlic', label: 'Garlic', proportion: 0.10 },
+      { vegId: 'onion', label: 'Onion', proportion: 0.10 },
+    ],
+    typicalSaltPct: 3.0,
+    saltPctMin: 2.5,
+    saltPctMax: 4.0,
+    typicalTotalGrams: 400,
+    tips: [
+      'WEAR GLOVES when handling habaneros.',
+      'Roughly chop everything, mix with salt, and pack into a jar.',
+      'Ferment 7–14 days. Blend smooth after fermenting — add brine to adjust consistency.',
+      'The pineapple sugar drives fast fermentation — check daily.',
+      'A splash of vinegar post-ferment adds brightness.',
+    ],
+    source: 'Katz, "The Art of Fermentation"; contemporary hot sauce practice',
+  },
+  {
+    id: 'cucumber-onion-dill',
+    name: 'Cucumber + Onion + Dill',
+    emoji: '🥒',
+    description: 'Quick cucumber-onion pickle with fresh dill. Lighter and faster than full dill pickles — ready in days, not weeks.',
+    method: 'brine',
+    vegetables: [
+      { vegId: 'pickling-cucumber', label: 'Pickling cucumber', proportion: 0.65 },
+      { vegId: 'onion', label: 'Onion', proportion: 0.25 },
+      { vegId: 'garlic', label: 'Garlic', proportion: 0.10 },
+    ],
+    typicalSaltPct: 3.5,
+    saltPctMin: 3.0,
+    saltPctMax: 5.0,
+    typicalTotalGrams: 700,
+    tips: [
+      'Slice cucumbers into spears or coins. Slice onion into thin rings.',
+      'Dill goes in whole — stems and all.',
+      'Ready in 3–5 days. Onions ferment quickly and taste amazing.',
+      'Keep refrigerated — these are half-sours and will continue fermenting.',
+    ],
+    source: 'Katz, "The Art of Fermentation"; Eastern European tradition',
+  },
+  {
+    id: 'beet-ginger',
+    name: 'Beet + Ginger Kvass',
+    emoji: '🫙',
+    description: 'Earthy beetroot with zingy ginger — a vibrant, deeply coloured tonic. Traditional Russian kvass, modernised with ginger.',
+    method: 'brine',
+    vegetables: [
+      { vegId: 'beetroot', label: 'Beetroot', proportion: 0.80 },
+      { vegId: 'ginger', label: 'Ginger', proportion: 0.20 },
+    ],
+    typicalSaltPct: 2.0,
+    saltPctMin: 1.5,
+    saltPctMax: 3.0,
+    typicalTotalGrams: 400,
+    tips: [
+      'Chop beets into 1-inch chunks — do not grate (too fast, too yeasty).',
+      'Slice ginger thin — no need to peel if organic.',
+      'Ready in just 3–5 days. Strain and refrigerate.',
+      'Drink a small glass daily as a tonic. The brine is the point here.',
+    ],
+    source: 'Katz, "The Art of Fermentation"; traditional Russian',
+  },
+  {
+    id: 'green-beans-garlic-dill',
+    name: 'Dilly Beans',
+    emoji: '🫘',
+    description: 'Crisp, garlicky fermented green beans — a classic American ferment. Snappy, tangy, and addictive.',
+    method: 'brine',
+    vegetables: [
+      { vegId: 'green-beans', label: 'Green beans', proportion: 0.80 },
+      { vegId: 'garlic', label: 'Garlic', proportion: 0.12 },
+      { vegId: 'jalapeno', label: 'Jalapeño (optional)', proportion: 0.08 },
+    ],
+    typicalSaltPct: 4.0,
+    saltPctMin: 3.5,
+    saltPctMax: 5.0,
+    typicalTotalGrams: 500,
+    tips: [
+      'Trim the stem ends. Pack beans vertically in a tall jar — they look beautiful.',
+      'Add a grape leaf for extra crunch — green beans can go soft.',
+      'Ready in 7–10 days. They stay crisp for weeks in the fridge.',
+      'Perfect in a Bloody Mary, or just eaten straight from the jar.',
+    ],
+    source: 'Shockey, "Fermented Vegetables"; American tradition',
+  },
+  {
+    id: 'mixed-ferment-fruit',
+    name: 'Mixed Fruit Ferment',
+    emoji: '🍎',
+    description: 'Apple, pear, and plum with warm spices — a fermented fruit compote. Great with yogurt, oatmeal, or cheese.',
+    method: 'dry',
+    vegetables: [
+      { vegId: 'apple', label: 'Apple', proportion: 0.40 },
+      { vegId: 'pear', label: 'Pear', proportion: 0.35 },
+      { vegId: 'plum', label: 'Plum', proportion: 0.25 },
+    ],
+    typicalSaltPct: 2.0,
+    saltPctMin: 1.5,
+    saltPctMax: 2.5,
+    typicalTotalGrams: 500,
+    tips: [
+      'Use firm, slightly underripe fruit. Dice into small cubes.',
+      'Add a cinnamon stick and 2 cloves. A star anise is wonderful too.',
+      'Fruits ferment fast — check daily. Move to fridge after 2–3 days.',
+      'The ferment will be lightly effervescent and tangy-sweet.',
+      'Serve chilled over yogurt, oatmeal, or vanilla ice cream.',
+    ],
+    source: 'Katz, "The Art of Fermentation"; contemporary',
+  },
+];
+
 /** Ordered list of ferment types for UI display (excluding custom). */
 export const FERMENT_TYPE_ORDER: Array<{ id: string; preset: FermentPreset }> = [
   { id: 'sauerkraut', preset: FERMENT_PRESETS.sauerkraut! },

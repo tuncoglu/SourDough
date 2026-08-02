@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { FermentType, FermentMethod, SaltCrystal, FermentInputs, FermentResults, LactoDayPoint, WaterHardness } from '../models/types';
-import { FERMENT_PRESETS } from '../data/fermentPresets';
+import { FERMENT_PRESETS, VEG_COMBOS } from '../data/fermentPresets';
 import { VEGETABLES, findVeg, VegEntry } from '../data/vegetables';
 import {
   runLactoCalculations,
@@ -81,6 +81,7 @@ export function useLactoCalculator(): LactoCalculatorState {
   const [fermentType, setFermentType] = useState<FermentType>('sauerkraut');
   const [vegId, setVegId] = useState('green-cabbage');
   const [vegWeight, setVegWeight] = useState('1000');
+  const [vegMix, setVegMix] = useState<{ vegId: string; grams: string }[]>([]);
   const [waterAmount, setWaterAmount] = useState('500');
   const [saltPct, setSaltPct] = useState('2.0');
   const [saltType, setSaltType] = useState<SaltCrystal>('maldon-flake');
@@ -96,6 +97,89 @@ export function useLactoCalculator(): LactoCalculatorState {
   const veg = useMemo(() => findVeg(vegId), [vegId]);
   const preset = FERMENT_PRESETS[fermentType]!;
   const method = preset.method;
+
+  // Multi-veg mix: derived array with full VegEntry data
+  const vegMixEntries = useMemo(() =>
+    vegMix.map(m => ({ ...m, veg: findVeg(m.vegId) })),
+    [vegMix],
+  );
+  const isMultiVeg = vegMixEntries.length > 1;
+  const totalMixGrams = useMemo(() =>
+    vegMixEntries.reduce((s, m) => s + (parseFloat(m.grams) || 0), 0),
+    [vegMixEntries],
+  );
+
+  // Weighted properties from the mix (or fall back to single veg)
+  const effectiveVeg = useMemo(() => {
+    if (!isMultiVeg) return veg;
+    const total = totalMixGrams || 1;
+    const waterContentPct = vegMixEntries.reduce((s, m) =>
+      s + m.veg.waterContentPct * (parseFloat(m.grams) || 0), 0) / total;
+    const speedFactor = vegMixEntries.reduce((s, m) =>
+      s + m.veg.speedFactor * (parseFloat(m.grams) || 0), 0) / total;
+    const typicalBrineSaltPct = vegMixEntries.reduce((s, m) =>
+      s + m.veg.typicalBrineSaltPct * (parseFloat(m.grams) || 0), 0) / total;
+    const typicalDrySaltPct = vegMixEntries.reduce((s, m) =>
+      s + m.veg.typicalDrySaltPct * (parseFloat(m.grams) || 0), 0) / total;
+    const firmnessCounts = { soft: 0, medium: 0, firm: 0 };
+    vegMixEntries.forEach(m => { firmnessCounts[m.veg.firmness]++; });
+    const firmness = firmnessCounts.firm >= firmnessCounts.soft && firmnessCounts.firm >= firmnessCounts.medium
+      ? 'firm' : firmnessCounts.medium >= firmnessCounts.soft ? 'medium' : 'soft';
+    return {
+      ...veg,
+      waterContentPct: Math.round(waterContentPct),
+      speedFactor: Math.round(speedFactor * 100) / 100,
+      typicalBrineSaltPct: Math.round(typicalBrineSaltPct * 10) / 10,
+      typicalDrySaltPct: Math.round(typicalDrySaltPct * 10) / 10,
+      firmness: firmness as VegEntry['firmness'],
+      name: vegMixEntries.map(m => m.veg.name).join(' + '),
+      emoji: vegMixEntries.map(m => m.veg.emoji).join(''),
+    };
+  }, [isMultiVeg, veg, vegMixEntries, totalMixGrams]);
+
+  const toggleVegInMix = useCallback((id: string) => {
+    setVegMix(prev => {
+      const exists = prev.find(m => m.vegId === id);
+      if (exists) {
+        const next = prev.filter(m => m.vegId !== id);
+        // If down to 1 veg, switch back to single-veg mode
+        if (next.length === 1) {
+          setVegId(next[0].vegId);
+          setVegWeight(next[0].grams);
+          return [];
+        }
+        return next;
+      }
+      const entry = findVeg(id);
+      const currentSingle = vegId;
+      // First veg being added — start mix with existing single veg + new veg
+      if (prev.length === 0) {
+        const singleGrams = vegWeight;
+        return [
+          { vegId: currentSingle, grams: singleGrams },
+          { vegId: id, grams: String(entry.typicalWeight) },
+        ];
+      }
+      return [...prev, { vegId: id, grams: String(entry.typicalWeight) }];
+    });
+    setShowResults(false);
+  }, [vegId, vegWeight]);
+
+  const updateMixGrams = useCallback((id: string, grams: string) => {
+    setVegMix(prev => prev.map(m => m.vegId === id ? { ...m, grams } : m));
+    setShowResults(false);
+  }, []);
+
+  const applyCombo = useCallback((combo: typeof VEG_COMBOS[number]) => {
+    setFermentType('custom');
+    setVegId(combo.vegetables[0].vegId); // set primary veg
+    setVegMix(combo.vegetables.map(v => ({
+      vegId: v.vegId,
+      grams: String(Math.round(combo.typicalTotalGrams * v.proportion)),
+    })));
+    setSaltPct(String(combo.typicalSaltPct));
+    setShowResults(false);
+  }, []);
 
   // Load water hardness override from settings
   useEffect(() => {
@@ -164,14 +248,13 @@ export function useLactoCalculator(): LactoCalculatorState {
   }, [method]);
 
   const calculate = useCallback(() => {
-    const vegW = parseFloat(vegWeight) || 0;
+    const vegW = isMultiVeg ? totalMixGrams : (parseFloat(vegWeight) || 0);
     const waterW = parseFloat(waterAmount) || 0;
     const salt = parseFloat(saltPct) || 2.0;
 
     if (vegW <= 0) return;
     if (method === 'brine' && waterW <= 0) return;
 
-    // Recompute temp with the actual estimated days (first pass with rough)
     const baseInputs: FermentInputs = {
       fermentType,
       method,
@@ -182,7 +265,7 @@ export function useLactoCalculator(): LactoCalculatorState {
       ambientTemp: effectiveTemp,
     };
 
-    const baseResults = runLactoCalculations(baseInputs, veg.waterContentPct, veg.speedFactor);
+    const baseResults = runLactoCalculations(baseInputs, effectiveVeg.waterContentPct, effectiveVeg.speedFactor);
 
     // Now compute accurate temp based on the actual estimated duration
     const accurateTemp = computeFermentTemp(
@@ -193,7 +276,7 @@ export function useLactoCalculator(): LactoCalculatorState {
     const temp = accurateTemp.effectiveTemp;
 
     // Recalculate with accurate temp (salinity unchanged — already correct from baseResults)
-    const duration = estimateFermentDuration(temp, veg.speedFactor);
+    const duration = estimateFermentDuration(temp, effectiveVeg.speedFactor);
     const finalResults: FermentResults = {
       ...baseResults,
       estimatedDays: duration.days,
@@ -208,14 +291,18 @@ export function useLactoCalculator(): LactoCalculatorState {
     setAdvice(lactoAdvice(method, salt, temp, finalResults.estimatedDays));
     setWaterAdvice(waterHardnessFermentAdvice(h));
     setShowResults(true);
-  }, [vegWeight, waterAmount, saltPct, saltType, fermentType, method, veg, effectiveTemp, locationData, getHardness]);
+  }, [vegWeight, waterAmount, saltPct, saltType, fermentType, method, effectiveVeg, effectiveTemp, locationData, getHardness, isMultiVeg, totalMixGrams]);
 
   return {
     fermentType,
     method,
     vegId,
-    veg,
+    veg: effectiveVeg,
     vegWeight,
+    vegMix,
+    vegMixEntries,
+    isMultiVeg,
+    totalMixGrams,
     waterAmount,
     saltPct,
     saltType,
@@ -238,6 +325,10 @@ export function useLactoCalculator(): LactoCalculatorState {
     waterAdvice,
     showResults,
     selectPreset,
+    toggleVegInMix,
+    updateMixGrams,
+    applyCombo,
+    VEG_COMBOS,
     selectVeg,
     setVegWeight,
     setWaterAmount,

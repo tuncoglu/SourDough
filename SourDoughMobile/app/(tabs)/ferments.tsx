@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import {
   View,
   Text,
+  TextInput,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
@@ -130,65 +131,125 @@ export default function FermentsScreen() {
             ))}
         </ScrollView>
 
+        {/* ── Recommended Combinations ── */}
+        {calc.vegMix.length === 0 && (
+          <View style={[styles.combosCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.combosTitle, { color: colors.muted }]}>SUGGESTED COMBINATIONS</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.combosRow}>
+              {calc.VEG_COMBOS.map((combo) => (
+                <TouchableOpacity
+                  key={combo.id}
+                  style={[styles.comboChip, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  onPress={() => calc.applyCombo(combo)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.comboEmoji}>{combo.emoji}</Text>
+                  <Text style={[styles.comboName, { color: colors.espresso }]} numberOfLines={1}>{combo.name}</Text>
+                  <Text style={[styles.comboVegs, { color: colors.lightText }]} numberOfLines={1}>
+                    {combo.vegetables.map(v => v.label).join(', ')}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
         {/* ── Vegetable / Fruit Picker ── */}
-        <Text style={[styles.sectionLabel, { color: colors.espresso }]}>Vegetable or fruit</Text>
+        <Text style={[styles.sectionLabel, { color: colors.espresso }]}>
+          {calc.isMultiVeg ? 'Vegetables in the mix' : 'Vegetable or fruit'}
+        </Text>
         <View style={[styles.vegPicker, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          {/* Selected veg summary */}
           <View style={[styles.currentVeg, { borderBottomColor: colors.border }]}>
             <Text style={styles.currentVegEmoji}>{calc.veg.emoji}</Text>
             <View style={styles.currentVegInfo}>
               <Text style={[styles.currentVegName, { color: colors.espresso }]}>
-                {calc.veg.name}
+                {calc.isMultiVeg ? `${calc.vegMix.length} vegetables selected` : calc.veg.name}
               </Text>
               <Text style={[styles.currentVegMeta, { color: colors.lightText }]}>
-                {calc.veg.waterContentPct}% water · {calc.veg.firmness} · salt:{' '}
+                ~{calc.veg.waterContentPct}% water · {calc.veg.firmness} · salt:{' '}
                 {calc.method === 'brine' ? calc.veg.typicalBrineSaltPct : calc.veg.typicalDrySaltPct}%
               </Text>
             </View>
           </View>
 
+          {/* Veg chip grid */}
           {VEG_CATEGORIES.map(({ key, label }) => {
             const items = VEGETABLES.filter((v) => v.category === key);
             if (items.length === 0) return null;
             return (
               <View key={key} style={styles.vegCategory}>
                 <Text style={[styles.vegCatLabel, { color: colors.muted }]}>{label}</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.vegChipRow}
-                >
-                  {items.map((veg) => (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.vegChipRow}>
+                  {items.map((veg) => {
+                    const inMix = !!calc.vegMix.find(m => m.vegId === veg.id);
+                    const isSelected = calc.isMultiVeg ? inMix : calc.vegId === veg.id;
+                    return (
                       <Chip
                         key={veg.id}
-                        selected={calc.vegId === veg.id}
-                        onPress={() => calc.selectVeg(veg.id)}
+                        selected={isSelected}
+                        onPress={() => calc.toggleVegInMix(veg.id)}
                         label={veg.name}
                         colorScheme="olive"
                         inactiveBg={colors.white}
                         style={styles.vegChip}
                       >
                         <Text style={styles.vegChipEmoji}>{veg.emoji}</Text>
-                        <Text
-                          style={[styles.vegChipName, { color: calc.vegId === veg.id ? colors.white : colors.espresso }]}
-                          numberOfLines={1}
-                        >
+                        <Text style={[styles.vegChipName, { color: isSelected ? colors.white : colors.espresso }]} numberOfLines={1}>
                           {veg.name}
                         </Text>
                       </Chip>
-                    ))}
+                    );
                   })}
                 </ScrollView>
               </View>
             );
           })}
+
+          {/* Clear mix button */}
+          {calc.isMultiVeg && (
+            <TouchableOpacity
+              style={styles.clearMixBtn}
+              onPress={() => { calc.vegMix.forEach(m => calc.toggleVegInMix(m.vegId)); }}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.clearMixText, { color: colors.terracotta }]}>Clear selection</Text>
+            </TouchableOpacity>
+          )}
         </View>
+
+        {/* ── Individual veg weights (multi-veg mode) ── */}
+        {calc.isMultiVeg && (
+          <View style={[cardStyleLg, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.miniLabel, { color: colors.muted }]}>WEIGHT PER INGREDIENT</Text>
+            {calc.vegMixEntries.map((m) => (
+              <View key={m.vegId} style={styles.mixWeightRow}>
+                <Text style={styles.mixWeightEmoji}>{m.veg.emoji}</Text>
+                <Text style={[styles.mixWeightLabel, { color: colors.espresso }]} numberOfLines={1}>{m.veg.name}</Text>
+                <TextInput
+                  style={[styles.mixWeightInput, { backgroundColor: colors.white, borderColor: colors.border, color: colors.espresso }]}
+                  value={m.grams}
+                  onChangeText={(t) => calc.updateMixGrams(m.vegId, t)}
+                  keyboardType="decimal-pad"
+                  selectTextOnFocus
+                />
+                <Text style={[styles.mixWeightUnit, { color: colors.muted }]}>g</Text>
+              </View>
+            ))}
+            <View style={[styles.mixTotalRow, { borderTopColor: colors.border }]}>
+              <Text style={[styles.mixTotalLabel, { color: colors.espresso }]}>Total weight</Text>
+              <Text style={[styles.mixTotalValue, { color: colors.terracotta }]}>{calc.totalMixGrams}g</Text>
+            </View>
+          </View>
+        )}
 
         {/* ── Inputs ── */}
         <View style={[cardStyleLg, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <NumberInput
-            label="Weight"
-            value={calc.vegWeight}
-            unit="g"
+          {!calc.isMultiVeg && (
+            <NumberInput
+              label="Weight"
+              value={calc.vegWeight}
+              unit="g"
             onChangeText={calc.setVegWeight}
             placeholder="500"
           />
@@ -201,6 +262,7 @@ export default function FermentsScreen() {
               onChangeText={calc.setWaterAmount}
               placeholder="500"
             />
+          )}
           )}
 
           <NumberInput
@@ -479,6 +541,35 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
     paddingLeft: 2,
   },
+  // Combos
+  combosCard: {
+    borderWidth: 1, borderRadius: BorderRadius.lg, padding: Spacing.md, marginBottom: Spacing.lg,
+  },
+  combosTitle: {
+    fontSize: FontSize.xs, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.sm,
+  },
+  combosRow: { gap: Spacing.sm, paddingRight: Spacing.md },
+  comboChip: {
+    borderWidth: 1, borderRadius: BorderRadius.md, padding: Spacing.sm + 2, width: 150, gap: 2,
+  },
+  comboEmoji: { fontSize: 20 },
+  comboName: { fontSize: FontSize.xs, fontWeight: '700' },
+  comboVegs: { fontSize: 10, lineHeight: 14 },
+  // Clear mix
+  clearMixBtn: { alignSelf: 'flex-end', paddingVertical: Spacing.xs, paddingHorizontal: Spacing.sm },
+  clearMixText: { fontSize: FontSize.xs, fontWeight: '600' },
+  // Mix weights
+  mixWeightRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.xs },
+  mixWeightEmoji: { fontSize: 16 },
+  mixWeightLabel: { flex: 1, fontSize: FontSize.sm },
+  mixWeightInput: {
+    width: 64, height: 36, borderWidth: 1, borderRadius: BorderRadius.sm,
+    textAlign: 'right', fontSize: FontSize.sm, fontWeight: '600', paddingHorizontal: Spacing.sm,
+  },
+  mixWeightUnit: { fontSize: FontSize.xs, width: 14 },
+  mixTotalRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, paddingTop: Spacing.sm, marginTop: Spacing.xs },
+  mixTotalLabel: { fontSize: FontSize.sm, fontWeight: '600' },
+  mixTotalValue: { fontSize: FontSize.lg, fontWeight: '800' },
   saltChip: {
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs + 2,
