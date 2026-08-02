@@ -38,14 +38,35 @@ Built for bakers who want predictable results without the guesswork.
 
 ## Features
 
-- 🧪 **Starter tracker** — Log feedings with flour, water, and ratio. View your starter's history at a glance. Get reminders when it's time to feed again.
+- 🧪 **Starter tracker** — Log feedings with flour, water, and ratio. View your starter's history at a glance. Get reminders when it's time to feed again (coming soon).
 - 📋 **Recipe engine** — Build recipes by flour mix, hydration percentage, and inoculation. Every ingredient scales live as you tweak the numbers.
 - 📍 **Auto-location** — One-tap detection pulls your local temperature (via Open-Meteo) and water hardness by region, then adjusts your fermentation schedule.
 - 🔒 **Manual mode** — Enter your own temperature and postcode. No location permission needed.
 - ⏱️ **Fermentation timeline** — Step-by-step schedule: autolyse, stretch-and-folds, bulk fermentation, shaping, proofing, and bake — all adjusted to your conditions.
-- 🌾 **Flour database** — 60+ profiles: bread flour, whole wheat, rye, spelt, einkorn, and more. Customize protein percentages.
-- 🔔 **Feeding reminders** — Notifications so your starter never goes neglected.
+- 🌾 **Flour database** — 60+ profiles: bread flour, whole wheat, rye, spelt, einkorn, and more.
+- 🔔 **Feeding reminders** — Notifications so your starter never goes neglected (coming soon).
 - 📱 **Cross-platform** — iOS, Android, and web from a single codebase.
+
+---
+
+## Yogurt Calculator
+
+- 🥛 **10 starter cultures** — from classic thermophilic blends to mesophilic heirloom styles
+- 🌡️ **Thermophilic & mesophilic** — separate incubation models for each culture type
+- 🥛 **Milk picker** — cow, goat, sheep, and plant-based milks with adjusted yield
+- ⏱️ **Incubation timeline** — target window, min/max range, and temperature cap
+- ⚖️ **Yield & nutrition** — accounts for evaporation and straining losses
+- ♻️ **Previous-batch starter** — use yesterday's yogurt as today's inoculum
+
+---
+
+## Lacto-Fermentation Calculator
+
+- 🥬 **7+ ferment styles** — dry salt, brine, and mash methods with volume conversion
+- 🥒 **25+ vegetables** — density and water-release data for common ferments
+- 🧂 **Salt calculator** — converts between grams, percentage, and volume measures
+- 📅 **Day-by-day timeline** — LAB succession from Leuconostoc to Lactobacillus
+- 🌡️ **Temperature-adjusted Q10 model** — duration and pH timeline adapt to ambient temperature
 
 ---
 
@@ -83,6 +104,7 @@ To deploy manually:
 
 ```bash
 npx expo export --platform web
+cp -f public/_headers dist/_headers
 npx wrangler pages deploy dist --project-name=sourdough
 ```
 
@@ -123,6 +145,22 @@ SourDoughMobile/
 | `@react-native-async-storage/async-storage` | Local data persistence |
 | `react-native-reanimated` | Smooth animations |
 | `react` 19 / `react-native` 0.85 | UI framework |
+
+---
+
+## Architecture
+
+Five tabs under `app/(tabs)/`, all sharing one Expo SDK 56 codebase:
+
+- **Sourdough** (`index.tsx`) — bread calculator: flour blends, pre-ferments, cold proof, ready-by planner
+- **Yogurt** (`yogurt.tsx`) — incubation calculator with 10 culture types, milk picker, yield & nutrition
+- **Lacto-ferment** (`ferments.tsx`) — vegetable fermentation with salt calculator and day-by-day timeline
+- **History** (`history.tsx`) — saved recipes with search, filter chips, edit, duplicate, delete
+- **Settings** (`settings.tsx`) — defaults, water hardness override, theme, units
+
+**Calculation engines** (`src/lib/`) are pure, React-free functions — `calculations.ts` (bread FDT, Q10 fermentation, cold proof), `yogurtCalculations.ts`, `lactoCalculations.ts`, `blendUtils.ts`, `unitConversion.ts` — fully unit-testable without the RN runtime. **Hooks** (`src/hooks/`) orchestrate UI state; **stores** (`src/store/`) persist to AsyncStorage (recipes, settings, starter) with an in-memory settings cache (60s TTL). The **theme system** (`src/theme/`) provides light/dark palettes, a `useAppTheme()` hook, and design tokens (spacing, font sizes, radii).
+
+All internal math is metric (g, °C); unit conversion happens only at the display boundary.
 
 ---
 
@@ -171,6 +209,6 @@ MIT — see [LICENSE](LICENSE) for the full text.
 
 ## Related
 
-- [SourDough Python Tool](../optimizer.py) — CLI/GUI desktop version
+- [SourDough](https://github.com/tuncoglu/SourDough) — open-source project home
 - [Shipton Mill](https://www.shipton-mill.com/) — source of our flour data
 - [Open-Meteo](https://open-meteo.com/) — free weather API

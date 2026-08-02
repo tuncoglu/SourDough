@@ -55,7 +55,9 @@ export const PREHEAT_TEMP_C = 85;
 /** Pre-heat hold time (minutes). */
 export const PREHEAT_MINUTES = 30;
 
-/** Straining yield factor by thickness. */
+/** Straining yield factor by thickness.
+ *  NOTE: Home-straining yields vary widely (technique, cheesecloth, time).
+ *  Protein retention is ~80% — whey proteins are lost in the drain. */
 const STRAINING_FACTORS: Record<string, number> = {
   'thin': 1.0,
   'medium': 1.0,
@@ -98,7 +100,7 @@ export function calculateSachets(milkLitres: number, starterRatio: number): numb
  *   rate = Q10^((temp - baseTemp) / 10)
  *   hours = typicalHours / rate
  *
- * Range is ±30% from the central estimate.
+ * Range is -25%/+50% from the central estimate.
  */
 export function estimateIncubation(
   temp: number,
@@ -280,7 +282,7 @@ export function buildYogurtTimeline(
   points.push({
     hour: completeH,
     label: 'Complete — Chill',
-    description: `Refrigerate for at least 4h. The cold halts fermentation and the gel continues to firm up. Keeps for 2–3 weeks refrigerated. Save 2 tbsp as starter for your next batch — heirloom cultures improve with each generation.`,
+    description: `Refrigerate for at least 4h. The cold halts fermentation and the gel continues to firm up. Keeps for 2–3 weeks refrigerated. Save 2 tbsp as starter for your next batch — heirloom cultures can be maintained over generations with proper technique.`,
   });
 
   return points;
@@ -345,7 +347,7 @@ export function yogurtAdvice(
     if (incubationTemp < 36) {
       tips.push(`🌡️ Incubation temp is low (${incubationTemp}°C). Thermophilic cultures need 38–46°C. Below 36°C, L. bulgaricus slows dramatically — expect a much longer set or a thin result.`);
     } else if (incubationTemp > 48) {
-      tips.push(`🔥 Too hot! Above 48°C, the cultures begin to die. S. thermophilus is more heat-tolerant than L. bulgaricus — you may get a thin, poorly set yogurt. Keep at 40–45°C.`);
+      tips.push(`🔥 Too hot! Above 48°C, both cultures are stressed. L. bulgaricus is more heat-tolerant than S. thermophilus (optimum 45–47°C vs 40–42°C) — you may get a thin, poorly set yogurt. Keep at 40–45°C.`);
     } else {
       tips.push(`✅ Temperature (${incubationTemp}°C) is in the thermophilic sweet spot. Maintain this consistently — temperature swings cause graininess.`);
     }
@@ -383,7 +385,7 @@ export function yogurtAdvice(
 
   // General tips
   tips.push('🫙 Use clean glass jars — residual detergent inhibits cultures. Sterilise with boiling water or a dishwasher cycle.');
-  tips.push('🔬 Save 2 tbsp from this batch to start the next. Heirloom cultures adapt to your kitchen and improve over generations. Reculture within 5–7 days.');
+  tips.push('🔬 Save 2 tbsp from this batch to start the next. Heirloom cultures adapt to your kitchen and can be maintained over generations with proper technique. Reculture within 5–7 days.');
   tips.push('🛡️ Signs of contamination: pink/orange discolouration, blue/green fuzzy mould, or yeasty/alcoholic smell. Discard if any of these appear. A clean, tangy/sour smell is normal.');
 
   return tips;

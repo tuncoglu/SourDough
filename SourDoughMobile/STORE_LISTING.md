@@ -1,7 +1,7 @@
 # Google Play Store Listing — Just Dough It
 
 ## Short description (80 chars max)
-> Sourdough starter tracker & recipe calculator. Auto-detects temperature for perfect fermentation.
+> Sourdough, yogurt & lacto-ferment calculator with live temperature adjustment
 
 ## Full description (4000 chars max)
 
@@ -17,6 +17,8 @@ Most recipes assume a fixed temperature and water profile. Just Dough It uses yo
 - **Manual mode** — Prefer privacy? Enter your own temperature and postcode — no location permission needed.
 - **Fermentation timeline** — See a step-by-step schedule: autolyse, stretch-and-folds, bulk fermentation, shaping, proofing, and bake — all adjusted to your conditions.
 - **Flour database** — Built-in profiles for bread flour, whole wheat, rye, spelt, einkorn, and more. Customize protein content per flour.
+- **Yogurt calculator** — 10 starter cultures (thermophilic & mesophilic), milk picker, incubation timeline with min/max range, yield & nutrition, and previous-batch starter.
+- **Lacto-fermentation calculator** — 7+ ferment styles, 25+ vegetables, salt calculator with volume conversion, day-by-day LAB succession timeline, and temperature-adjusted Q10 model.
 
 ### Private by design
 No accounts. No analytics. No tracking. Your recipes and starter logs stay on your device. When you enable location, only your coordinates are sent (to Open-Meteo for weather and OpenStreetMap for geocoding) — nothing else. See the privacy policy linked below for full details.

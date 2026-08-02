@@ -1,5 +1,7 @@
 # 🥖 SourDough — Location-Aware Sourdough Optimizer
 
+> **The app is called Just Dough It; the open-source project is SourDough.**
+
 **Bake better bread by listening to your kitchen, not a textbook.**
 
 SourDough takes the guesswork out of sourdough baking. It auto-detects your
@@ -18,7 +20,7 @@ SourDough adapts everything to where you really are:
 
 - 🌡 **Live ambient temperature** via Open-Meteo weather data
 - 💧 **Regional water hardness** from open water-quality datasets
-- 🌾 **Flour-specific hydration** from a built-in catalogue of 60+ flours
+- 🌾 **Flour-specific protein data** from a built-in catalogue of 60+ flours
 - 📍 **Location-aware** — auto-detects your city via GPS or postcode lookup
 
 ---
@@ -41,13 +43,27 @@ and Android from a single codebase.
 
 ### 🧪 Starter Tracker
 - **Feeding log** — record each feeding by flour, water, and ratio
-- **Notifications** — configurable feeding reminders via expo-notifications
-- **History** — browse past feedings to track your starter's rhythm
+- **Notifications** — configurable feeding reminders via expo-notifications (coming soon)
+- **History** — browse past bakes, search and filter saved recipes
 
 ### 📦 Data & Privacy
 - **Fully offline-capable** — all data stored locally via AsyncStorage; no accounts
 - **No tracking** — no analytics, no telemetry, no cloud storage
 - **Location is transient** — coordinates are sent only to fetch weather and geocode your city; never stored or shared
+
+### 🥛 Yogurt Calculator
+- **10 starter cultures** — thermophilic and mesophilic, each with its own incubation model
+- **Milk picker** — cow, goat, sheep, and plant-based milks with adjusted yield
+- **Incubation timeline** — target window, min/max range, and temperature cap
+- **Yield & nutrition** — accounts for evaporation and straining losses
+- **Previous-batch starter** — use yesterday's yogurt as today's inoculum
+
+### 🥬 Lacto-Fermentation Calculator
+- **7+ ferment styles** — dry salt, brine, and mash methods with volume conversion
+- **25+ vegetables** — density and water-release data for common ferments
+- **Salt calculator** — converts between grams, percentage, and volume measures
+- **Day-by-day timeline** — LAB succession from Leuconostoc to Lactobacillus
+- **Temperature-adjusted Q10 model** — duration and pH timeline adapt to ambient temperature
 
 ---
 
