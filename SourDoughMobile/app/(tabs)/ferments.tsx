@@ -265,9 +265,6 @@ export default function FermentsScreen() {
             />
           )}
 
-          {!calc.isMultiVeg && (
-          <View style={styles.hintRow}>
-
           <NumberInput
             label="Salt %"
             value={calc.saltPct}
