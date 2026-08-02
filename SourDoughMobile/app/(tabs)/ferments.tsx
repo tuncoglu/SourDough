@@ -1,4 +1,5 @@
 import React, { useCallback } from 'react';
+import { useRouter } from 'expo-router';
 import {
   View,
   Text,
@@ -22,6 +23,7 @@ import { VEGETABLES, VEG_CATEGORIES } from '@/src/data/vegetables';
 import { FermentType, SALT_LABELS, SALT_TYPE_ORDER } from '@/src/models/types';
 
 export default function FermentsScreen() {
+  const router = useRouter();
   const calc = useLactoCalculator();
   const { colors } = useAppTheme();
 
@@ -40,11 +42,13 @@ export default function FermentsScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Header */}
+        {/* Header — tap to return home */}
         <View style={styles.header}>
-          <Text style={[styles.heading, { color: colors.espresso }]}>🫙 Lacto-Fermentation</Text>
+          <TouchableOpacity onPress={() => router.push('/')} activeOpacity={0.7}>
+            <Text style={[styles.heading, { color: colors.espresso }]}>🥖  Just Dough It</Text>
+          </TouchableOpacity>
           <Text style={[styles.subtitle, { color: colors.muted }]}>
-            Salt calculator & fermentation timeline
+            Perfect bread, less guesswork
           </Text>
         </View>
 

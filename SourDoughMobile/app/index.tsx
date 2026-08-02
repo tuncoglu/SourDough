@@ -55,7 +55,7 @@ export default function LandingScreen() {
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.espresso }]}>🥖  Just Dough It</Text>
           <Text style={[styles.subtitle, { color: colors.muted }]}>
-            What are we making today?
+            Perfect bread, less guesswork
           </Text>
         </View>
 

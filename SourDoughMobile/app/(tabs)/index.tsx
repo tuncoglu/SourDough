@@ -607,9 +607,11 @@ export default function CalculatorScreen() {
     <SafeAreaView style={[layoutStyles.container, { backgroundColor: colors.cream }]} edges={['top']}>
       {isDesktop && (
         <>
-          <Text style={[layoutStyles.header, { color: colors.espresso }]}>🥖  Just Dough It</Text>
+          <TouchableOpacity onPress={() => router.push('/')} activeOpacity={0.7}>
+            <Text style={[layoutStyles.header, { color: colors.espresso }]}>🥖  Just Dough It</Text>
+          </TouchableOpacity>
           <Text style={[layoutStyles.tagline, { color: colors.muted }]}>
-            A sourdough calculator for beginners and pros. Tell us your flour — we'll grab your local weather for ambient temp, auto-detect water temp, figure out the exact ingredients, predict how long your dough needs, and guide you through every step from mixing to fresh-baked bread.
+            Perfect bread, less guesswork
           </Text>
         </>
       )}
@@ -637,9 +639,11 @@ export default function CalculatorScreen() {
           >
             {!isDesktop && (
               <>
-                <Text style={[layoutStyles.header, { color: colors.espresso }]}>🥖  Just Dough It</Text>
+                <TouchableOpacity onPress={() => router.push('/')} activeOpacity={0.7}>
+                  <Text style={[layoutStyles.header, { color: colors.espresso }]}>🥖  Just Dough It</Text>
+                </TouchableOpacity>
                 <Text style={[layoutStyles.tagline, { color: colors.muted }]}>
-                  A sourdough calculator for beginners and pros. Tell us your flour — we'll grab your local weather for ambient temp, auto-detect water temp, figure out the exact ingredients, predict how long your dough needs, and guide you through every step from mixing to fresh-baked bread.
+                  Perfect bread, less guesswork
                 </Text>
               </>
             )}
