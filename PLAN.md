@@ -1,5 +1,61 @@
 # 🥖 SourDough — Improvement Plan
 
+## Post-Ultrareview Remediation (2026-08-02)
+
+Comprehensive fixes from a 4-dimension review (GUI UX, recipe science, code consistency, documentation). ~127 findings addressed.
+
+### Science Fixes
+- FDT calculation now includes pre-ferment mass in weighted average (was silently excluded)
+- Corrected yogurt heat-tolerance claim (L. bulgaricus > S. thermophilus, was reversed)
+- Corrected lacto heterofermentative temperature claim (low temp favors heterofermentative, was reversed)
+- Protein health claims in culture presets now match actual nutrition model output
+- Water-release factor for cabbage documented as overestimating effective salinity
+- Pennsylvania, Utah, Nevada removed from soft-water regions
+- Oat flour protein corrected (10% → 14.5%), barley (9% → 11.5%), oatmeal (11% → 13%)
+- Heirloom culture "improves over generations" language softened (unsupported claim)
+- Inoculation sqrt model, proof fraction, cold-proof target all labeled as heuristics
+
+### UX Fixes
+- Dark mode fixed across entire bread calculator (~15 components converted to dynamic theme)
+- DarkColors.lightText contrast fixed (#6B6360 → #9B938C, now passes WCAG AA)
+- Semantic background tokens added (tipBg, warningBg, coldBg, successBg, badgeBg) for dark mode
+- StatusBar integrated into theme provider
+- Accessibility labels/roles/states added to all interactive elements across all screens
+- All touch targets raised to ≥44px minimum
+- Stale results indicator after input edits
+- Ready-by planner now accounts for cold proof hours
+- KeyboardAvoidingView added to all form screens
+- Settings loading state shows spinner instead of blank screen
+- Dead "tap to set manually" banner now navigates to Settings
+- RecipeCard temperature display respects imperial/metric unit system
+
+### Code Fixes
+- Biga pre-ferment type now preserved throughout calculation pipeline (was silently converted to poolish)
+- Theme/unit settings consolidated — removed duplicate UserSettings fields (split-brain resolved)
+- wrapSet memoized — calculator screen no longer re-renders fully on every keystroke
+- Hardness resolution extracted to shared hardnessUtils.ts (was duplicated 4×)
+- fullProcessHours unified across FermentationTimeline and ready-by planner (was divergent)
+- Dead code removed: useNotifications.ts, notifications.ts, constants/Colors.ts
+- Circular import flourSearch.ts ↔ blendUtils.ts broken
+- Import paths standardized to @/ alias
+- Type fixes: YogurtThickness exported, FlourBlendCard conditional type simplified
+- Error handling added to starter fridge actions
+- buildFlourTypeLabel extracted to eliminate copy-pasted blend label building
+
+### Doc Fixes
+- Root PRIVACY.md rewritten (removed ipapi.co, recipes.txt, CLI references — was legally risky)
+- ipapi.co removed from CSP headers
+- Yogurt + lacto-fermentation features documented in all READMEs + STORE_LISTING
+- "Just Dough It" naming added to root README
+- Architecture overview added to AGENTS.md (was one line)
+- STORE_LISTING short description shortened to fit 80-char Play Store limit
+- Manual deploy instructions fixed (added _headers copy step)
+- Version aligned (package.json 3.0.0) and userInterfaceStyle set to "automatic"
+- JSDoc range comments corrected (yogurt -25%/+50%, lacto ±40%)
+- PLAN.md updated with actual implementation divergences from Phase 2 plan
+
+---
+
 Based on the architecture review of 25 findings. Organized in 6 phases by
 dependency order: each phase can be worked on in parallel within itself,
 but later phases build on earlier ones.
@@ -294,6 +350,11 @@ export default function CalculatorScreen() {
 `src/components/FdtResultCard.tsx`, `src/components/ReadyByResultCard.tsx`,
 `src/components/ResultsSection.tsx`
 
+**Note (2026-08-02):** The actual implementation split differently from this plan.
+The ready-by planner, cold proof card, and daily recommendation card remain inline
+in index.tsx. useFlourBlend and useReadyByPlanner hooks were folded into
+useCalculatorInputs and inline logic respectively. This is a valid trade-off.
+
 ---
 
 ## Phase 3 — UX Fixes ✅
@@ -578,6 +639,17 @@ new `src/lib/rateLimiter.ts`
 
 ---
 
+## Phase 6 — Post-Ultrareview Remediation ✅
+
+Comprehensive fixes from a 4-dimension review (GUI UX, recipe science, code consistency, documentation). ~127 findings addressed. Full summary at the top of this file.
+
+- **Science** — FDT includes pre-ferment mass; yogurt heat-tolerance claim corrected; lacto heterofermentative temp claim corrected; flour proteins corrected (oat 14.5%, barley 11.5%, oatmeal 13%); soft-water regions trimmed; unsupported heirloom claim softened; heuristics labeled
+- **UX** — full dark mode across bread calculator; WCAG AA contrast; semantic background tokens; accessibility labels/roles/states; ≥44px touch targets; stale-results indicator; ready-by accounts for cold proof; KeyboardAvoidingView; settings spinner; dead banner now navigates to Settings
+- **Code** — biga type preserved through pipeline; settings split-brain resolved; wrapSet memoized; hardnessUtils extracted; fullProcessHours unified; dead code removed; circular import broken; @/ alias standardized; type + error-handling fixes
+- **Docs** — root PRIVACY.md rewritten; ipapi.co removed from CSP; yogurt/lacto features in READMEs + STORE_LISTING; naming in root README; AGENTS.md architecture; store description ≤80 chars; deploy _headers step; version 3.0.0; userInterfaceStyle automatic; JSDoc ranges corrected
+
+---
+
 ## Implementation Order Summary
 
 ```
@@ -617,6 +689,9 @@ Phase 5 (Robustness) ✅
   ✅ #23 API retry
   ✅ #24 Settings cache
   ✅ #25 Error boundary
+
+Phase 6 (Post-Ultrareview Remediation) ✅
+  ✅ ~127 findings across science, UX, code, docs
 ```
 
 **All 25 items complete.** 🎉

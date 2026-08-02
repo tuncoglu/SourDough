@@ -98,7 +98,7 @@ export function calculateSachets(milkLitres: number, starterRatio: number): numb
  *   rate = Q10^((temp - baseTemp) / 10)
  *   hours = typicalHours / rate
  *
- * Range is ±30% from the central estimate.
+ * Range is -25%/+50% from the central estimate.
  */
 export function estimateIncubation(
   temp: number,

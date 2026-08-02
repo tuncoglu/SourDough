@@ -3,7 +3,7 @@ import { lookupUkPostcodeHardness, classifyHardness } from './ukWaterHardness';
 
 /**
  * Water hardness by country/region (mg/L CaCO₃ → classification).
- * Ported from optimizer.py WATER_HARDNESS_TABLE.
+ * Originally ported from the retired Python optimizer.
  *
  * Resolution priority:
  *   1. UK postcode district lookup (e.g. "PO6" → Portsmouth zone data)

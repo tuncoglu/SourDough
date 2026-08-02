@@ -160,7 +160,7 @@ export function estimateFermentDuration(
     days *= penalty;
   }
 
-  // Range: ±30% for early taste / fully sour
+  // Range: ±40% for early taste / fully sour
   const daysMin = days * 0.6;
   const daysMax = days * 1.4;
 

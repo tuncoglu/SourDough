@@ -2,7 +2,7 @@ import { FlourEntry, FlourCategory } from '../models/types';
 
 /**
  * Shipton Mill flour catalogue + generic fallbacks.
- * Ported from optimizer.py SHIPTON_MILL_FLOURS.
+ * Originally ported from the retired Python optimizer.
  * Protein is midpoint of spec range where available, rounded to nearest 0.5%.
  */
 export const SHIPTON_MILL_FLOURS: FlourEntry[] = [

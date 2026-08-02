@@ -1,6 +1,6 @@
 /**
  * Core sourdough calculations.
- * Ported from optimizer.py — same math, TypeScript syntax.
+ * Originally ported from the retired Python optimizer.
  */
 import {
   RecipeInputs,
