@@ -250,9 +250,10 @@ export default function FermentsScreen() {
               label="Weight"
               value={calc.vegWeight}
               unit="g"
-            onChangeText={calc.setVegWeight}
-            placeholder="500"
-          />
+              onChangeText={calc.setVegWeight}
+              placeholder="500"
+            />
+          )}
 
           {calc.method === 'brine' && (
             <NumberInput
@@ -263,7 +264,9 @@ export default function FermentsScreen() {
               placeholder="500"
             />
           )}
-          )}
+
+          {!calc.isMultiVeg && (
+          <View style={styles.hintRow}>
 
           <NumberInput
             label="Salt %"
