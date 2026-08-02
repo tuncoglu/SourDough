@@ -11,6 +11,7 @@ import {
   CalculationResults,
   WaterHardness,
   FlourBlendEntry,
+  RecipePreset,
 } from '../models/types';
 import { getTempZone } from '../models/types';
 import { findFlour } from './flourSearch';
@@ -35,7 +36,8 @@ const BASE_FERMENTATION_HOURS = 4.0;
 const MIN_FERMENTATION_HOURS = 2.0;
 
 /** Thermal time constant (hours) — how fast dough temperature drifts
- *  toward ambient. ~1.5 h for a typical 1–2 kg dough mass. */
+ *  toward ambient. Calibrated for a typical 1–2 kg dough mass; smaller
+ *  or larger masses have different thermal time constants. */
 export const TAU = 1.5;
 
 /** Q10 coefficient — fermentation rate multiplier per 10°C.
@@ -56,8 +58,9 @@ export const DT = 0.25;
 const MAX_STEPS = 400;
 
 /** Proof time ≈ 60% of bulk fermentation duration.
- *  Empirical observation (Hammelman, "Bread") — the shaped loaf proofs
- *  faster than bulk because the dough is warmer and more active after folds. */
+ *  Heuristic — the shaped loaf typically proofs faster than bulk because
+ *  the dough is warmer and more active after folds. Practice ranges widely:
+ *  0.25× (Forkish-style short proof) to 1.0× (Tartine-style long proof). */
 export const PROOF_FRACTION = 0.6;
 
 // Flour ferment factors, blend utilities, and protein calculation
@@ -77,6 +80,9 @@ export {
  * weighted average. Specific heats (J/g·°C): flour ≈ 1.8, water ≈ 4.18,
  * starter ≈ 3.0. Reference: Gisslen 9th ed., Calvel "Le Goût du Pain".
  *
+ * Pre-ferment flour and water contribute to dough temperature too — they
+ * sit at ambient temp before mixing, so their terms use ambientTemp.
+ *
  * Without weights, falls back to a simple arithmetic average for backward
  * compatibility.
  */
@@ -88,12 +94,16 @@ export function calculateFDT(
   flourWeight?: number,
   waterWeight?: number,
   starterWeight?: number,
+  prefermentFlour?: number,
+  prefermentWater?: number,
 ): number {
+  const pfFlour = prefermentFlour ?? 0;
+  const pfWater = prefermentWater ?? 0;
   if (
     flourWeight !== undefined &&
     waterWeight !== undefined &&
     starterWeight !== undefined &&
-    flourWeight + waterWeight + starterWeight > 0
+    flourWeight + waterWeight + starterWeight + pfFlour + pfWater > 0
   ) {
     // Specific heats (J/g·°C)
     const CP_FLOUR = 1.8;
@@ -103,9 +113,15 @@ export function calculateFDT(
     const numerator =
       flourWeight * CP_FLOUR * flourTemp +
       waterWeight * CP_WATER * waterTemp +
-      starterWeight * CP_STARTER * starterTemp;
+      starterWeight * CP_STARTER * starterTemp +
+      pfFlour * CP_FLOUR * ambientTemp +
+      pfWater * CP_WATER * ambientTemp;
     const denominator =
-      flourWeight * CP_FLOUR + waterWeight * CP_WATER + starterWeight * CP_STARTER;
+      flourWeight * CP_FLOUR +
+      waterWeight * CP_WATER +
+      starterWeight * CP_STARTER +
+      pfFlour * CP_FLOUR +
+      pfWater * CP_WATER;
 
     return numerator / denominator;
   }
@@ -158,7 +174,7 @@ export function calculateIngredients(
 
   const waterTotal = (hydrationPct / 100.0) * totalFlour;
   // Added water = total water – water in starter – water in pre-ferment
-  const addedWater = waterTotal - starterWater - prefermentWater;
+  const addedWater = Math.max(0, waterTotal - starterWater - prefermentWater);
   const salt = (saltPct / 100.0) * totalFlour;
 
   // ═══ Oil ═══
@@ -193,15 +209,34 @@ export function estimateFermentation(
   inoculationPct: number = 20.0,
   hydrationPct: number = 70.0,
   flour: string | FlourBlendEntry[] = 'Generic: Bread Flour',
+  starterHoursSinceFed?: number,
+  oilPct?: number,
 ): { hours: number; note: string } {
-  // Inoculation factor: more starter = faster (time ∝ 1/√(inoc%))
+  // Inoculation factor: more starter = faster (time ∝ 1/√(inoc%)).
+  // NOTE: sqrt model is a heuristic that under-predicts at low inoculation (<10%).
   const inocRate = Math.sqrt(inoculationPct / 20.0);
   // Hydration factor: wetter dough = faster (rate ∝ (hyd% / 70)^0.6)
   // Reference: Hammelman "Bread", Gisslen 9th ed.
   const hydRate = Math.pow(hydrationPct / 70.0, 0.6);
   // Flour factor: wholemeal/rye/spelt ferment faster than white
   const flourFactor = resolveFermentFactor(flour);
-  const baseHours = BASE_FERMENTATION_HOURS / (inocRate * hydRate * flourFactor);
+
+  // Vitality factor: triangular peak model (heuristic, not from a specific study)
+  // 0h=0.85 → peak 1.0 at 6h → 0.7 at 24h → floor 0.65 after 24h
+  let vitalityFactor = 1.0;
+  if (starterHoursSinceFed !== undefined) {
+    if (starterHoursSinceFed <= 6) {
+      vitalityFactor = 0.85 + (0.15 / 6) * starterHoursSinceFed;
+    } else if (starterHoursSinceFed <= 24) {
+      vitalityFactor = 1.0 - (0.3 / 18) * (starterHoursSinceFed - 6);
+    } else {
+      vitalityFactor = 0.65;
+    }
+  }
+
+  // Fat penalty: oil coats gluten strands and slows yeast activity
+  const oilRate = (oilPct ?? 0) >= 10 ? 0.85 : (oilPct ?? 0) >= 5 ? 0.92 : 1.0;
+  const baseHours = BASE_FERMENTATION_HOURS / (inocRate * hydRate * flourFactor * vitalityFactor * oilRate);
 
   // Q10 temperature adjustment — consistent with dynamic model
   const rateMultiplier = Math.pow(Q10, (fdt - T_BASE) / 10.0);
@@ -249,9 +284,12 @@ export function estimateDynamicFermentation(
   hydrationPct: number = 70.0,
   flour: string | FlourBlendEntry[] = 'Generic: Bread Flour',
   starterHoursSinceFed?: number,
+  oilPct?: number,
 ): DynamicFermentation | null {
 
   // Inoculation + hydration + flour multipliers
+  // NOTE: sqrt inoculation model is a heuristic that under-predicts at low
+  // inoculation (<10%).
   const inocRate = Math.sqrt(inoculationPct / 20.0);
   // Hydration factor: wetter dough = faster (rate ∝ (hyd% / 70)^0.6)
   // Reference: Hammelman "Bread", Gisslen 9th ed.
@@ -259,7 +297,7 @@ export function estimateDynamicFermentation(
   const flourFactor = resolveFermentFactor(flour);
   const baseRate = inocRate * hydRate * flourFactor;
 
-  // Vitality factor: triangular peak model (Gänzle et al., 2019)
+  // Vitality factor: triangular peak model (heuristic, not from a specific study)
   // 0h=0.85 → peak 1.0 at 6h → 0.7 at 24h → floor 0.65 after 24h
   let vitalityFactor = 1.0;
   if (starterHoursSinceFed !== undefined) {
@@ -271,7 +309,10 @@ export function estimateDynamicFermentation(
       vitalityFactor = 0.65;
     }
   }
-  const adjustedBaseRate = baseRate * vitalityFactor;
+
+  // Fat penalty: oil coats gluten strands and slows yeast activity
+  const oilRate = (oilPct ?? 0) >= 10 ? 0.85 : (oilPct ?? 0) >= 5 ? 0.92 : 1.0;
+  const adjustedBaseRate = baseRate * vitalityFactor * oilRate;
 
   if (hourlyForecast.length < 2) return null;
 
@@ -502,7 +543,7 @@ export function waterHardnessAdvice(hardness: WaterHardness): string[] {
  * the same thermal time constant τ, and fermentation continues at a very
  * slow rate (Q10 model extended downward).
  *
- * At 4°C, rate ≈ 0.05–0.08× baseline — primarily acetic acid production.
+ * At 4°C, rate ≈ 0.13× baseline (pure Q10 model).
  *
  * NOTE: This model uses a uniform Q10 coefficient (≈2.5) across all
  * temperatures. In reality, yeast (S. cerevisiae) and lactic acid bacteria
@@ -521,6 +562,8 @@ export function estimateColdProof(
   let doughTemp = fdt;
   let progress = TARGET_HOURS; // starts where bulk left off (100% completion)
   // Cold target: proof is done when it reaches ~1.3× baseline (gentle rise in fridge)
+  // Heuristic — actual cold-proof duration is primarily determined by the
+  // user-specified coldHours, not this target.
   const COLD_TARGET = TARGET_HOURS * 1.3;
   let steps = 0;
   const profile = [...baseProfile.profile];
@@ -597,6 +640,8 @@ export function runAllCalculations(
     ingredients.bowlFlour,
     ingredients.addedWater,
     inputs.starterWeight,
+    ingredients.prefermentFlour,
+    ingredients.prefermentWater,
   );
 
   // Build fresh flour blend (synthesize from legacy scalar if needed)
@@ -626,6 +671,8 @@ export function runAllCalculations(
     ingredients.starterPct,
     inputs.hydration,
     totalBlend,
+    inputs.starterHoursSinceFed,
+    inputs.oilPct,
   );
 
   let dynamicFerment: DynamicFermentation | null = null;
@@ -637,6 +684,7 @@ export function runAllCalculations(
       inputs.hydration,
       totalBlend,
       inputs.starterHoursSinceFed,
+      inputs.oilPct,
     );
 
     // Extend with cold proof if requested
@@ -686,6 +734,32 @@ export function runAllCalculations(
     warnings,
     hardness,
   };
+}
+
+// ── Process Time ───────────────────────────────────────────────────────
+
+/**
+ * Compute total process time (hours) for a recipe preset: autolyse,
+ * folds × fold interval, bench rest, shaping (5 min), bulk ferment,
+ * proof (PROOF_FRACTION × fermentHours), scoring (1 min), and bake.
+ *
+ * Single source of truth for process duration. Without a preset, falls
+ * back to bulk ferment + proof only.
+ */
+export function computeProcessHours(
+  fermentHours: number,
+  preset: RecipePreset | null | undefined,
+): number {
+  if (!preset) return fermentHours + fermentHours * PROOF_FRACTION;
+  const { process, bake } = preset;
+  const autolyse = process.autolyseMinutes / 60;
+  const folds = process.folds * (process.foldIntervalMinutes / 60);
+  const benchRest = process.benchRestMinutes / 60;
+  const shaping = 5 / 60;
+  const proof = fermentHours * PROOF_FRACTION;
+  const scoring = 1 / 60;
+  const bakeTime = bake.bakeTimeMinutes / 60;
+  return autolyse + folds + benchRest + shaping + fermentHours + proof + scoring + bakeTime;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────

@@ -17,11 +17,19 @@ const FLOUR_FERMENT_FACTORS: Record<FlourCategory, number> = {
   'Cake & Pastry': 1.0,
   'Brown, Malted & Seeded': 1.15,
   'Wholemeal': 1.3,
+  // NOTE: Published evidence for faster spelt fermentation is mixed.
+  // Some bakers observe no difference from wheat.
   'Spelt': 1.2,
   'Ancient & Heritage': 1.2,
   'Rye': 1.5,
   'Other Grains': 1.0,
+  // NOTE: GF factor reflects both slower microbial activity AND poor gas
+  // retention. GF doughs may appear to overproof quickly because structure
+  // fails, not because fermentation is faster.
   'Gluten-Free': 0.7,
+  // NOTE: This factor does not account for diastatic malt, which adds
+  // amylase and fermentable sugars — diastatic malt at 0.5–2% measurably
+  // accelerates fermentation.
   'Malt & Brewing': 1.0,
   'Generic': 1.0,
 };

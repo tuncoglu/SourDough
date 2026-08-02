@@ -127,7 +127,7 @@ export const VEGETABLES: VegEntry[] = [
     firmness: 'firm',
     typicalWeight: 400,
     notes: 'Stems ferment better than florets. Peel tough outer skin.',
-    researchNote: 'Chen et al. (2026): 35°C native LAB fermentation increased sulforaphane 44× (84,000 μg/kg). Blanched broccoli + warm ferment = anti-cancer functional food.',
+    researchNote: 'Some research suggests fermentation may increase sulforaphane availability in broccoli, though results vary by method and temperature.',
   },
   {
     id: 'kohlrabi',
@@ -343,7 +343,7 @@ export const VEGETABLES: VegEntry[] = [
     speedFactor: 1.0,
     firmness: 'firm',
     typicalWeight: 100,
-    notes: 'Fermented garlic in honey is a cult favourite. Cloves may turn blue/green — harmless enzymatic reaction.',
+    notes: 'Fermented garlic in honey is a cult favourite. Cloves may turn blue/green — harmless enzymatic reaction. SAFETY NOTE: Garlic-in-honey ferments can stay above pH 4.6. Honey may carry C. botulinum spores. Keep refrigerated, monitor pH, and do not feed to infants under 12 months.',
   },
   {
     id: 'shallot',

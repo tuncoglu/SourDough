@@ -287,7 +287,7 @@ export const SHIPTON_MILL_FLOURS: FlourEntry[] = [
   // ── Other Grains ────────────────────────────────────────────────────
   {
     label: 'Barley Flour Organic (405)',
-    protein: 9.0,
+    protein: 11.5,
     productNumber: '405',
     category: 'Other Grains',
     notes: 'Barley flour — low gluten. Add 10-20% for flavour.',
@@ -308,7 +308,7 @@ export const SHIPTON_MILL_FLOURS: FlourEntry[] = [
   },
   {
     label: 'Medium Oatmeal Organic (404)',
-    protein: 11.0,
+    protein: 13.0,
     productNumber: '404',
     category: 'Other Grains',
     notes: 'Oatmeal flour for biscuits & texture. Low gluten.',
@@ -368,7 +368,7 @@ export const SHIPTON_MILL_FLOURS: FlourEntry[] = [
   },
   {
     label: 'GF Oat Flour (801)',
-    protein: 10.0,
+    protein: 14.5,
     productNumber: '801',
     category: 'Gluten-Free',
     notes: 'Gluten-free oat flour. Moisture-retentive.',
