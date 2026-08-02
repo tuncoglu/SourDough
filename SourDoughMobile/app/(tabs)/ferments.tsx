@@ -5,11 +5,10 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLactoCalculator } from '@/src/hooks/useLactoCalculator';
+import { KeyboardScreen } from '@/src/components/KeyboardScreen';
 import { LactoResultCard } from '@/src/components/LactoResultCard';
 import { LactoTimeline } from '@/src/components/LactoTimeline';
 import { LactoAdvice } from '@/src/components/LactoAdvice';
@@ -33,10 +32,7 @@ export default function FermentsScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.cream }]} edges={['top']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
-      >
+      <KeyboardScreen>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
@@ -315,7 +311,7 @@ export default function FermentsScreen() {
 
         <View style={styles.bottomPad} />
       </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardScreen>
     </SafeAreaView>
   );
 }

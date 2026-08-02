@@ -7,8 +7,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -28,6 +26,7 @@ import { StarterCard } from '../../src/components/StarterCard';
 import { FlourBlendCard } from '../../src/components/FlourBlendCard';
 import { TemperatureCard } from '../../src/components/TemperatureCard';
 import { ResultsSection } from '../../src/components/ResultsSection';
+import { KeyboardScreen } from '../../src/components/KeyboardScreen';
 
 import { useCalculatorInputs } from '../../src/hooks/useCalculatorInputs';
 import { useRecipePreset } from '../../src/hooks/useRecipePreset';
@@ -228,13 +227,12 @@ export default function CalculatorScreen() {
       totalMinutes += 5;
     }
 
-    // Cold proof replaces the room-temp proof with a longer fridge hold
-    if (coldProofEnabled) {
-      const cpHours = parseFloat(coldProofHours);
-      if (!isNaN(cpHours) && cpHours > 0) {
-        totalMinutes -= fermentHours * PROOF_FRACTION * 60; // remove room-temp proof
-        totalMinutes += cpHours * 60;
-      }
+    // Cold proof: replace room-temp proof with longer fridge hold
+    const cpHours = parseFloat(coldProofHours);
+    const cpValid = coldProofEnabled && !isNaN(cpHours) && cpHours > 0;
+    if (cpValid) {
+      totalMinutes -= fermentHours * PROOF_FRACTION * 60;
+      totalMinutes += cpHours * 60;
     }
     const totalHours = totalMinutes / 60;
 
@@ -256,16 +254,9 @@ export default function CalculatorScreen() {
       const foldTime = process.folds * process.foldIntervalMinutes;
       if (foldTime > 0) breakdownParts.push(`folds ${foldTime}min`);
       if (process.benchRestMinutes > 0) breakdownParts.push(`bench rest ${process.benchRestMinutes}min`);
-      if (coldProofEnabled) {
-        const cpHours = parseFloat(coldProofHours);
-        if (!isNaN(cpHours) && cpHours > 0) {
-          breakdownParts.push(`cold proof ~${cpHours}h in fridge`);
-        } else {
-          breakdownParts.push(`proof ~${(fermentHours * PROOF_FRACTION).toFixed(1)}h`);
-        }
-      } else {
-        breakdownParts.push(`proof ~${(fermentHours * PROOF_FRACTION).toFixed(1)}h`);
-      }
+      breakdownParts.push(cpValid
+        ? `cold proof ~${cpHours}h in fridge`
+        : `proof ~${(fermentHours * PROOF_FRACTION).toFixed(1)}h`);
       breakdownParts.push(`bake ${bake.bakeTimeMinutes}min`);
     }
 
@@ -603,7 +594,7 @@ export default function CalculatorScreen() {
     </>
   ), [
     calc.results, inputs.blend, inputs.totalFlourWeight, starter.starterFlourLabel,
-    preset.prefermentEnabled, preset.selectedPreset,
+    preset.selectedPreset,
     inputs.flourTemp, inputs.ambientTemp, inputs.waterTemp, inputs.starterTemp,
     actions.saving, handleSave, handleShare, readyByResult,
     inputsDirty, doCalculate, colors,
@@ -635,10 +626,7 @@ export default function CalculatorScreen() {
         />
       )}
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
-      >
+      <KeyboardScreen>
         <View style={isDesktop ? desktopStyles.twoCol : layoutStyles.mobileCol}>
           <ScrollView
             ref={calc.scrollRef}
@@ -686,7 +674,7 @@ export default function CalculatorScreen() {
             </ScrollView>
           )}
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardScreen>
     </SafeAreaView>
   );
 }

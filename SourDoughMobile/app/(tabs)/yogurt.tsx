@@ -6,11 +6,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   Switch,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useYogurtCalculator } from '@/src/hooks/useYogurtCalculator';
+import { KeyboardScreen } from '@/src/components/KeyboardScreen';
 import { YogurtResultCard } from '@/src/components/YogurtResultCard';
 import { YogurtTimeline } from '@/src/components/YogurtTimeline';
 import { YogurtAdvice } from '@/src/components/YogurtAdvice';
@@ -33,10 +32,7 @@ export default function YogurtScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.cream }]} edges={['top']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
-      >
+      <KeyboardScreen>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
@@ -374,7 +370,7 @@ export default function YogurtScreen() {
 
         <View style={styles.bottomPad} />
       </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardScreen>
     </SafeAreaView>
   );
 }
