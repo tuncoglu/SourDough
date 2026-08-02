@@ -17,10 +17,12 @@ export function ErrorFallback({ error, resetError }: Props) {
         Just Dough It encountered an unexpected error. Your recipes and settings are safe.
       </Text>
 
-      <View style={[styles.devBox, { backgroundColor: colors.warningBg, borderLeftColor: colors.warm }]}>
-        <Text style={[styles.devTitle, { color: colors.muted }]}>Error details</Text>
-        <Text style={[styles.devMessage, { color: colors.error }]}>{error.message}</Text>
-      </View>
+      {__DEV__ && (
+        <View style={[styles.devBox, { backgroundColor: colors.warningBg, borderLeftColor: colors.warm }]}>
+          <Text style={[styles.devTitle, { color: colors.muted }]}>Error details (dev mode)</Text>
+          <Text style={[styles.devMessage, { color: colors.error }]}>{error.message}</Text>
+        </View>
+      )}
 
       <TouchableOpacity style={[styles.btn, { backgroundColor: colors.terracotta }]} onPress={resetError} activeOpacity={0.8}>
         <Text style={[styles.btnText, { color: colors.white }]}>Reload</Text>
