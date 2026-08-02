@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
-import { Colors, Spacing, FontSize, BorderRadius, MaxWidth, useAppTheme } from '../theme';
+import { Spacing, FontSize, BorderRadius, MaxWidth, useAppTheme } from '../theme';
 
 type AppRoute = '/' | '/yogurt' | '/ferments' | '/history' | '/settings';
 
@@ -22,7 +22,7 @@ const NAV_ITEMS: NavItem[] = [
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { colors, isDark } = useAppTheme();
+  const { colors } = useAppTheme();
 
   const isActive = (path: AppRoute) => {
     if (path === '/') return pathname === '/';
@@ -47,10 +47,12 @@ export function Sidebar() {
               key={item.path}
               style={[
                 styles.navItem,
-                active && { backgroundColor: isDark ? '#3D3530' : '#F5EDE4' },
+                active && { backgroundColor: colors.badgeBg },
               ]}
               onPress={() => router.push(item.path)}
               activeOpacity={0.6}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
             >
               <Text style={styles.navIcon}>{item.icon}</Text>
               <Text style={[styles.navLabel, { color: active ? colors.terracotta : colors.muted }, active && styles.navLabelActive]}>
@@ -73,9 +75,7 @@ export function Sidebar() {
 const styles = StyleSheet.create({
   sidebar: {
     width: MaxWidth.sidebar,
-    backgroundColor: Colors.card,
     borderRightWidth: 1,
-    borderRightColor: Colors.border,
     height: '100%',
     paddingTop: Spacing.xl,
   },
@@ -83,7 +83,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.xl,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
     marginBottom: Spacing.md,
     alignItems: 'center',
   },
@@ -94,11 +93,9 @@ const styles = StyleSheet.create({
   brandName: {
     fontSize: FontSize.xl,
     fontWeight: '800',
-    color: Colors.espresso,
   },
   brandSub: {
     fontSize: FontSize.xs,
-    color: Colors.muted,
     fontWeight: '500',
     marginTop: 2,
   },
@@ -109,14 +106,12 @@ const styles = StyleSheet.create({
   navItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: 44,
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.md,
     borderRadius: BorderRadius.md,
     marginBottom: Spacing.xs,
     gap: Spacing.md,
-  },
-  navItemActive: {
-    backgroundColor: '#F5EDE4',
   },
   navIcon: {
     fontSize: FontSize.lg,
@@ -126,21 +121,17 @@ const styles = StyleSheet.create({
   navLabel: {
     fontSize: FontSize.md,
     fontWeight: '500',
-    color: Colors.muted,
   },
   navLabelActive: {
-    color: Colors.terracotta,
     fontWeight: '700',
   },
   footer: {
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
     alignItems: 'center',
   },
   footerText: {
     fontSize: FontSize.xs,
-    color: Colors.lightText,
   },
 });

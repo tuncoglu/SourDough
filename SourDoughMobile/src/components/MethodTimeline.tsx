@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
+import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
 import { formatTemp } from '../lib/unitConversion';
 import { RecipePreset } from '../models/types';
 import { PROOF_FRACTION } from '../lib/calculations';
@@ -148,33 +148,33 @@ function buildSteps(preset: RecipePreset, fermentHours: number, unitSystem: impo
 }
 
 export function MethodTimeline({ preset, staticFermentHours, fermentAdvice }: Props) {
-  const { unitSystem } = useAppTheme();
+  const { unitSystem, colors } = useAppTheme();
   if (preset.id === 'custom') return null;
 
   const steps = buildSteps(preset, staticFermentHours, unitSystem);
 
   return (
-    <View style={styles.card}>
-      <Text style={styles.title}>📝  Method</Text>
-      <Text style={styles.subtitle}>
+    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Text style={[styles.title, { color: colors.muted }]}>📝  Method</Text>
+      <Text style={[styles.subtitle, { color: colors.espresso }]}>
         {preset.emoji} {preset.name} · {preset.difficulty}
       </Text>
 
       {steps.map((step, i) => (
         <View key={i} style={styles.stepRow}>
-          <View style={styles.circle}>
-            <Text style={styles.circleText}>{step.number}</Text>
+          <View style={[styles.circle, { backgroundColor: colors.olive }]}>
+            <Text style={[styles.circleText, { color: colors.white }]}>{step.number}</Text>
           </View>
           <View style={styles.stepContent}>
-            <Text style={styles.stepTitle}>{step.title}</Text>
-            <Text style={styles.stepDesc}>{step.description}</Text>
-            <View style={styles.timeBadge}>
-              <Text style={styles.timeBadgeText}>⏱ {step.time}</Text>
+            <Text style={[styles.stepTitle, { color: colors.espresso }]}>{step.title}</Text>
+            <Text style={[styles.stepDesc, { color: colors.espresso }]}>{step.description}</Text>
+            <View style={[styles.timeBadge, { backgroundColor: colors.tipBg }]}>
+              <Text style={[styles.timeBadgeText, { color: colors.terracotta }]}>⏱ {step.time}</Text>
             </View>
             {step.title === 'Bulk fermentation' && fermentAdvice && fermentAdvice.length > 0 && (
-              <View style={styles.fermentAdviceBox}>
+              <View style={[styles.fermentAdviceBox, { backgroundColor: colors.tipBg, borderLeftColor: colors.olive }]}>
                 {fermentAdvice.map((line, j) => (
-                  <Text key={j} style={styles.fermentAdviceLine}>{line}</Text>
+                  <Text key={j} style={[styles.fermentAdviceLine, { color: colors.espresso }]}>{line}</Text>
                 ))}
               </View>
             )}
@@ -183,10 +183,10 @@ export function MethodTimeline({ preset, staticFermentHours, fermentAdvice }: Pr
       ))}
 
       {preset.tips && preset.tips.length > 0 && (
-        <View style={styles.tipsSection}>
-          <Text style={styles.tipsTitle}>💡 Tips</Text>
+        <View style={[styles.tipsSection, { borderTopColor: colors.border }]}>
+          <Text style={[styles.tipsTitle, { color: colors.muted }]}>💡 Tips</Text>
           {preset.tips.map((tip, i) => (
-            <Text key={i} style={styles.tipText}>
+            <Text key={i} style={[styles.tipText, { color: colors.espresso }]}>
               {tip}
             </Text>
           ))}
@@ -198,9 +198,7 @@ export function MethodTimeline({ preset, staticFermentHours, fermentAdvice }: Pr
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.card,
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
     marginBottom: Spacing.md,
@@ -208,14 +206,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FontSize.xs,
     fontWeight: '700',
-    color: Colors.muted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: Spacing.xs,
   },
   subtitle: {
     fontSize: FontSize.sm,
-    color: Colors.espresso,
     fontWeight: '600',
     marginBottom: Spacing.md,
   },
@@ -227,7 +223,6 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: Colors.olive,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Spacing.sm,
@@ -236,7 +231,6 @@ const styles = StyleSheet.create({
   circleText: {
     fontSize: FontSize.xs,
     fontWeight: '800',
-    color: Colors.white,
   },
   stepContent: {
     flex: 1,
@@ -244,23 +238,19 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: FontSize.sm,
     fontWeight: '700',
-    color: Colors.espresso,
     marginBottom: 2,
   },
   stepDesc: {
     fontSize: FontSize.sm,
-    color: Colors.espresso,
     lineHeight: 19,
     marginBottom: 2,
   },
   stepTime: {
     fontSize: FontSize.xs,
-    color: Colors.muted,
     fontWeight: '500',
   },
   timeBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#FDF3E8',
     borderRadius: BorderRadius.sm,
     paddingHorizontal: Spacing.sm + 2,
     paddingVertical: Spacing.xs,
@@ -269,23 +259,19 @@ const styles = StyleSheet.create({
   timeBadgeText: {
     fontSize: FontSize.sm,
     fontWeight: '700',
-    color: Colors.terracotta,
   },
   tipsSection: {
     marginTop: Spacing.sm,
     paddingTop: Spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
   },
   tipsTitle: {
     fontSize: FontSize.xs,
     fontWeight: '700',
-    color: Colors.muted,
     marginBottom: Spacing.xs,
   },
   tipText: {
     fontSize: FontSize.xs,
-    color: Colors.espresso,
     lineHeight: 17,
     marginBottom: 2,
   },
@@ -294,14 +280,11 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.sm,
     paddingHorizontal: Spacing.sm,
     paddingBottom: Spacing.sm,
-    backgroundColor: '#FDF8F0',
     borderLeftWidth: 3,
-    borderLeftColor: Colors.olive,
     borderRadius: BorderRadius.sm,
   },
   fermentAdviceLine: {
     fontSize: FontSize.xs,
-    color: Colors.espresso,
     lineHeight: 18,
     marginBottom: 1,
   },

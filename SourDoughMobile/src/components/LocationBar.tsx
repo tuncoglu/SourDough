@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
+import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
 
 interface Props {
   summary: string | null;
@@ -16,6 +16,7 @@ interface Props {
 }
 
 export function LocationBar({ summary, loading, error, onRefresh, showFallbackWarning, onTapFallback, onPostcodeSubmit }: Props) {
+  const { colors } = useAppTheme();
   const [showPostcode, setShowPostcode] = useState(false);
   const [postcode, setPostcode] = useState('');
 
@@ -28,158 +29,115 @@ export function LocationBar({ summary, loading, error, onRefresh, showFallbackWa
     }
   };
 
+  const postcodeInput = (
+    <>
+      <TextInput
+        style={[styles.postcodeInput, { backgroundColor: colors.white, borderColor: colors.terracotta, color: colors.espresso }]}
+        value={postcode}
+        onChangeText={setPostcode}
+        placeholder="e.g. SW1A 1AA"
+        placeholderTextColor={colors.lightText}
+        onSubmitEditing={handlePostcodeSubmit}
+        returnKeyType="go"
+        autoCapitalize="characters"
+        autoCorrect={false}
+        accessibilityLabel="Postcode"
+      />
+      <TouchableOpacity
+        style={[styles.postcodeGoBtn, { backgroundColor: colors.terracotta }]}
+        onPress={handlePostcodeSubmit}
+        activeOpacity={0.7}
+        accessibilityLabel="Submit postcode"
+        accessibilityRole="button"
+        hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+      >
+        <Text style={[styles.postcodeGoText, { color: colors.white }]}>Go</Text>
+      </TouchableOpacity>
+    </>
+  );
+
+  const postcodeLink = (
+    <TouchableOpacity
+      style={[styles.inner, styles.postcodeLink]}
+      onPress={() => setShowPostcode(!showPostcode)}
+      activeOpacity={0.7}
+      accessibilityLabel="Enter postcode for precise location"
+      accessibilityRole="button"
+      hitSlop={{ top: 8, bottom: 8 }}
+    >
+      <Text style={[styles.postcodeLinkText, { color: colors.terracotta }]}>
+        📍 Enter postcode for precise location
+      </Text>
+    </TouchableOpacity>
+  );
+
+  const fallbackBanner = (icon: string, lines: number) => (
+    <TouchableOpacity
+      style={[styles.inner, styles.fallbackBanner, { backgroundColor: colors.tipBg, borderLeftColor: colors.warm }]}
+      onPress={onTapFallback}
+      activeOpacity={0.7}
+      accessibilityLabel="Location unavailable. Using default water hardness. Double tap to open Settings."
+      accessibilityRole="button"
+    >
+      <Text style={styles.fallbackIcon}>{icon}</Text>
+      <Text style={[styles.fallbackText, { color: colors.terracottaDark }]} numberOfLines={lines}>
+        {lines === 2
+          ? 'Assuming moderately soft water (120 mg/L). Tap to open Settings → Water Hardness Override.'
+          : 'Location unavailable. Assuming moderately soft water (120 mg/L). Tap to open Settings → Water Hardness Override.'}
+      </Text>
+    </TouchableOpacity>
+  );
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.card, borderColor: colors.border }]}>
       {loading && (
         <View style={styles.inner}>
-          <ActivityIndicator size="small" color={Colors.terracotta} />
-          <Text style={styles.text}>Detecting location…</Text>
+          <ActivityIndicator size="small" color={colors.terracotta} />
+          <Text style={[styles.text, { color: colors.espresso }]}>Detecting location…</Text>
         </View>
       )}
       {!loading && error && (
         <View>
           <View style={styles.inner}>
-            <Text style={styles.error} numberOfLines={2}>{error}</Text>
-            <TouchableOpacity onPress={onRefresh} style={styles.retryBtn}>
-              <Text style={styles.retryText}>Retry</Text>
+            <Text style={[styles.error, { color: colors.error }]} numberOfLines={2}>{error}</Text>
+            <TouchableOpacity
+              onPress={onRefresh}
+              style={styles.retryBtn}
+              accessibilityLabel="Retry location detection"
+              accessibilityRole="button"
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={[styles.retryText, { color: colors.terracotta }]}>Retry</Text>
             </TouchableOpacity>
           </View>
-          {showFallbackWarning && (
-            <TouchableOpacity
-              style={[styles.inner, styles.fallbackBanner]}
-              onPress={onTapFallback}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.fallbackIcon}>🧪</Text>
-              <Text style={styles.fallbackText} numberOfLines={2}>
-                Assuming moderately soft water (120 mg/L). Tap to set manually.
-              </Text>
-            </TouchableOpacity>
-          )}
-          {onPostcodeSubmit && (
-            <TouchableOpacity
-              style={[styles.inner, styles.postcodeLink]}
-              onPress={() => setShowPostcode(!showPostcode)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.postcodeLinkText}>
-                📍 Enter postcode for precise location
-              </Text>
-            </TouchableOpacity>
-          )}
-          {showPostcode && (
-            <View style={styles.postcodeRow}>
-              <TextInput
-                style={styles.postcodeInput}
-                value={postcode}
-                onChangeText={setPostcode}
-                placeholder="e.g. SW1A 1AA"
-                placeholderTextColor={Colors.lightText}
-                onSubmitEditing={handlePostcodeSubmit}
-                returnKeyType="go"
-                autoCapitalize="characters"
-                autoCorrect={false}
-              />
-              <TouchableOpacity
-                style={styles.postcodeGoBtn}
-                onPress={handlePostcodeSubmit}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.postcodeGoText}>Go</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+          {showFallbackWarning && fallbackBanner('🧪', 2)}
+          {onPostcodeSubmit && postcodeLink}
+          {showPostcode && <View style={styles.postcodeRow}>{postcodeInput}</View>}
         </View>
       )}
       {!loading && !error && summary && (
         <View>
-          <TouchableOpacity onPress={onRefresh} style={styles.inner}>
-            <Text style={styles.text} numberOfLines={2}>{summary}</Text>
-            <Text style={styles.retryText}>↺</Text>
+          <TouchableOpacity
+            onPress={onRefresh}
+            style={styles.inner}
+            accessibilityLabel="Location summary. Tap to refresh"
+            accessibilityRole="button"
+          >
+            <Text style={[styles.text, { color: colors.espresso }]} numberOfLines={2}>{summary}</Text>
+            <Text style={[styles.retryText, { color: colors.terracotta }]}>↺</Text>
           </TouchableOpacity>
           {onPostcodeSubmit && (
             <View>
-              {!showPostcode ? (
-                <TouchableOpacity
-                  style={[styles.inner, styles.postcodeLink]}
-                  onPress={() => setShowPostcode(true)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.postcodeLinkText}>
-                    📍 Enter postcode for precise location
-                  </Text>
-                </TouchableOpacity>
-              ) : (
-                <View style={styles.postcodeRow}>
-                  <TextInput
-                    style={styles.postcodeInput}
-                    value={postcode}
-                    onChangeText={setPostcode}
-                    placeholder="e.g. SW1A 1AA"
-                    placeholderTextColor={Colors.lightText}
-                    onSubmitEditing={handlePostcodeSubmit}
-                    returnKeyType="go"
-                    autoCapitalize="characters"
-                    autoCorrect={false}
-                  />
-                  <TouchableOpacity
-                    style={styles.postcodeGoBtn}
-                    onPress={handlePostcodeSubmit}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.postcodeGoText}>Go</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+              {!showPostcode ? postcodeLink : <View style={styles.postcodeRow}>{postcodeInput}</View>}
             </View>
           )}
         </View>
       )}
       {!loading && !error && !summary && showFallbackWarning && (
         <View>
-          <TouchableOpacity
-            style={[styles.inner, styles.fallbackBanner]}
-            onPress={onTapFallback}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.fallbackIcon}>📍</Text>
-            <Text style={styles.fallbackText} numberOfLines={3}>
-              Location unavailable. Assuming moderately soft water (120 mg/L). Tap to set manually.
-            </Text>
-          </TouchableOpacity>
-          {onPostcodeSubmit && (
-            <TouchableOpacity
-              style={[styles.inner, styles.postcodeLink]}
-              onPress={() => setShowPostcode(!showPostcode)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.postcodeLinkText}>
-                📍 Enter postcode for precise location
-              </Text>
-            </TouchableOpacity>
-          )}
-          {showPostcode && (
-            <View style={styles.postcodeRow}>
-              <TextInput
-                style={styles.postcodeInput}
-                value={postcode}
-                onChangeText={setPostcode}
-                placeholder="e.g. SW1A 1AA"
-                placeholderTextColor={Colors.lightText}
-                onSubmitEditing={handlePostcodeSubmit}
-                returnKeyType="go"
-                autoCapitalize="characters"
-                autoCorrect={false}
-              />
-              <TouchableOpacity
-                style={styles.postcodeGoBtn}
-                onPress={handlePostcodeSubmit}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.postcodeGoText}>Go</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+          {fallbackBanner('📍', 3)}
+          {onPostcodeSubmit && postcodeLink}
+          {showPostcode && <View style={styles.postcodeRow}>{postcodeInput}</View>}
         </View>
       )}
     </View>
@@ -188,9 +146,7 @@ export function LocationBar({ summary, loading, error, onRefresh, showFallbackWa
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.card,
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm + 2,
@@ -204,13 +160,11 @@ const styles = StyleSheet.create({
   text: {
     flex: 1,
     fontSize: FontSize.xs,
-    color: Colors.espresso,
     lineHeight: 18,
   },
   error: {
     flex: 1,
     fontSize: FontSize.xs,
-    color: Colors.error,
   },
   retryBtn: {
     paddingHorizontal: Spacing.sm,
@@ -218,16 +172,13 @@ const styles = StyleSheet.create({
   },
   retryText: {
     fontSize: FontSize.sm,
-    color: Colors.terracotta,
     fontWeight: '600',
   },
   fallbackBanner: {
-    backgroundColor: '#FFF8F0',
     borderRadius: BorderRadius.sm,
     paddingVertical: Spacing.xs + 2,
     paddingHorizontal: Spacing.sm,
     borderLeftWidth: 3,
-    borderLeftColor: Colors.warm,
     marginTop: Spacing.xs,
   },
   fallbackIcon: {
@@ -236,7 +187,6 @@ const styles = StyleSheet.create({
   fallbackText: {
     flex: 1,
     fontSize: FontSize.xs,
-    color: '#7D3E1A',
     lineHeight: 18,
     fontWeight: '500',
   },
@@ -246,7 +196,6 @@ const styles = StyleSheet.create({
   },
   postcodeLinkText: {
     fontSize: FontSize.xs,
-    color: Colors.terracotta,
     fontWeight: '600',
   },
   postcodeRow: {
@@ -257,23 +206,20 @@ const styles = StyleSheet.create({
   },
   postcodeInput: {
     flex: 1,
-    backgroundColor: Colors.white,
+    minHeight: 44,
     borderWidth: 1,
-    borderColor: Colors.terracotta,
     borderRadius: BorderRadius.sm,
     paddingHorizontal: Spacing.sm,
     paddingVertical: Spacing.xs + 2,
     fontSize: FontSize.sm,
-    color: Colors.espresso,
   },
   postcodeGoBtn: {
-    backgroundColor: Colors.terracotta,
+    minHeight: 44,
+    justifyContent: 'center',
     borderRadius: BorderRadius.sm,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs + 2,
   },
   postcodeGoText: {
-    color: Colors.white,
     fontSize: FontSize.sm,
     fontWeight: '700',
   },

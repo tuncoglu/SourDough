@@ -10,7 +10,7 @@ import {
   Pressable,
   useWindowDimensions,
 } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius, Breakpoints } from '../theme';
+import { Spacing, FontSize, BorderRadius, Breakpoints, useAppTheme } from '../theme';
 import { SHIPTON_MILL_FLOURS, FLOURS_BY_CATEGORY } from '../data/flours';
 import { FlourEntry, FlourCategory } from '../models/types';
 
@@ -23,6 +23,7 @@ const CATEGORIES = Object.keys(FLOURS_BY_CATEGORY) as FlourCategory[];
 const DROPDOWN_MAX_HEIGHT = 360;
 
 export function FlourPicker({ value, onSelect }: Props) {
+  const { colors } = useAppTheme();
   const [visible, setVisible] = useState(false);
   const [search, setSearch] = useState('');
   const { width } = useWindowDimensions();
@@ -51,16 +52,61 @@ export function FlourPicker({ value, onSelect }: Props) {
     setSearch('');
   };
 
+  const searchInput = (
+    <TextInput
+      style={[styles.searchInput, { backgroundColor: colors.white, borderColor: colors.border, color: colors.espresso }]}
+      placeholder="Search by name, number, or category…"
+      placeholderTextColor={colors.muted}
+      value={search}
+      onChangeText={setSearch}
+      autoFocus
+      clearButtonMode="while-editing"
+      accessibilityLabel="Search flours"
+    />
+  );
+
+  const renderItem = ({ item }: { item: FlourEntry }) => (
+    <TouchableOpacity
+      style={[
+        styles.item,
+        { borderBottomColor: colors.border },
+        value === item.label && { backgroundColor: colors.card },
+      ]}
+      onPress={() => handleSelect(item)}
+      accessibilityRole="button"
+      accessibilityLabel={item.label}
+    >
+      <View style={styles.itemContent}>
+        <Text style={[styles.itemLabel, { color: colors.espresso }]} numberOfLines={1}>
+          {item.label}
+        </Text>
+        <Text style={[styles.itemMeta, { color: colors.muted }]}>
+          {item.category} · {item.protein.toFixed(1)}% protein
+        </Text>
+        {item.notes ? (
+          <Text style={[styles.itemNotes, { color: colors.muted }]} numberOfLines={2}>
+            {item.notes}
+          </Text>
+        ) : null}
+      </View>
+      {value === item.label && (
+        <Text style={[styles.check, { color: colors.olive }]}>✓</Text>
+      )}
+    </TouchableOpacity>
+  );
+
   const trigger = (
     <TouchableOpacity
-      style={styles.trigger}
+      style={[styles.trigger, { backgroundColor: colors.white, borderColor: colors.border }]}
       onPress={() => setVisible(!visible)}
       activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel="Select flour"
     >
-      <Text style={styles.triggerText} numberOfLines={1}>
+      <Text style={[styles.triggerText, { color: colors.espresso }]} numberOfLines={1}>
         {value || 'Select flour…'}
       </Text>
-      <Text style={[styles.chevron, visible && styles.chevronOpen]}>▼</Text>
+      <Text style={[styles.chevron, { color: colors.muted }, visible && styles.chevronOpen]}>▼</Text>
     </TouchableOpacity>
   );
 
@@ -77,44 +123,20 @@ export function FlourPicker({ value, onSelect }: Props) {
           onRequestClose={handleClose}
         >
           <Pressable style={styles.backdrop} onPress={handleClose}>
-            <View style={styles.dropdown}>
+            <View style={[styles.dropdown, { backgroundColor: colors.white, borderColor: colors.border }]}>
               <TextInput
-                style={styles.searchInput}
+                style={[styles.searchInput, { backgroundColor: colors.white, borderColor: colors.border, color: colors.espresso }]}
                 placeholder="Search by name, number, or category…"
-                placeholderTextColor={Colors.muted}
+                placeholderTextColor={colors.muted}
                 value={search}
                 onChangeText={setSearch}
                 autoFocus
+                accessibilityLabel="Search flours"
               />
               <FlatList
                 data={filtered}
                 keyExtractor={(item) => item.label}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={[
-                      styles.item,
-                      value === item.label && styles.itemSelected,
-                    ]}
-                    onPress={() => handleSelect(item)}
-                  >
-                    <View style={styles.itemContent}>
-                      <Text style={styles.itemLabel} numberOfLines={1}>
-                        {item.label}
-                      </Text>
-                      <Text style={styles.itemMeta}>
-                        {item.category} · {item.protein.toFixed(1)}% protein
-                      </Text>
-                      {item.notes ? (
-                        <Text style={styles.itemNotes} numberOfLines={2}>
-                          {item.notes}
-                        </Text>
-                      ) : null}
-                    </View>
-                    {value === item.label && (
-                      <Text style={styles.check}>✓</Text>
-                    )}
-                  </TouchableOpacity>
-                )}
+                renderItem={renderItem}
                 style={{ maxHeight: DROPDOWN_MAX_HEIGHT }}
                 keyboardShouldPersistTaps="handled"
               />
@@ -131,53 +153,25 @@ export function FlourPicker({ value, onSelect }: Props) {
       {trigger}
 
       <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
-        <View style={styles.modal}>
+        <View style={[styles.modal, { backgroundColor: colors.cream }]}>
           <View style={styles.header}>
-            <Text style={styles.title}>Choose Flour</Text>
-            <TouchableOpacity onPress={handleClose}>
-              <Text style={styles.closeBtn}>Done</Text>
+            <Text style={[styles.title, { color: colors.espresso }]}>Choose Flour</Text>
+            <TouchableOpacity
+              onPress={handleClose}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityLabel="Done selecting flour"
+              accessibilityRole="button"
+            >
+              <Text style={[styles.closeBtn, { color: colors.terracotta }]}>Done</Text>
             </TouchableOpacity>
           </View>
 
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by name, number, or category…"
-            placeholderTextColor={Colors.muted}
-            value={search}
-            onChangeText={setSearch}
-            autoFocus
-            clearButtonMode="while-editing"
-          />
+          {searchInput}
 
           <FlatList
             data={filtered}
             keyExtractor={(item) => item.label}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[
-                  styles.item,
-                  value === item.label && styles.itemSelected,
-                ]}
-                onPress={() => handleSelect(item)}
-              >
-                <View style={styles.itemContent}>
-                  <Text style={styles.itemLabel} numberOfLines={1}>
-                    {item.label}
-                  </Text>
-                  <Text style={styles.itemMeta}>
-                    {item.category} · {item.protein.toFixed(1)}% protein
-                  </Text>
-                  {item.notes ? (
-                    <Text style={styles.itemNotes} numberOfLines={1}>
-                      {item.notes}
-                    </Text>
-                  ) : null}
-                </View>
-                {value === item.label && (
-                  <Text style={styles.check}>✓</Text>
-                )}
-              </TouchableOpacity>
-            )}
+            renderItem={renderItem}
             getItemLayout={(_, index) => ({
               length: 72,
               offset: 72 * index,
@@ -200,21 +194,17 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    height: 36,
-    backgroundColor: Colors.white,
+    minHeight: 44,
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: BorderRadius.sm,
     paddingHorizontal: Spacing.sm,
   },
   triggerText: {
     flex: 1,
     fontSize: FontSize.sm,
-    color: Colors.espresso,
   },
   chevron: {
     fontSize: FontSize.xs,
-    color: Colors.muted,
   },
   chevronOpen: {
     transform: [{ rotate: '180deg' }],
@@ -233,9 +223,7 @@ const styles = StyleSheet.create({
     padding: 40,
   },
   dropdown: {
-    backgroundColor: Colors.white,
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: BorderRadius.md,
     zIndex: 100,
     elevation: 10,
@@ -249,7 +237,6 @@ const styles = StyleSheet.create({
   },
   modal: {
     flex: 1,
-    backgroundColor: Colors.cream,
   },
   header: {
     flexDirection: 'row',
@@ -262,36 +249,28 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FontSize.xl,
     fontWeight: '700',
-    color: Colors.espresso,
   },
   closeBtn: {
     fontSize: FontSize.lg,
-    color: Colors.terracotta,
     fontWeight: '600',
   },
   searchInput: {
     marginHorizontal: Spacing.lg,
     marginBottom: Spacing.md,
-    height: 40,
-    backgroundColor: Colors.white,
+    minHeight: 44,
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
     fontSize: FontSize.md,
-    color: Colors.espresso,
     marginTop: Spacing.sm,
   },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: 44,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border,
-  },
-  itemSelected: {
-    backgroundColor: Colors.card,
   },
   itemContent: {
     flex: 1,
@@ -299,22 +278,18 @@ const styles = StyleSheet.create({
   itemLabel: {
     fontSize: FontSize.md,
     fontWeight: '500',
-    color: Colors.espresso,
   },
   itemMeta: {
     fontSize: FontSize.xs,
-    color: Colors.muted,
     marginTop: 2,
   },
   itemNotes: {
     fontSize: FontSize.xs,
-    color: Colors.muted,
     fontStyle: 'italic',
     marginTop: 1,
   },
   check: {
     fontSize: FontSize.lg,
-    color: Colors.olive,
     marginLeft: Spacing.sm,
   },
 });

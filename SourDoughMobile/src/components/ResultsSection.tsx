@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
+import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
 import { formatTemp, formatTempValue } from '../lib/unitConversion';
 import {
   CalculationResults,
@@ -46,13 +46,13 @@ export function ResultsSection({
   flourTemp, ambientTemp, waterTemp, starterTemp,
   saving, onSave, onShare, readyByResult,
 }: Props) {
-  const { unitSystem } = useAppTheme();
+  const { unitSystem, colors } = useAppTheme();
   const zoneInfo = getTempZoneInfo(results.tempZone);
   const targetFDT = 26.0;
 
   const fdtCard = (
-    <View style={styles.fdtCard}>
-      <Text style={styles.fdtLabel}>Final Dough Temperature</Text>
+    <View style={[styles.fdtCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Text style={[styles.fdtLabel, { color: colors.muted }]}>Final Dough Temperature</Text>
       <Text style={[styles.fdtValue, { color: zoneInfo.color }]}>
         {zoneInfo.icon}  {formatTemp(results.fdt, unitSystem)}
       </Text>
@@ -60,7 +60,7 @@ export function ResultsSection({
       {(() => {
         const zone = results.tempZone;
         if (zone === 'ideal') {
-          return <Text style={styles.fdtHint}>Your dough is in the optimal fermentation range</Text>;
+          return <Text style={[styles.fdtHint, { color: colors.muted }]}>Your dough is in the optimal fermentation range</Text>;
         }
         const targetFDT = 26.0;
         const neededWater = Math.round((targetFDT * 4 - parseFloat(flourTemp) - parseFloat(ambientTemp) - parseFloat(starterTemp)) * 10) / 10;
@@ -69,8 +69,8 @@ export function ResultsSection({
         if (zone === 'cold' || zone === 'cool') {
           return (
             <>
-              <Text style={styles.fdtHint}>{formatTemp(results.fdt, unitSystem)} is below the {formatTemp(targetFDT, unitSystem)} target — fermentation will be slower.</Text>
-              <Text style={styles.fdtAction}>
+              <Text style={[styles.fdtHint, { color: colors.muted }]}>{formatTemp(results.fdt, unitSystem)} is below the {formatTemp(targetFDT, unitSystem)} target — fermentation will be slower.</Text>
+              <Text style={[styles.fdtAction, { color: colors.espresso, backgroundColor: colors.tipBg }]}>
                 💧 Heat your water to <Text style={{ fontWeight: '800' }}>{formatTempValue(neededWater, unitSystem)}°</Text> (currently {formatTempValue(currentWater, unitSystem)}°, +{formatTempValue(diff, unitSystem)}°)
               </Text>
             </>
@@ -78,8 +78,8 @@ export function ResultsSection({
         }
         return (
           <>
-            <Text style={styles.fdtHint}>{formatTemp(results.fdt, unitSystem)} is above the {formatTemp(targetFDT, unitSystem)} target — fermentation will be faster. Watch closely!</Text>
-            <Text style={styles.fdtAction}>
+            <Text style={[styles.fdtHint, { color: colors.muted }]}>{formatTemp(results.fdt, unitSystem)} is above the {formatTemp(targetFDT, unitSystem)} target — fermentation will be faster. Watch closely!</Text>
+            <Text style={[styles.fdtAction, { color: colors.espresso, backgroundColor: colors.tipBg }]}>
               💧 Cool your water to <Text style={{ fontWeight: '800' }}>{formatTempValue(neededWater, unitSystem)}°</Text> (currently {formatTempValue(currentWater, unitSystem)}°, {formatTempValue(diff, unitSystem)}°)
             </Text>
           </>
@@ -101,25 +101,25 @@ export function ResultsSection({
       />
 
       {readyByResult && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>🕐  YOUR SCHEDULE</Text>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.cardTitle, { color: colors.muted }]}>🕐  YOUR SCHEDULE</Text>
           <View style={readyStyles.resultRow}>
             <View style={readyStyles.resultBlock}>
-              <Text style={readyStyles.resultLabel}>Start mixing</Text>
-              <Text style={readyStyles.resultTime}>{readyByResult.startTimeStr}</Text>
+              <Text style={[readyStyles.resultLabel, { color: colors.muted }]}>Start mixing</Text>
+              <Text style={[readyStyles.resultTime, { color: colors.terracotta }]}>{readyByResult.startTimeStr}</Text>
               {!readyByResult.isToday && (
-                <Text style={readyStyles.resultDate}>
+                <Text style={[readyStyles.resultDate, { color: colors.muted }]}>
                   {readyByResult.startDate.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
                 </Text>
               )}
             </View>
-            <Text style={readyStyles.resultArrow}>→</Text>
+            <Text style={[readyStyles.resultArrow, { color: colors.muted }]}>→</Text>
             <View style={readyStyles.resultBlock}>
-              <Text style={readyStyles.resultLabel}>Ready by</Text>
-              <Text style={readyStyles.resultTime}>{readyByResult.readyTimeStr}</Text>
+              <Text style={[readyStyles.resultLabel, { color: colors.muted }]}>Ready by</Text>
+              <Text style={[readyStyles.resultTime, { color: colors.terracotta }]}>{readyByResult.readyTimeStr}</Text>
             </View>
           </View>
-          <Text style={styles.cardHint}>
+          <Text style={[styles.cardHint, { color: colors.muted }]}>
             ~{readyByResult.totalHours.toFixed(1)}h total · {readyByResult.breakdownParts.join(' · ')}
           </Text>
         </View>
@@ -145,16 +145,16 @@ export function ResultsSection({
         />
       )}
 
-      <TouchableOpacity style={styles.saveBtn} onPress={onSave} disabled={saving} activeOpacity={0.8}>
+      <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.terracotta }]} onPress={onSave} disabled={saving} activeOpacity={0.8}>
         {saving ? (
-          <ActivityIndicator color={Colors.white} />
+          <ActivityIndicator color={colors.white} />
         ) : (
-          <Text style={styles.saveBtnText}>💾  Save Recipe</Text>
+          <Text style={[styles.saveBtnText, { color: colors.white }]}>💾  Save Recipe</Text>
         )}
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.shareBtn} onPress={onShare} activeOpacity={0.8}>
-        <Text style={styles.shareBtnText}>📤  Share Recipe</Text>
+      <TouchableOpacity style={[styles.shareBtn, { backgroundColor: colors.card, borderColor: colors.olive }]} onPress={onShare} activeOpacity={0.8}>
+        <Text style={[styles.shareBtnText, { color: colors.olive }]}>📤  Share Recipe</Text>
       </TouchableOpacity>
     </>
   );
@@ -162,47 +162,47 @@ export function ResultsSection({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.card, borderWidth: 1, borderColor: Colors.border,
+    borderWidth: 1,
     borderRadius: BorderRadius.md, padding: Spacing.md, marginBottom: Spacing.md,
   },
   cardTitle: {
-    fontSize: FontSize.xs, fontWeight: '700', color: Colors.muted,
+    fontSize: FontSize.xs, fontWeight: '700',
     letterSpacing: 0.5, marginBottom: Spacing.sm,
   },
-  cardHint: { fontSize: FontSize.xs, color: Colors.muted, lineHeight: 16 },
+  cardHint: { fontSize: FontSize.xs, lineHeight: 16 },
   fdtCard: {
-    backgroundColor: Colors.card, borderWidth: 1, borderColor: Colors.border,
+    borderWidth: 1,
     borderRadius: BorderRadius.md, padding: Spacing.lg, marginBottom: Spacing.md, alignItems: 'center',
   },
   fdtLabel: {
-    fontSize: FontSize.xs, fontWeight: '700', color: Colors.muted,
+    fontSize: FontSize.xs, fontWeight: '700',
     textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.xs,
   },
   fdtValue: { fontSize: FontSize.title + 4, fontWeight: '800', marginBottom: Spacing.xs },
   fdtZone: { fontSize: FontSize.md, fontWeight: '500' },
-  fdtHint: { fontSize: FontSize.xs, color: Colors.muted, marginTop: Spacing.xs, textAlign: 'center' },
+  fdtHint: { fontSize: FontSize.xs, marginTop: Spacing.xs, textAlign: 'center' },
   fdtAction: {
-    fontSize: FontSize.sm, color: Colors.espresso, marginTop: Spacing.sm, textAlign: 'center',
-    backgroundColor: '#FDF3E8', borderRadius: BorderRadius.sm,
+    fontSize: FontSize.sm, marginTop: Spacing.sm, textAlign: 'center',
+    borderRadius: BorderRadius.sm,
     paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm, overflow: 'hidden', lineHeight: 20,
   },
   saveBtn: {
-    backgroundColor: Colors.terracotta, borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.md,
     paddingVertical: Spacing.md, alignItems: 'center', marginBottom: Spacing.sm,
   },
-  saveBtnText: { color: Colors.white, fontSize: FontSize.md, fontWeight: '700' },
+  saveBtnText: { fontSize: FontSize.md, fontWeight: '700' },
   shareBtn: {
-    backgroundColor: Colors.card, borderWidth: 1.5, borderColor: Colors.olive,
+    borderWidth: 1.5,
     borderRadius: BorderRadius.md, paddingVertical: Spacing.md, alignItems: 'center', marginBottom: Spacing.lg,
   },
-  shareBtnText: { color: Colors.olive, fontSize: FontSize.md, fontWeight: '700' },
+  shareBtnText: { fontSize: FontSize.md, fontWeight: '700' },
 });
 
 const readyStyles = StyleSheet.create({
   resultRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: Spacing.lg, paddingVertical: Spacing.md },
   resultBlock: { alignItems: 'center' },
-  resultLabel: { fontSize: FontSize.xs, color: Colors.muted, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.xs },
-  resultTime: { fontSize: FontSize.xxl, fontWeight: '800', color: Colors.terracotta },
-  resultDate: { fontSize: FontSize.xs, color: Colors.muted, marginTop: 2 },
-  resultArrow: { fontSize: FontSize.xl, color: Colors.muted, fontWeight: '300', marginTop: Spacing.md },
+  resultLabel: { fontSize: FontSize.xs, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.xs },
+  resultTime: { fontSize: FontSize.xxl, fontWeight: '800' },
+  resultDate: { fontSize: FontSize.xs, marginTop: 2 },
+  resultArrow: { fontSize: FontSize.xl, fontWeight: '300', marginTop: Spacing.md },
 });

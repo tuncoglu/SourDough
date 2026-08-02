@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Spacing, FontSize, BorderRadius, useAppTheme } from '../../src/theme';
+import { Spacing, FontSize, BorderRadius, useAppTheme } from '../../src/theme';
 import { formatTemp, formatWeight, formatWeightValue, weightUnit } from '../../src/lib/unitConversion';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { SavedRecipe, FlourBlendEntry } from '../../src/models/types';
@@ -32,7 +32,7 @@ export default function RecipeDetailScreen() {
   const [recipe, setRecipe] = useState<SavedRecipe | null>(null);
   const [loading, setLoading] = useState(true);
   const { isDesktop } = useBreakpoint();
-  const { unitSystem } = useAppTheme();
+  const { unitSystem, colors } = useAppTheme();
 
   useEffect(() => {
     if (!id) return;
@@ -44,16 +44,16 @@ export default function RecipeDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color={Colors.terracotta} style={{ flex: 1 }} />
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.cream }]}>
+        <ActivityIndicator size="large" color={colors.terracotta} style={{ flex: 1 }} />
       </SafeAreaView>
     );
   }
 
   if (!recipe) {
     return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.errorText}>Recipe not found.</Text>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.cream }]}>
+        <Text style={[styles.errorText, { color: colors.error }]}>Recipe not found.</Text>
       </SafeAreaView>
     );
   }
@@ -89,90 +89,90 @@ export default function RecipeDetailScreen() {
   const showBlendDetail = blend.length > 1;
 
   const inputsCard = (
-    <View style={styles.card}>
-      <Text style={styles.cardTitle}>📋  INPUTS</Text>
+    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Text style={[styles.cardTitle, { color: colors.muted }]}>📋  INPUTS</Text>
 
       {showBlendDetail ? (
         // Multi-flour breakdown
         <>
-          <Text style={styles.sectionLabel}>Flour mix ({formatWeight(recipe.inputs.flourWeight, unitSystem, 0)} total)</Text>
+          <Text style={[styles.sectionLabel, { color: colors.espresso }]}>Flour mix ({formatWeight(recipe.inputs.flourWeight, unitSystem, 0)} total)</Text>
           {blend.map((entry: FlourBlendEntry) => {
             const grams = recipe.inputs.flourWeight * entry.percentage / 100;
             return (
               <View style={styles.row} key={entry.label}>
-                <Text style={styles.label}>
+                <Text style={[styles.label, { color: colors.espresso }]}>
                   {entry.label.replace(/\s*\([^)]*\)$/, '')}
                 </Text>
-                <Text style={styles.value}>
+                <Text style={[styles.value, { color: colors.espresso }]}>
                   {formatWeightValue(grams, unitSystem, 0)}{weightUnit(unitSystem)} ({Math.round(entry.percentage)}%)
                 </Text>
               </View>
             );
           })}
           <View style={styles.row}>
-            <Text style={styles.label}>Protein (wtd.)</Text>
-            <Text style={styles.value}>{recipe.inputs.flourProtein.toFixed(1)}%</Text>
+            <Text style={[styles.label, { color: colors.espresso }]}>Protein (wtd.)</Text>
+            <Text style={[styles.value, { color: colors.espresso }]}>{recipe.inputs.flourProtein.toFixed(1)}%</Text>
           </View>
         </>
       ) : (
         <>
           <View style={styles.row}>
-            <Text style={styles.label}>Flour</Text>
-            <Text style={styles.value}>{formatWeight(recipe.inputs.flourWeight, unitSystem, 0)} — {recipe.inputs.flourType}</Text>
+            <Text style={[styles.label, { color: colors.espresso }]}>Flour</Text>
+            <Text style={[styles.value, { color: colors.espresso }]}>{formatWeight(recipe.inputs.flourWeight, unitSystem, 0)} — {recipe.inputs.flourType}</Text>
           </View>
           <View style={styles.row}>
-            <Text style={styles.label}>Protein</Text>
-            <Text style={styles.value}>{recipe.inputs.flourProtein.toFixed(1)}%</Text>
+            <Text style={[styles.label, { color: colors.espresso }]}>Protein</Text>
+            <Text style={[styles.value, { color: colors.espresso }]}>{recipe.inputs.flourProtein.toFixed(1)}%</Text>
           </View>
         </>
       )}
 
       <View style={styles.row}>
-        <Text style={styles.label}>Hydration</Text>
-        <Text style={styles.value}>{recipe.inputs.hydration.toFixed(0)}%</Text>
+        <Text style={[styles.label, { color: colors.espresso }]}>Hydration</Text>
+        <Text style={[styles.value, { color: colors.espresso }]}>{recipe.inputs.hydration.toFixed(0)}%</Text>
       </View>
       <View style={styles.row}>
-        <Text style={styles.label}>Starter</Text>
-        <Text style={styles.value}>{formatWeight(recipe.inputs.starterWeight, unitSystem, 0)} ({recipe.inputs.starterHydration.toFixed(0)}% hyd.)</Text>
+        <Text style={[styles.label, { color: colors.espresso }]}>Starter</Text>
+        <Text style={[styles.value, { color: colors.espresso }]}>{formatWeight(recipe.inputs.starterWeight, unitSystem, 0)} ({recipe.inputs.starterHydration.toFixed(0)}% hyd.)</Text>
       </View>
       {recipe.inputs.starterFlourType && (
         <View style={styles.row}>
-          <Text style={styles.label}>Starter flour</Text>
-          <Text style={styles.value}>{recipe.inputs.starterFlourType}</Text>
+          <Text style={[styles.label, { color: colors.espresso }]}>Starter flour</Text>
+          <Text style={[styles.value, { color: colors.espresso }]}>{recipe.inputs.starterFlourType}</Text>
         </View>
       )}
       <View style={styles.row}>
-        <Text style={styles.label}>Salt</Text>
-        <Text style={styles.value}>{recipe.inputs.saltPct.toFixed(1)}%</Text>
+        <Text style={[styles.label, { color: colors.espresso }]}>Salt</Text>
+        <Text style={[styles.value, { color: colors.espresso }]}>{recipe.inputs.saltPct.toFixed(1)}%</Text>
       </View>
       {recipe.inputs.oilPct && recipe.inputs.oilPct > 0 ? (
         <View style={styles.row}>
-          <Text style={styles.label}>Oil / Fat</Text>
-          <Text style={styles.value}>{recipe.inputs.oilPct.toFixed(1)}%</Text>
+          <Text style={[styles.label, { color: colors.espresso }]}>Oil / Fat</Text>
+          <Text style={[styles.value, { color: colors.espresso }]}>{recipe.inputs.oilPct.toFixed(1)}%</Text>
         </View>
       ) : null}
       {recipe.inputs.preferment ? (
         <View style={styles.row}>
-          <Text style={styles.label}>Pre-ferment</Text>
-          <Text style={styles.value}>{recipe.inputs.preferment.type} — {recipe.inputs.preferment.flourPct.toFixed(0)}% of flour</Text>
+          <Text style={[styles.label, { color: colors.espresso }]}>Pre-ferment</Text>
+          <Text style={[styles.value, { color: colors.espresso }]}>{recipe.inputs.preferment.type} — {recipe.inputs.preferment.flourPct.toFixed(0)}% of flour</Text>
         </View>
       ) : null}
-      <View style={styles.divider} />
+      <View style={[styles.divider, { backgroundColor: colors.border }]} />
       <View style={styles.row}>
-        <Text style={styles.label}>Ambient</Text>
-        <Text style={styles.value}>{formatTemp(recipe.inputs.ambientTemp, unitSystem)}</Text>
+        <Text style={[styles.label, { color: colors.espresso }]}>Ambient</Text>
+        <Text style={[styles.value, { color: colors.espresso }]}>{formatTemp(recipe.inputs.ambientTemp, unitSystem)}</Text>
       </View>
       <View style={styles.row}>
-        <Text style={styles.label}>Flour temp</Text>
-        <Text style={styles.value}>{formatTemp(recipe.inputs.flourTemp, unitSystem)}</Text>
+        <Text style={[styles.label, { color: colors.espresso }]}>Flour temp</Text>
+        <Text style={[styles.value, { color: colors.espresso }]}>{formatTemp(recipe.inputs.flourTemp, unitSystem)}</Text>
       </View>
       <View style={styles.row}>
-        <Text style={styles.label}>Water temp</Text>
-        <Text style={styles.value}>{formatTemp(recipe.inputs.waterTemp, unitSystem)}</Text>
+        <Text style={[styles.label, { color: colors.espresso }]}>Water temp</Text>
+        <Text style={[styles.value, { color: colors.espresso }]}>{formatTemp(recipe.inputs.waterTemp, unitSystem)}</Text>
       </View>
       <View style={styles.row}>
-        <Text style={styles.label}>Starter temp</Text>
-        <Text style={styles.value}>{formatTemp(recipe.inputs.starterTemp, unitSystem)}</Text>
+        <Text style={[styles.label, { color: colors.espresso }]}>Starter temp</Text>
+        <Text style={[styles.value, { color: colors.espresso }]}>{formatTemp(recipe.inputs.starterTemp, unitSystem)}</Text>
       </View>
     </View>
   );
@@ -181,8 +181,8 @@ export default function RecipeDetailScreen() {
   const resultsSection = (
     <>
       {/* FDT */}
-      <View style={styles.fdtCard}>
-        <Text style={styles.fdtLabel}>Final Dough Temperature</Text>
+      <View style={[styles.fdtCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={[styles.fdtLabel, { color: colors.muted }]}>Final Dough Temperature</Text>
         <Text style={[styles.fdtValue, { color: zoneInfo.color }]}>
           {zoneInfo.icon}  {formatTemp(recipe.results.fdt, unitSystem)}
         </Text>
@@ -226,7 +226,7 @@ export default function RecipeDetailScreen() {
 
   // ── Layout (responsive; single component tree — no remount on resize) ──
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.cream }]} edges={['top']}>
       <Stack.Screen options={{ title: 'Recipe Detail' }} />
       <ScrollView
         style={styles.scroll}
@@ -236,7 +236,7 @@ export default function RecipeDetailScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.date}>
+        <Text style={[styles.date, { color: colors.espresso }]}>
           {preset ? `${preset.emoji} ${preset.name} — ` : ''}
           {date.toLocaleDateString(undefined, {
             weekday: 'long',
@@ -247,7 +247,7 @@ export default function RecipeDetailScreen() {
             minute: '2-digit',
           })}
         </Text>
-        <Text style={styles.location}>{recipe.locationSummary}</Text>
+        <Text style={[styles.location, { color: colors.muted }]}>{recipe.locationSummary}</Text>
 
         <View style={isDesktop && desktopStyles.twoCol}>
           <View style={isDesktop && desktopStyles.leftCol}>
@@ -256,11 +256,12 @@ export default function RecipeDetailScreen() {
           <View style={isDesktop && desktopStyles.rightCol}>
             {resultsSection}
             <TouchableOpacity
-              style={styles.shareBtn}
+              style={[styles.shareBtn, { backgroundColor: colors.olive }]}
               onPress={handleShare}
               activeOpacity={0.8}
+              accessibilityRole="button"
             >
-              <Text style={styles.shareBtnText}>📤  Share Recipe</Text>
+              <Text style={[styles.shareBtnText, { color: colors.white }]}>📤  Share Recipe</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -274,20 +275,17 @@ export default function RecipeDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.cream,
   },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md },
   date: {
     fontSize: FontSize.md,
     fontWeight: '600',
-    color: Colors.espresso,
     textAlign: 'center',
     marginTop: Spacing.md,
   },
   location: {
     fontSize: FontSize.xs,
-    color: Colors.muted,
     textAlign: 'center',
     marginBottom: Spacing.lg,
     marginTop: Spacing.xs,
@@ -296,12 +294,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 60,
     fontSize: FontSize.lg,
-    color: Colors.error,
   },
   card: {
-    backgroundColor: Colors.card,
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
     marginBottom: Spacing.md,
@@ -309,14 +304,12 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: FontSize.xs,
     fontWeight: '700',
-    color: Colors.muted,
     letterSpacing: 0.5,
     marginBottom: Spacing.sm,
   },
   sectionLabel: {
     fontSize: FontSize.sm,
     fontWeight: '600',
-    color: Colors.espresso,
     marginBottom: Spacing.xs,
     marginTop: Spacing.xs,
   },
@@ -327,23 +320,18 @@ const styles = StyleSheet.create({
   label: {
     width: 100,
     fontSize: FontSize.sm,
-    color: Colors.espresso,
     fontWeight: '500',
   },
   value: {
     flex: 1,
     fontSize: FontSize.sm,
-    color: Colors.espresso,
   },
   divider: {
     height: 1,
-    backgroundColor: Colors.border,
     marginVertical: Spacing.sm,
   },
   fdtCard: {
-    backgroundColor: Colors.card,
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: BorderRadius.md,
     padding: Spacing.lg,
     marginBottom: Spacing.md,
@@ -352,7 +340,6 @@ const styles = StyleSheet.create({
   fdtLabel: {
     fontSize: FontSize.xs,
     fontWeight: '700',
-    color: Colors.muted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: Spacing.xs,
@@ -367,14 +354,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   shareBtn: {
-    backgroundColor: Colors.olive,
     borderRadius: BorderRadius.md,
     paddingVertical: Spacing.md,
     alignItems: 'center',
     marginBottom: Spacing.lg,
   },
   shareBtnText: {
-    color: Colors.white,
     fontSize: FontSize.md,
     fontWeight: '700',
   },

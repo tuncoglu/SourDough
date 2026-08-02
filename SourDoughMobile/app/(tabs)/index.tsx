@@ -7,10 +7,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams } from 'expo-router';
-import { Colors, Spacing, FontSize, BorderRadius, useAppTheme } from '../../src/theme';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Spacing, FontSize, BorderRadius, useAppTheme } from '../../src/theme';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { buildSummary } from '../../src/lib/location';
 import { classifyHardness } from '../../src/data/ukWaterHardness';
@@ -42,6 +44,7 @@ export default function CalculatorScreen() {
   const { isDesktop } = useBreakpoint();
   const { colors, unitSystem } = useAppTheme();
   const { editRecipeId } = useLocalSearchParams<{ editRecipeId?: string }>();
+  const router = useRouter();
 
   // ── Hooks ──────────────────────────────────────────────────────────────
   const inputs = useCalculatorInputs();
@@ -49,6 +52,11 @@ export default function CalculatorScreen() {
   const starter = useStarterTracker();
   const calc = useRecipeCalculation();
   const actions = useRecipeActions();
+
+  // ── H1: Location fallback → Settings (water hardness override) ───────
+  const openSettingsForHardness = useCallback(() => {
+    router.push('/settings');
+  }, [router]);
 
   const { recommendation, dismiss: dismissRec } = useDailyRecommendation(
     inputs.ambientTemp, preset.breadType,
@@ -101,6 +109,23 @@ export default function CalculatorScreen() {
   const [coldProofHours, setColdProofHours] = React.useState('12');
   const [coldProofTemp, setColdProofTemp] = React.useState('4');
 
+  // ── D2: Stale-results detection ───────────────────────────────────────
+  const [inputsDirty, setInputsDirty] = React.useState(false);
+  const calculatedSignature = React.useRef<string | null>(null);
+  const inputSignature = [
+    inputs.hydration, inputs.starterWeight, inputs.saltPct,
+    inputs.ambientTemp, inputs.flourTemp, inputs.waterTemp, inputs.starterTemp,
+    preset.oilPct, preset.prefermentFlourPct, preset.prefermentEnabled,
+    inputs.mixRows.map((r) => `${r.flour.label}:${r.grams}`).join(','),
+    coldProofEnabled, coldProofHours, coldProofTemp,
+    inputs.locationData?.summary,
+  ].join('|');
+  useEffect(() => {
+    if (calculatedSignature.current !== null && inputSignature !== calculatedSignature.current) {
+      setInputsDirty(true);
+    }
+  }, [inputSignature]);
+
   // ── Derived ───────────────────────────────────────────────────────────
   const displaySummary = !inputs.locationData ? null
     : inputs.settings.waterHardnessOverride > 0
@@ -109,6 +134,8 @@ export default function CalculatorScreen() {
 
   // ── Calculate ─────────────────────────────────────────────────────────
   const doCalculate = useCallback(() => {
+    calculatedSignature.current = inputSignature;
+    setInputsDirty(false);
     calc.doCalculate({
       blend: inputs.blend,
       totalFlourWeight: inputs.totalFlourWeight,
@@ -208,6 +235,15 @@ export default function CalculatorScreen() {
       totalMinutes += bake.bakeTimeMinutes;
       totalMinutes += 5;
     }
+
+    // Cold proof replaces the room-temp proof with a longer fridge hold
+    if (coldProofEnabled) {
+      const cpHours = parseFloat(coldProofHours);
+      if (!isNaN(cpHours) && cpHours > 0) {
+        totalMinutes -= fermentHours * PROOF_FRACTION * 60; // remove room-temp proof
+        totalMinutes += cpHours * 60;
+      }
+    }
     const totalHours = totalMinutes / 60;
 
     const readyDate = new Date();
@@ -228,7 +264,16 @@ export default function CalculatorScreen() {
       const foldTime = process.folds * process.foldIntervalMinutes;
       if (foldTime > 0) breakdownParts.push(`folds ${foldTime}min`);
       if (process.benchRestMinutes > 0) breakdownParts.push(`bench rest ${process.benchRestMinutes}min`);
-      breakdownParts.push(`proof ~${(fermentHours * PROOF_FRACTION).toFixed(1)}h`);
+      if (coldProofEnabled) {
+        const cpHours = parseFloat(coldProofHours);
+        if (!isNaN(cpHours) && cpHours > 0) {
+          breakdownParts.push(`cold proof ~${cpHours}h in fridge`);
+        } else {
+          breakdownParts.push(`proof ~${(fermentHours * PROOF_FRACTION).toFixed(1)}h`);
+        }
+      } else {
+        breakdownParts.push(`proof ~${(fermentHours * PROOF_FRACTION).toFixed(1)}h`);
+      }
       breakdownParts.push(`bake ${bake.bakeTimeMinutes}min`);
     }
 
@@ -241,7 +286,7 @@ export default function CalculatorScreen() {
       breakdownParts,
       fermentHours,
     };
-  }, [planByReadyEnabled, calc.results, readyByHour, readyByMinute, preset.selectedPreset]);
+  }, [planByReadyEnabled, calc.results, readyByHour, readyByMinute, preset.selectedPreset, coldProofEnabled, coldProofHours]);
 
   // ═══════════════════════════════════════════════════════════════════════
   //  RENDER
@@ -250,12 +295,12 @@ export default function CalculatorScreen() {
     <>
       {/* Daily Recommendation */}
       {recommendation && (
-        <View style={recStyles.card}>
+        <View style={[recStyles.card, { backgroundColor: colors.tipBg, borderColor: colors.border }]}>
           <View style={recStyles.row}>
             <Text style={recStyles.icon}>💡</Text>
             <View style={{ flex: 1 }}>
-              <Text style={recStyles.title}>Today's suggestion</Text>
-              <Text style={recStyles.body}>
+              <Text style={[recStyles.title, { color: colors.muted }]}>Today's suggestion</Text>
+              <Text style={[recStyles.body, { color: colors.espresso }]}>
                 <Text style={recStyles.presetName}>{recommendation.preset.emoji} {recommendation.preset.name}</Text>
                 {' — '}{recommendation.reason}
               </Text>
@@ -266,20 +311,27 @@ export default function CalculatorScreen() {
                   inputs.setHydration, inputs.setStarterWeight, inputs.setSaltPct,
                 )}
                 activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8 }}
+                accessibilityRole="button"
               >
-                <Text style={recStyles.applyBtn}>Use this preset →</Text>
+                <Text style={[recStyles.applyBtn, { color: colors.terracotta }]}>Use this preset →</Text>
               </TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={dismissRec} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Text style={recStyles.dismiss}>×</Text>
+            <TouchableOpacity
+              onPress={dismissRec}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityLabel="Dismiss recommendation"
+              accessibilityRole="button"
+            >
+              <Text style={[recStyles.dismiss, { color: colors.muted }]}>×</Text>
             </TouchableOpacity>
           </View>
         </View>
       )}
 
       {/* Recipe Type */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>RECIPE TYPE</Text>
+      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={[styles.cardTitle, { color: colors.muted }]}>RECIPE TYPE</Text>
         <RecipeTypePicker
           selected={preset.breadType}
           onSelect={(p) => preset.handlePresetSelect(
@@ -289,7 +341,7 @@ export default function CalculatorScreen() {
           )}
         />
         {preset.selectedPreset && (
-          <Text style={styles.cardHint}>{preset.selectedPreset.emoji} {preset.selectedPreset.description}</Text>
+          <Text style={[styles.cardHint, { color: colors.muted }]}>{preset.selectedPreset.emoji} {preset.selectedPreset.description}</Text>
         )}
       </View>
 
@@ -317,59 +369,78 @@ export default function CalculatorScreen() {
 
       {/* Pre-ferment */}
       {preset.prefermentEnabled && (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>PRE-FERMENT</Text>
-          <Text style={styles.cardHint}>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.cardTitle, { color: colors.muted }]}>PRE-FERMENT</Text>
+          <Text style={[styles.cardHint, { color: colors.muted }]}>
             Pre-ferment flour is subtracted from the bowl flour. Its water is accounted for in total hydration.
           </Text>
           <View style={prefStyles.row}>
-            <Text style={prefStyles.label}>Flour in pre-ferment</Text>
+            <Text style={[prefStyles.label, { color: colors.espresso }]}>Flour in pre-ferment</Text>
             <View style={{ flex: 1 }}>
               <TextInput
-                style={prefStyles.input}
+                style={[prefStyles.input, { backgroundColor: colors.white, borderColor: colors.border, color: colors.espresso }]}
                 value={preset.prefermentFlourPct}
                 onChangeText={preset.setPrefermentFlourPct}
-                keyboardType="numeric"
+                keyboardType="decimal-pad"
+                placeholderTextColor={colors.muted}
               />
             </View>
-            <Text style={prefStyles.unit}>% of total flour</Text>
+            <Text style={[prefStyles.unit, { color: colors.muted }]}>% of total flour</Text>
           </View>
-          <Text style={styles.cardHint}>
+          <Text style={[styles.cardHint, { color: colors.muted }]}>
             Poolish: 100% hydration · Mix equal weights flour and water{'\n'}
             Pre-ferment ripeness: look for a domed surface that just begins to sink in the centre.
           </Text>
-          <TouchableOpacity style={prefStyles.removeBtn} onPress={() => preset.setPrefermentEnabled(false)} activeOpacity={0.6}>
-            <Text style={prefStyles.removeBtnText}>Remove Pre-ferment</Text>
+          <TouchableOpacity
+            style={prefStyles.removeBtn}
+            onPress={() => preset.setPrefermentEnabled(false)}
+            activeOpacity={0.6}
+            hitSlop={{ top: 8, bottom: 8 }}
+            accessibilityLabel="Remove pre-ferment"
+            accessibilityRole="button"
+          >
+            <Text style={[prefStyles.removeBtnText, { color: colors.terracotta }]}>Remove Pre-ferment</Text>
           </TouchableOpacity>
         </View>
       )}
 
       {/* Ready-By Planner */}
       {!planByReadyEnabled ? (
-        <TouchableOpacity style={styles.card} onPress={() => setPlanByReadyEnabled(true)} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => setPlanByReadyEnabled(true)}
+          activeOpacity={0.7}
+          accessibilityLabel="Plan by ready time. Tell us when you want your bread ready."
+          accessibilityRole="button"
+        >
           <View style={readyStyles.promptRow}>
             <Text style={readyStyles.promptIcon}>🕐</Text>
             <View style={{ flex: 1 }}>
-              <Text style={readyStyles.promptTitle}>Plan by ready time</Text>
-              <Text style={readyStyles.promptHint}>Tell us when you want your bread ready — we'll tell you when to start</Text>
+              <Text style={[readyStyles.promptTitle, { color: colors.espresso }]}>Plan by ready time</Text>
+              <Text style={[readyStyles.promptHint, { color: colors.muted }]}>Tell us when you want your bread ready — we'll tell you when to start</Text>
             </View>
-            <Text style={readyStyles.promptChevron}>›</Text>
+            <Text style={[readyStyles.promptChevron, { color: colors.muted }]}>›</Text>
           </View>
         </TouchableOpacity>
       ) : (
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={readyStyles.headerRow}>
-            <Text style={styles.cardTitle}>🕐  READY-BY PLANNER</Text>
-            <TouchableOpacity onPress={() => setPlanByReadyEnabled(false)}>
-              <Text style={readyStyles.removeText}>Remove</Text>
+            <Text style={[styles.cardTitle, { color: colors.muted }]}>🕐  READY-BY PLANNER</Text>
+            <TouchableOpacity
+              onPress={() => setPlanByReadyEnabled(false)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityLabel="Remove ready-by planner"
+              accessibilityRole="button"
+            >
+              <Text style={[readyStyles.removeText, { color: colors.terracotta }]}>Remove</Text>
             </TouchableOpacity>
           </View>
-          <Text style={styles.cardHint}>Set the time you want your bread to come out of the oven.</Text>
+          <Text style={[styles.cardHint, { color: colors.muted }]}>Set the time you want your bread to come out of the oven.</Text>
           <View style={readyStyles.timeRow}>
-            <Text style={readyStyles.timeLabel}>Ready by</Text>
+            <Text style={[readyStyles.timeLabel, { color: colors.espresso }]}>Ready by</Text>
             <View style={readyStyles.timeInputGroup}>
               <TextInput
-                style={readyStyles.timeInput}
+                style={[readyStyles.timeInput, { backgroundColor: colors.white, borderColor: colors.border, color: colors.espresso }]}
                 value={readyByHour}
                 onChangeText={(t) => {
                   const n = parseInt(t, 10);
@@ -378,11 +449,11 @@ export default function CalculatorScreen() {
                 keyboardType="number-pad"
                 maxLength={2}
                 placeholder="HH"
-                placeholderTextColor={Colors.lightText}
+                placeholderTextColor={colors.lightText}
               />
-              <Text style={readyStyles.timeColon}>:</Text>
+              <Text style={[readyStyles.timeColon, { color: colors.espresso }]}>:</Text>
               <TextInput
-                style={readyStyles.timeInput}
+                style={[readyStyles.timeInput, { backgroundColor: colors.white, borderColor: colors.border, color: colors.espresso }]}
                 value={readyByMinute}
                 onChangeText={(t) => {
                   const n = parseInt(t, 10);
@@ -391,7 +462,7 @@ export default function CalculatorScreen() {
                 keyboardType="number-pad"
                 maxLength={2}
                 placeholder="MM"
-                placeholderTextColor={Colors.lightText}
+                placeholderTextColor={colors.lightText}
               />
             </View>
           </View>
@@ -400,52 +471,63 @@ export default function CalculatorScreen() {
 
       {/* Cold Proof (collapsible) */}
       {!coldProofEnabled ? (
-        <TouchableOpacity style={styles.card} onPress={() => setColdProofEnabled(true)} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={() => setColdProofEnabled(true)}
+          activeOpacity={0.7}
+          accessibilityLabel="Cold proof. Add a fridge proofing phase."
+          accessibilityRole="button"
+        >
           <View style={readyStyles.promptRow}>
             <Text style={readyStyles.promptIcon}>❄️</Text>
             <View style={{ flex: 1 }}>
-              <Text style={readyStyles.promptTitle}>Cold proof / retard</Text>
-              <Text style={readyStyles.promptHint}>
+              <Text style={[readyStyles.promptTitle, { color: colors.espresso }]}>Cold proof / retard</Text>
+              <Text style={[readyStyles.promptHint, { color: colors.muted }]}>
                 Proof in the fridge overnight for deeper flavour and tangier crumb
               </Text>
             </View>
-            <Text style={readyStyles.promptChevron}>›</Text>
+            <Text style={[readyStyles.promptChevron, { color: colors.muted }]}>›</Text>
           </View>
         </TouchableOpacity>
       ) : (
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={readyStyles.headerRow}>
-            <Text style={styles.cardTitle}>❄️  COLD PROOF</Text>
-            <TouchableOpacity onPress={() => setColdProofEnabled(false)}>
-              <Text style={readyStyles.removeText}>Remove</Text>
+            <Text style={[styles.cardTitle, { color: colors.muted }]}>❄️  COLD PROOF</Text>
+            <TouchableOpacity
+              onPress={() => setColdProofEnabled(false)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityLabel="Remove cold proof"
+              accessibilityRole="button"
+            >
+              <Text style={[readyStyles.removeText, { color: colors.terracotta }]}>Remove</Text>
             </TouchableOpacity>
           </View>
-          <Text style={styles.cardHint}>
+          <Text style={[styles.cardHint, { color: colors.muted }]}>
             After bulk fermentation, shape and place in the fridge. Cold temperatures favour acetic acid production for a tangier crumb.
           </Text>
           <View style={coldStyles.row}>
-            <Text style={coldStyles.label}>Duration</Text>
+            <Text style={[coldStyles.label, { color: colors.espresso }]}>Duration</Text>
             <TextInput
-              style={coldStyles.input}
+              style={[coldStyles.input, { backgroundColor: colors.white, borderColor: colors.border, color: colors.espresso }]}
               value={coldProofHours}
               onChangeText={setColdProofHours}
-              keyboardType="numeric"
+              keyboardType="decimal-pad"
               placeholder="12"
-              placeholderTextColor={Colors.lightText}
+              placeholderTextColor={colors.lightText}
             />
-            <Text style={coldStyles.unit}>hours</Text>
+            <Text style={[coldStyles.unit, { color: colors.muted }]}>hours</Text>
           </View>
           <View style={coldStyles.row}>
-            <Text style={coldStyles.label}>Fridge temp</Text>
+            <Text style={[coldStyles.label, { color: colors.espresso }]}>Fridge temp</Text>
             <TextInput
-              style={coldStyles.input}
+              style={[coldStyles.input, { backgroundColor: colors.white, borderColor: colors.border, color: colors.espresso }]}
               value={coldProofTemp}
               onChangeText={setColdProofTemp}
-              keyboardType="numeric"
+              keyboardType="decimal-pad"
               placeholder="4"
-              placeholderTextColor={Colors.lightText}
+              placeholderTextColor={colors.lightText}
             />
-            <Text style={coldStyles.unit}>°C</Text>
+            <Text style={[coldStyles.unit, { color: colors.muted }]}>°C</Text>
           </View>
         </View>
       )}
@@ -464,11 +546,11 @@ export default function CalculatorScreen() {
       />
 
       {/* Calculate */}
-      <TouchableOpacity style={styles.calcBtn} onPress={doCalculate} disabled={calc.calculating} activeOpacity={0.8}>
+      <TouchableOpacity style={[styles.calcBtn, { backgroundColor: colors.terracotta }]} onPress={doCalculate} disabled={calc.calculating} activeOpacity={0.8}>
         {calc.calculating ? (
-          <ActivityIndicator color={Colors.white} />
+          <ActivityIndicator color={colors.white} />
         ) : (
-          <Text style={styles.calcBtnText}>Calculate</Text>
+          <Text style={[styles.calcBtnText, { color: colors.white }]}>Calculate</Text>
         )}
       </TouchableOpacity>
     </>
@@ -493,30 +575,46 @@ export default function CalculatorScreen() {
     planByReadyEnabled, readyByHour, readyByMinute,
     coldProofEnabled, coldProofHours, coldProofTemp,
     doCalculate, calc.calculating,
+    colors,
   ]);
 
   const resultsPanel = React.useMemo(() => calc.results && (
-    <ResultsSection
-      results={calc.results}
-      blend={inputs.blend}
-      totalFlourWeight={inputs.totalFlourWeight}
-      starterFlourLabel={starter.starterFlourLabel}
-      preferredType={preset.prefermentEnabled ? 'poolish' : undefined}
-      selectedPreset={preset.selectedPreset}
-      flourTemp={inputs.flourTemp}
-      ambientTemp={inputs.ambientTemp}
-      waterTemp={inputs.waterTemp}
-      starterTemp={inputs.starterTemp}
-      saving={actions.saving}
-      onSave={handleSave}
-      onShare={handleShare}
-      readyByResult={readyByResult}
-    />
+    <>
+      {inputsDirty && (
+        <TouchableOpacity
+          style={[bannerStyles.banner, { backgroundColor: colors.warningBg, borderColor: colors.hot }]}
+          onPress={doCalculate}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+        >
+          <Text style={[bannerStyles.bannerText, { color: colors.espresso }]}>
+            ⚠️  Inputs changed since you calculated — tap to recalculate
+          </Text>
+        </TouchableOpacity>
+      )}
+      <ResultsSection
+        results={calc.results}
+        blend={inputs.blend}
+        totalFlourWeight={inputs.totalFlourWeight}
+        starterFlourLabel={starter.starterFlourLabel}
+        preferredType={preset.prefermentEnabled ? 'poolish' : undefined}
+        selectedPreset={preset.selectedPreset}
+        flourTemp={inputs.flourTemp}
+        ambientTemp={inputs.ambientTemp}
+        waterTemp={inputs.waterTemp}
+        starterTemp={inputs.starterTemp}
+        saving={actions.saving}
+        onSave={handleSave}
+        onShare={handleShare}
+        readyByResult={readyByResult}
+      />
+    </>
   ), [
     calc.results, inputs.blend, inputs.totalFlourWeight, starter.starterFlourLabel,
     preset.prefermentEnabled, preset.selectedPreset,
     inputs.flourTemp, inputs.ambientTemp, inputs.waterTemp, inputs.starterTemp,
     actions.saving, handleSave, handleShare, readyByResult,
+    inputsDirty, doCalculate, colors,
   ]);
 
   // ═══════════════════════════════════════════════════════════════════════
@@ -540,58 +638,63 @@ export default function CalculatorScreen() {
           error={inputs.locError}
           onRefresh={inputs.onRefreshLocation}
           showFallbackWarning={!inputs.locLoading && !inputs.locationData}
-          onTapFallback={() => {}}
+          onTapFallback={openSettingsForHardness}
           onPostcodeSubmit={inputs.onPostcodeSubmit}
         />
       )}
 
-      <View style={isDesktop ? desktopStyles.twoCol : layoutStyles.mobileCol}>
-        <ScrollView
-          ref={calc.scrollRef}
-          style={isDesktop ? desktopStyles.leftCol : layoutStyles.scroll}
-          contentContainerStyle={isDesktop ? desktopStyles.leftContent : layoutStyles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {!isDesktop && (
-            <>
-              <Text style={[layoutStyles.header, { color: colors.espresso }]}>🥖  Just Dough It</Text>
-              <Text style={[layoutStyles.tagline, { color: colors.muted }]}>
-                A sourdough calculator for beginners and pros. Tell us your flour — we'll grab your local weather for ambient temp, auto-detect water temp, figure out the exact ingredients, predict how long your dough needs, and guide you through every step from mixing to fresh-baked bread.
-              </Text>
-            </>
-          )}
-
-          {!isDesktop && (
-            <LocationBar
-              summary={displaySummary}
-              loading={inputs.locLoading}
-              error={inputs.locError}
-              onRefresh={inputs.onRefreshLocation}
-              showFallbackWarning={!inputs.locLoading && !inputs.locationData}
-              onTapFallback={() => {}}
-              onPostcodeSubmit={inputs.onPostcodeSubmit}
-            />
-          )}
-
-          {inputPanels}
-
-          {!isDesktop && resultsPanel}
-
-          {!isDesktop && <View style={layoutStyles.bottomPad} />}
-        </ScrollView>
-
-        {isDesktop && (
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
+      >
+        <View style={isDesktop ? desktopStyles.twoCol : layoutStyles.mobileCol}>
           <ScrollView
-            ref={calc.rightScrollRef}
-            style={desktopStyles.rightCol}
-            contentContainerStyle={desktopStyles.rightContent}
+            ref={calc.scrollRef}
+            style={isDesktop ? desktopStyles.leftCol : layoutStyles.scroll}
+            contentContainerStyle={isDesktop ? desktopStyles.leftContent : layoutStyles.scrollContent}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
-            {resultsPanel}
+            {!isDesktop && (
+              <>
+                <Text style={[layoutStyles.header, { color: colors.espresso }]}>🥖  Just Dough It</Text>
+                <Text style={[layoutStyles.tagline, { color: colors.muted }]}>
+                  A sourdough calculator for beginners and pros. Tell us your flour — we'll grab your local weather for ambient temp, auto-detect water temp, figure out the exact ingredients, predict how long your dough needs, and guide you through every step from mixing to fresh-baked bread.
+                </Text>
+              </>
+            )}
+
+            {!isDesktop && (
+              <LocationBar
+                summary={displaySummary}
+                loading={inputs.locLoading}
+                error={inputs.locError}
+                onRefresh={inputs.onRefreshLocation}
+                showFallbackWarning={!inputs.locLoading && !inputs.locationData}
+                onTapFallback={openSettingsForHardness}
+                onPostcodeSubmit={inputs.onPostcodeSubmit}
+              />
+            )}
+
+            {inputPanels}
+
+            {!isDesktop && resultsPanel}
+
+            {!isDesktop && <View style={layoutStyles.bottomPad} />}
           </ScrollView>
-        )}
-      </View>
+
+          {isDesktop && (
+            <ScrollView
+              ref={calc.rightScrollRef}
+              style={desktopStyles.rightCol}
+              contentContainerStyle={desktopStyles.rightContent}
+              showsVerticalScrollIndicator={false}
+            >
+              {resultsPanel}
+            </ScrollView>
+          )}
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -612,74 +715,86 @@ const layoutStyles = StyleSheet.create({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.card, borderWidth: 1, borderColor: Colors.border,
+    borderWidth: 1,
     borderRadius: BorderRadius.md, padding: Spacing.md, marginBottom: Spacing.md,
   },
   cardTitle: {
-    fontSize: FontSize.xs, fontWeight: '700', color: Colors.muted,
+    fontSize: FontSize.xs, fontWeight: '700',
     letterSpacing: 0.5, marginBottom: Spacing.sm,
   },
-  cardHint: { fontSize: FontSize.xs, color: Colors.muted, marginBottom: Spacing.sm, lineHeight: 16 },
+  cardHint: { fontSize: FontSize.xs, marginBottom: Spacing.sm, lineHeight: 16 },
   calcBtn: {
-    backgroundColor: Colors.terracotta, borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.md,
     paddingVertical: Spacing.md + 4, alignItems: 'center', marginBottom: Spacing.lg,
   },
-  calcBtnText: { color: Colors.white, fontSize: FontSize.lg, fontWeight: '700' },
+  calcBtnText: { fontSize: FontSize.lg, fontWeight: '700' },
 });
 
 const prefStyles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.xs, gap: Spacing.sm },
-  label: { fontSize: FontSize.sm, color: Colors.espresso },
+  label: { fontSize: FontSize.sm },
   input: {
-    backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border,
+    minHeight: 44,
+    borderWidth: 1,
     borderRadius: BorderRadius.sm, paddingHorizontal: Spacing.sm, paddingVertical: Spacing.xs,
-    fontSize: FontSize.sm, color: Colors.espresso, textAlign: 'right', minWidth: 60,
+    fontSize: FontSize.sm, textAlign: 'right', minWidth: 60,
   },
-  unit: { fontSize: FontSize.xs, color: Colors.muted },
-  removeBtn: { alignSelf: 'flex-end', paddingVertical: Spacing.xs, paddingHorizontal: Spacing.sm, marginTop: Spacing.xs },
-  removeBtnText: { fontSize: FontSize.xs, color: Colors.terracotta, fontWeight: '600' },
+  unit: { fontSize: FontSize.xs },
+  removeBtn: { alignSelf: 'flex-end', minHeight: 44, justifyContent: 'center', paddingVertical: Spacing.xs, paddingHorizontal: Spacing.sm, marginTop: Spacing.xs },
+  removeBtnText: { fontSize: FontSize.xs, fontWeight: '600' },
 });
 
 const recStyles = StyleSheet.create({
   card: {
-    backgroundColor: '#F8F4ED', borderWidth: 1, borderColor: '#E0D6C5',
+    borderWidth: 1,
     borderRadius: BorderRadius.md, padding: Spacing.md, marginBottom: Spacing.md,
   },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm },
   icon: { fontSize: 20, marginTop: 1 },
-  title: { fontSize: FontSize.xs, fontWeight: '700', color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
-  body: { fontSize: FontSize.sm, color: Colors.espresso, lineHeight: 19 },
+  title: { fontSize: FontSize.xs, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
+  body: { fontSize: FontSize.sm, lineHeight: 19 },
   presetName: { fontWeight: '700' },
-  applyBtn: { fontSize: FontSize.xs, color: Colors.terracotta, fontWeight: '700', marginTop: Spacing.sm },
-  dismiss: { fontSize: FontSize.lg, color: Colors.muted, fontWeight: '300', paddingLeft: Spacing.sm },
+  applyBtn: { fontSize: FontSize.xs, fontWeight: '700', marginTop: Spacing.sm },
+  dismiss: { fontSize: FontSize.lg, fontWeight: '300', paddingLeft: Spacing.sm },
 });
 
 const readyStyles = StyleSheet.create({
   promptRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   promptIcon: { fontSize: 22 },
-  promptTitle: { fontSize: FontSize.sm, fontWeight: '600', color: Colors.espresso },
-  promptHint: { fontSize: FontSize.xs, color: Colors.muted, marginTop: 2 },
-  promptChevron: { fontSize: FontSize.xl, color: Colors.muted, fontWeight: '300' },
+  promptTitle: { fontSize: FontSize.sm, fontWeight: '600' },
+  promptHint: { fontSize: FontSize.xs, marginTop: 2 },
+  promptChevron: { fontSize: FontSize.xl, fontWeight: '300' },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xs },
-  removeText: { fontSize: FontSize.xs, color: Colors.terracotta, fontWeight: '600' },
+  removeText: { fontSize: FontSize.xs, fontWeight: '600' },
   timeRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.sm },
-  timeLabel: { width: 90, fontSize: FontSize.sm, color: Colors.espresso },
+  timeLabel: { width: 90, fontSize: FontSize.sm },
   timeInputGroup: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   timeInput: {
-    width: 52, height: 40, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: BorderRadius.sm, textAlign: 'center', fontSize: FontSize.lg, fontWeight: '700', color: Colors.espresso,
+    width: 52, minHeight: 44, borderWidth: 1,
+    borderRadius: BorderRadius.sm, textAlign: 'center', fontSize: FontSize.lg, fontWeight: '700',
   },
-  timeColon: { fontSize: FontSize.xl, fontWeight: '700', color: Colors.espresso },
+  timeColon: { fontSize: FontSize.xl, fontWeight: '700' },
 });
 
 const coldStyles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.xs, gap: Spacing.sm },
-  label: { fontSize: FontSize.sm, color: Colors.espresso, width: 90 },
+  label: { fontSize: FontSize.sm, width: 90 },
   input: {
-    width: 60, height: 36, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: BorderRadius.sm, textAlign: 'center', fontSize: FontSize.sm, fontWeight: '600', color: Colors.espresso,
+    width: 60, minHeight: 44, borderWidth: 1,
+    borderRadius: BorderRadius.sm, textAlign: 'center', fontSize: FontSize.sm, fontWeight: '600',
   },
-  unit: { fontSize: FontSize.xs, color: Colors.muted },
+  unit: { fontSize: FontSize.xs },
+});
+
+const bannerStyles = StyleSheet.create({
+  banner: {
+    borderWidth: 1,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm + 2,
+    marginBottom: Spacing.md,
+  },
+  bannerText: { fontSize: FontSize.sm, fontWeight: '600', lineHeight: 19 },
 });
 
 const desktopStyles = StyleSheet.create({

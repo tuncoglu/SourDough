@@ -81,12 +81,12 @@ export function YogurtResultCard({ results, cultureType, thickness, nutrition }:
       {/* Culture type badge */}
       <View style={styles.badgeRow}>
         <Text style={[styles.badge, {
-          backgroundColor: cultureType === 'thermophilic' ? '#FFF0EB' : '#EBF5FF',
+          backgroundColor: cultureType === 'thermophilic' ? colors.warningBg : colors.coldBg,
           color: cultureType === 'thermophilic' ? colors.warm : colors.cool,
         }]}>
           {cultureType === 'thermophilic' ? '🌡 Thermophilic' : '🏠 Mesophilic'}
         </Text>
-        <Text style={[styles.badge, { backgroundColor: '#F0F7EB', color: colors.olive }]}>
+        <Text style={[styles.badge, { backgroundColor: colors.successBg, color: colors.olive }]}>
           {thickness}
         </Text>
       </View>

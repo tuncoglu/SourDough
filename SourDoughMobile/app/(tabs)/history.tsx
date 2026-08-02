@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Spacing, FontSize, BorderRadius, useAppTheme } from '../../src/theme';
+import { Spacing, FontSize, BorderRadius, useAppTheme } from '../../src/theme';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { SavedRecipe, BreadType } from '../../src/models/types';
 import { loadRecipes, deleteRecipe, saveRecipe, generateRecipeId } from '../../src/store/recipeStore';
@@ -132,6 +132,7 @@ export default function HistoryScreen() {
           clearButtonMode="while-editing"
           autoCapitalize="none"
           autoCorrect={false}
+          accessibilityLabel="Search recipes"
         />
       </View>
 
@@ -149,6 +150,8 @@ export default function HistoryScreen() {
             ]}
             onPress={() => setActiveFilter(chip.key)}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityState={{ selected: activeFilter === chip.key }}
           >
             <Text style={[styles.chipText, { color: activeFilter === chip.key ? '#FFFFFF' : colors.muted }]}>
               {chip.label}
@@ -176,14 +179,29 @@ export default function HistoryScreen() {
             <View style={[styles.cardWrapper, numColumns > 1 && styles.cardWrapperGrid]}>
               <RecipeCard recipe={item} onPress={() => handlePress(item)} />
               <View style={styles.actions}>
-                <TouchableOpacity onPress={() => handleEdit(item)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <TouchableOpacity
+                  onPress={() => handleEdit(item)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityLabel="Edit recipe"
+                  accessibilityRole="button"
+                >
                   <Text style={styles.actionBtn}>✏️</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleDuplicate(item)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <TouchableOpacity
+                  onPress={() => handleDuplicate(item)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityLabel="Duplicate recipe"
+                  accessibilityRole="button"
+                >
                   <Text style={styles.actionBtn}>📋</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => handleDelete(item)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Text style={[styles.actionBtn, { color: Colors.error }]}>🗑️</Text>
+                <TouchableOpacity
+                  onPress={() => handleDelete(item)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityLabel="Delete recipe"
+                  accessibilityRole="button"
+                >
+                  <Text style={[styles.actionBtn, { color: colors.error }]}>🗑️</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -204,9 +222,9 @@ export default function HistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.cream },
+  container: { flex: 1 },
   header: {
-    fontSize: FontSize.xl, fontWeight: '800', color: Colors.espresso,
+    fontSize: FontSize.xl, fontWeight: '800',
     textAlign: 'center', marginVertical: Spacing.md,
   },
   searchRow: {
@@ -214,14 +232,11 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   searchInput: {
-    height: 40,
-    backgroundColor: Colors.white,
+    minHeight: 44,
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
     fontSize: FontSize.md,
-    color: Colors.espresso,
   },
   chipRow: {
     flexDirection: 'row',

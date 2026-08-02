@@ -5,6 +5,8 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLactoCalculator } from '@/src/hooks/useLactoCalculator';
@@ -14,7 +16,7 @@ import { LactoAdvice } from '@/src/components/LactoAdvice';
 import { LactoScience } from '@/src/components/LactoScience';
 import { LocationBar } from '@/src/components/LocationBar';
 import { NumberInput } from '@/src/components/NumberInput';
-import { Colors, Spacing, FontSize, BorderRadius, useAppTheme, MaxWidth } from '@/src/theme';
+import { Spacing, FontSize, BorderRadius, useAppTheme, MaxWidth } from '@/src/theme';
 import { FERMENT_TYPE_ORDER } from '@/src/data/fermentPresets';
 import { VEGETABLES, VEG_CATEGORIES } from '@/src/data/vegetables';
 import { FermentType, SALT_LABELS, SALT_TYPE_ORDER } from '@/src/models/types';
@@ -31,6 +33,10 @@ export default function FermentsScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.cream }]} edges={['top']}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
+      >
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
@@ -81,7 +87,7 @@ export default function FermentsScreen() {
                 </View>
               ))}
             </View>
-            <Text style={[styles.tempSummary, { color: colors.lightText }]}>
+            <Text style={[styles.tempSummary, { color: colors.lightText, borderTopColor: colors.border }]}>
               {calc.tempResult?.summary ?? 'Using weather forecast for accurate timing'}
               {calc.tempResult?.source === 'fallback' && ' — enable location for local temps'}
             </Text>
@@ -110,6 +116,9 @@ export default function FermentsScreen() {
                 ]}
                 onPress={() => calc.selectPreset(id as FermentType)}
                 activeOpacity={0.7}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={preset.name}
               >
                 <Text style={styles.presetEmoji}>{preset.emoji}</Text>
                 <Text
@@ -128,7 +137,7 @@ export default function FermentsScreen() {
         {/* ── Vegetable / Fruit Picker ── */}
         <Text style={[styles.sectionLabel, { color: colors.espresso }]}>Vegetable or fruit</Text>
         <View style={[styles.vegPicker, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.currentVeg}>
+          <View style={[styles.currentVeg, { borderBottomColor: colors.border }]}>
             <Text style={styles.currentVegEmoji}>{calc.veg.emoji}</Text>
             <View style={styles.currentVegInfo}>
               <Text style={[styles.currentVegName, { color: colors.espresso }]}>
@@ -166,6 +175,9 @@ export default function FermentsScreen() {
                         ]}
                         onPress={() => calc.selectVeg(veg.id)}
                         activeOpacity={0.7}
+                        accessibilityRole="radio"
+                        accessibilityState={{ selected: active }}
+                        accessibilityLabel={veg.name}
                       >
                         <Text style={styles.vegChipEmoji}>{veg.emoji}</Text>
                         <Text
@@ -241,6 +253,9 @@ export default function FermentsScreen() {
                   ]}
                   onPress={() => calc.setSaltType(st)}
                   activeOpacity={0.7}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={SALT_LABELS[st]}
                 >
                   <Text
                     style={[
@@ -261,8 +276,9 @@ export default function FermentsScreen() {
           style={[styles.calcBtn, { backgroundColor: colors.terracotta }]}
           onPress={handleCalculate}
           activeOpacity={0.8}
+          accessibilityRole="button"
         >
-          <Text style={styles.calcBtnText}>Calculate</Text>
+          <Text style={[styles.calcBtnText, { color: colors.white }]}>Calculate</Text>
         </TouchableOpacity>
 
         {/* ── Results ── */}
@@ -299,6 +315,7 @@ export default function FermentsScreen() {
 
         <View style={styles.bottomPad} />
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -385,7 +402,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingTop: Spacing.xs,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
   },
 
   // Style chips
@@ -428,7 +444,6 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.md,
     marginBottom: Spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
   currentVegEmoji: {
     fontSize: 28,
@@ -516,7 +531,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   calcBtnText: {
-    color: '#FFF',
     fontSize: FontSize.lg,
     fontWeight: '700',
   },

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
+import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
+import type { AppColors } from '../theme';
 import { formatWeight, formatWeightValue, weightUnit } from '../lib/unitConversion';
 import { IngredientResults as IngredientResultsType, FlourBlendEntry } from '../models/types';
 
@@ -17,13 +18,13 @@ interface Props {
 }
 
 export function IngredientResults({ ingredients, blend, totalFlourWeight, starterFlourType, prefermentType, typicalUnitGrams, unitLabel }: Props) {
-  const { unitSystem } = useAppTheme();
+  const { unitSystem, colors } = useAppTheme();
   const showBlend = blend && blend.length > 1 && totalFlourWeight;
   const wu = weightUnit(unitSystem);
 
   return (
-    <View style={styles.card}>
-      <Text style={styles.title}>⚖️  Ingredients (put this in the bowl)</Text>
+    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Text style={[styles.title, { color: colors.muted }]}>⚖️  Ingredients (put this in the bowl)</Text>
 
       {showBlend ? (
         // Multi-flour breakdown
@@ -32,40 +33,40 @@ export function IngredientResults({ ingredients, blend, totalFlourWeight, starte
             const grams = totalFlourWeight! * entry.percentage / 100;
             return (
               <View style={styles.row} key={entry.label}>
-                <Text style={styles.label}>
+                <Text style={[styles.label, { color: colors.espresso }]}>
                   {entry.label.replace(/\s*\([^)]*\)$/, '')}
                 </Text>
-                <Text style={styles.value}>{formatWeight(grams, unitSystem)}</Text>
-                <Text style={styles.note}>{Math.round(entry.percentage)}%</Text>
+                <Text style={[styles.value, { color: colors.espresso }]}>{formatWeight(grams, unitSystem)}</Text>
+                <Text style={[styles.note, { color: colors.muted }]}>{Math.round(entry.percentage)}%</Text>
               </View>
             );
           })}
-          <View style={styles.subRow}>
-            <Text style={styles.subLabel}>
+          <View style={[styles.subRow, { borderLeftColor: colors.border, borderTopColor: colors.border }]}>
+            <Text style={[styles.subLabel, { color: colors.muted }]}>
               Total flour
             </Text>
-            <Text style={styles.subValue}>
+            <Text style={[styles.subValue, { color: colors.muted }]}>
               {formatWeight(ingredients.freshFlour, unitSystem)}
             </Text>
           </View>
         </>
       ) : (
-        renderRow('Flour', formatWeight(ingredients.freshFlour, unitSystem), null)
+        renderRow('Flour', formatWeight(ingredients.freshFlour, unitSystem), null, false, colors)
       )}
 
-      {renderRow('Water', formatWeight(ingredients.addedWater, unitSystem), null)}
+      {renderRow('Water', formatWeight(ingredients.addedWater, unitSystem), null, false, colors)}
       {renderRow('Starter', formatWeight(ingredients.starterTotal, unitSystem),
-        `(${ingredients.starterPct.toFixed(0)}% of total flour)`)}
-      <View style={styles.subRow}>
-        <Text style={styles.subLabel}>flour in starter</Text>
-        <Text style={styles.subValue}>
+        `(${ingredients.starterPct.toFixed(0)}% of total flour)`, false, colors)}
+      <View style={[styles.subRow, { borderLeftColor: colors.border, borderTopColor: colors.border }]}>
+        <Text style={[styles.subLabel, { color: colors.muted }]}>flour in starter</Text>
+        <Text style={[styles.subValue, { color: colors.muted }]}>
           {formatWeight(ingredients.flourFromStarter, unitSystem)}
           {starterFlourType ? `  (${starterFlourType.replace(/\s*\([^)]*\)$/, '')})` : ''}
         </Text>
       </View>
-      <View style={styles.subRow}>
-        <Text style={styles.subLabel}>water in starter</Text>
-        <Text style={styles.subValue}>{formatWeight(ingredients.waterFromStarter, unitSystem)}</Text>
+      <View style={[styles.subRow, { borderLeftColor: colors.border, borderTopColor: colors.border }]}>
+        <Text style={[styles.subLabel, { color: colors.muted }]}>water in starter</Text>
+        <Text style={[styles.subValue, { color: colors.muted }]}>{formatWeight(ingredients.waterFromStarter, unitSystem)}</Text>
       </View>
 
       {/* Pre-ferment breakdown */}
@@ -75,32 +76,35 @@ export function IngredientResults({ ingredients, blend, totalFlourWeight, starte
             `Pre-ferment (${prefermentType ?? 'poolish'})`,
             formatWeight(ingredients.prefermentTotal, unitSystem),
             `${(ingredients.prefermentFlour / ingredients.totalFlour * 100).toFixed(0)}% of total flour`,
+            false,
+            colors,
           )}
-          <View style={styles.subRow}>
-            <Text style={styles.subLabel}>flour in pre-ferment</Text>
-            <Text style={styles.subValue}>{formatWeight(ingredients.prefermentFlour, unitSystem)}</Text>
+          <View style={[styles.subRow, { borderLeftColor: colors.border, borderTopColor: colors.border }]}>
+            <Text style={[styles.subLabel, { color: colors.muted }]}>flour in pre-ferment</Text>
+            <Text style={[styles.subValue, { color: colors.muted }]}>{formatWeight(ingredients.prefermentFlour, unitSystem)}</Text>
           </View>
-          <View style={styles.subRow}>
-            <Text style={styles.subLabel}>water in pre-ferment</Text>
-            <Text style={styles.subValue}>{formatWeight(ingredients.prefermentWater, unitSystem)}</Text>
+          <View style={[styles.subRow, { borderLeftColor: colors.border, borderTopColor: colors.border }]}>
+            <Text style={[styles.subLabel, { color: colors.muted }]}>water in pre-ferment</Text>
+            <Text style={[styles.subValue, { color: colors.muted }]}>{formatWeight(ingredients.prefermentWater, unitSystem)}</Text>
           </View>
         </>
       )}
 
       {/* Oil */}
       {ingredients.oil > 0 &&
-        renderRow('Oil / Fat', formatWeight(ingredients.oil, unitSystem), null)}
+        renderRow('Oil / Fat', formatWeight(ingredients.oil, unitSystem), null, false, colors)}
 
-      {renderRow('Salt', formatWeight(ingredients.salt, unitSystem), null)}
+      {renderRow('Salt', formatWeight(ingredients.salt, unitSystem), null, false, colors)}
 
-      <View style={styles.divider} />
+      <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
       {renderRow('Total weight', formatWeight(ingredients.totalDoughWeight, unitSystem),
         `${ingredients.hydrationPct.toFixed(0)}% hydration`,
-        true)}
+        true,
+        colors)}
 
-      <View style={styles.noteRow}>
-        <Text style={styles.note}>
+      <View style={[styles.noteRow, { borderTopColor: colors.border }]}>
+        <Text style={[styles.note, { color: colors.muted }]}>
           Based on {formatWeightValue(ingredients.totalFlour, unitSystem, 0)}{wu} total flour
           (incl. {formatWeight(ingredients.flourFromStarter, unitSystem)} from starter{ingredients.prefermentFlour > 0 ? ` + ${formatWeight(ingredients.prefermentFlour, unitSystem)} in pre-ferment` : ''})
         </Text>
@@ -113,16 +117,16 @@ export function IngredientResults({ ingredients, blend, totalFlourWeight, starte
             const IRREGULAR_PLURALS: Record<string, string> = { loaf: 'loaves' };
             const pluralLabel = IRREGULAR_PLURALS[unitLabel] ?? `${unitLabel}s`;
             return (
-              <View style={styles.yieldRow}>
-                <Text style={styles.yieldText}>
+              <View style={[styles.yieldRow, { borderTopColor: colors.terracotta, backgroundColor: colors.tipBg }]}>
+                <Text style={[styles.yieldText, { color: colors.espresso }]}>
                   🧮  This dough yields{' '}
-                  <Text style={styles.yieldBold}>
+                  <Text style={[styles.yieldBold, { color: colors.terracotta }]}>
                     ~{unitCount.toFixed(1)} {unitCount > 1 ? pluralLabel : unitLabel}
                   </Text>
                   {' '}({formatWeight(typicalUnitGrams, unitSystem, 0)} per {unitLabel})
                 </Text>
                 {unitCount >= 2 && (
-                  <Text style={styles.yieldSub}>
+                  <Text style={[styles.yieldSub, { color: colors.muted }]}>
                     Scale each to {formatWeight(typicalUnitGrams, unitSystem, 0)} for the best result.
                   </Text>
                 )}
@@ -139,12 +143,13 @@ function renderRow(
   value: string,
   note: string | null,
   bold?: boolean,
+  colors?: AppColors,
 ) {
   return (
     <View style={styles.row} key={label}>
-      <Text style={[styles.label, bold && styles.bold]}>{label}</Text>
-      <Text style={[styles.value, bold && styles.bold]}>{value}</Text>
-      {note && <Text style={styles.note}>{note}</Text>}
+      <Text style={[styles.label, bold && styles.bold, { color: colors?.espresso }]}>{label}</Text>
+      <Text style={[styles.value, bold && styles.bold, { color: colors?.espresso }]}>{value}</Text>
+      {note && <Text style={[styles.note, { color: colors?.muted }]}>{note}</Text>}
     </View>
   );
 }
@@ -153,9 +158,7 @@ const CARD_PADDING = Spacing.md;
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.card,
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: BorderRadius.md,
     padding: CARD_PADDING,
     marginBottom: Spacing.md,
@@ -163,7 +166,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FontSize.xs,
     fontWeight: '700',
-    color: Colors.muted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: Spacing.sm,
@@ -176,11 +178,9 @@ const styles = StyleSheet.create({
   label: {
     flex: 1,
     fontSize: FontSize.md,
-    color: Colors.espresso,
   },
   value: {
     fontSize: FontSize.md,
-    color: Colors.espresso,
     fontWeight: '500',
   },
   bold: {
@@ -189,13 +189,11 @@ const styles = StyleSheet.create({
   },
   note: {
     fontSize: FontSize.xs,
-    color: Colors.muted,
     marginLeft: Spacing.sm,
     maxWidth: '40%',
   },
   divider: {
     height: 1,
-    backgroundColor: Colors.border,
     marginVertical: Spacing.sm,
   },
   subRow: {
@@ -204,34 +202,27 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     paddingLeft: Spacing.md,
     borderLeftWidth: 2,
-    borderLeftColor: Colors.border,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
     marginTop: 2,
     paddingTop: Spacing.xs,
   },
   subLabel: {
     flex: 1,
     fontSize: FontSize.xs,
-    color: Colors.muted,
   },
   subValue: {
     fontSize: FontSize.xs,
-    color: Colors.muted,
     fontWeight: '500',
   },
   noteRow: {
     marginTop: Spacing.sm,
     paddingTop: Spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: Colors.border,
   },
   yieldRow: {
     marginTop: Spacing.md,
     paddingTop: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: Colors.terracotta,
-    backgroundColor: '#FFF5EF',
     marginHorizontal: -CARD_PADDING,
     paddingHorizontal: CARD_PADDING,
     paddingBottom: Spacing.sm,
@@ -241,16 +232,13 @@ const styles = StyleSheet.create({
   },
   yieldText: {
     fontSize: FontSize.sm,
-    color: Colors.espresso,
     lineHeight: 20,
   },
   yieldBold: {
     fontWeight: '700',
-    color: Colors.terracotta,
   },
   yieldSub: {
     fontSize: FontSize.xs,
-    color: Colors.muted,
     marginTop: Spacing.xs,
     fontStyle: 'italic',
   },

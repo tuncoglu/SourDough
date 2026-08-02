@@ -51,7 +51,7 @@ export function YogurtTimeline({ timeline, results }: Props) {
       </View>
 
       {/* Temperature note */}
-      <View style={[styles.tempNote, { backgroundColor: '#FFF8F3', borderColor: colors.warm }]}>
+      <View style={[styles.tempNote, { backgroundColor: colors.tipBg, borderColor: colors.warm }]}>
         <Text style={[styles.tempText, { color: colors.warm }]}>
           🌡 Keep temperature stable during incubation · Temperature swings cause graininess · Refrigerate 4h after completion to fully set
         </Text>

@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   Switch,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useYogurtCalculator } from '@/src/hooks/useYogurtCalculator';
@@ -15,7 +17,7 @@ import { YogurtAdvice } from '@/src/components/YogurtAdvice';
 import { YogurtScience } from '@/src/components/YogurtScience';
 import { LocationBar } from '@/src/components/LocationBar';
 import { NumberInput } from '@/src/components/NumberInput';
-import { Colors, Spacing, FontSize, BorderRadius, useAppTheme, MaxWidth } from '@/src/theme';
+import { Spacing, FontSize, BorderRadius, useAppTheme, MaxWidth } from '@/src/theme';
 import { YogurtType, StarterSource } from '@/src/models/types';
 import { MILK_TYPES } from '@/src/data/yogurtCultures';
 
@@ -31,6 +33,10 @@ export default function YogurtScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.cream }]} edges={['top']}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
+      >
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
@@ -81,7 +87,7 @@ export default function YogurtScreen() {
                 </View>
               ))}
             </View>
-            <Text style={[styles.tempSummary, { color: colors.lightText }]}>
+            <Text style={[styles.tempSummary, { color: colors.lightText, borderTopColor: colors.border }]}>
               {calc.tempResult?.summary ?? 'Using weather forecast for ambient temp'}
               {calc.tempResult?.source === 'fallback' && ' — enable location for local temps'}
               {calc.cultureType === 'thermophilic' && ' (thermophilic — use a heat source at 40–45°C)'}
@@ -117,6 +123,9 @@ export default function YogurtScreen() {
                 ]}
                 onPress={() => calc.selectPreset(id as YogurtType)}
                 activeOpacity={0.7}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={preset.name}
               >
                 <Text style={styles.presetEmoji}>{preset.emoji}</Text>
                 <Text
@@ -156,6 +165,9 @@ export default function YogurtScreen() {
                 ]}
                 onPress={() => calc.selectPreset(id as YogurtType)}
                 activeOpacity={0.7}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={preset.name}
               >
                 <Text style={styles.presetEmoji}>{preset.emoji}</Text>
                 <Text
@@ -203,6 +215,9 @@ export default function YogurtScreen() {
                 ]}
                 onPress={() => calc.selectMilk(m.id)}
                 activeOpacity={0.7}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={m.name}
               >
                 <Text style={styles.milkEmoji}>{m.emoji}</Text>
                 <View style={styles.milkInfo}>
@@ -254,6 +269,7 @@ export default function YogurtScreen() {
               onValueChange={(v) => calc.setStarterSource(v ? 'previous-batch' : 'sachet')}
               trackColor={{ false: colors.disabledBg, true: colors.oliveLight }}
               thumbColor={calc.starterSource === 'previous-batch' ? colors.olive : colors.disabled}
+              accessibilityLabel="Use previous batch as starter"
             />
           </View>
 
@@ -304,6 +320,7 @@ export default function YogurtScreen() {
               onValueChange={calc.setPreHeatEnabled}
               trackColor={{ false: colors.disabledBg, true: colors.oliveLight }}
               thumbColor={calc.preHeatEnabled ? colors.olive : colors.disabled}
+              accessibilityLabel="Pre-heat milk to 85 degrees Celsius"
             />
           </View>
         </View>
@@ -313,8 +330,9 @@ export default function YogurtScreen() {
           style={[styles.calcBtn, { backgroundColor: colors.terracotta }]}
           onPress={handleCalculate}
           activeOpacity={0.8}
+          accessibilityRole="button"
         >
-          <Text style={styles.calcBtnText}>Calculate</Text>
+          <Text style={[styles.calcBtnText, { color: colors.white }]}>Calculate</Text>
         </TouchableOpacity>
 
         {/* ── Results ── */}
@@ -356,6 +374,7 @@ export default function YogurtScreen() {
 
         <View style={styles.bottomPad} />
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -449,7 +468,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingTop: Spacing.xs,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
   },
 
   // Culture chips
@@ -543,7 +561,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: Spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
   },
   toggleLabel: {
     flex: 1,
@@ -566,7 +583,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   calcBtnText: {
-    color: '#FFF',
     fontSize: FontSize.lg,
     fontWeight: '700',
   },

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors, FontSize, Spacing, useAppTheme } from '../theme';
+import { FontSize, Spacing, useAppTheme } from '../theme';
 
 interface Props {
   icon: string;
@@ -34,13 +34,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FontSize.lg,
     fontWeight: '600',
-    color: Colors.espresso,
     textAlign: 'center',
     marginBottom: Spacing.sm,
   },
   subtitle: {
     fontSize: FontSize.sm,
-    color: Colors.muted,
     textAlign: 'center',
     lineHeight: 20,
   },

@@ -6,7 +6,7 @@ import {
   StyleSheet,
   TextInputProps,
 } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
+import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
 import { weightUnit } from '../lib/unitConversion';
 
 interface Props extends Omit<TextInputProps, 'onChangeText'> {
@@ -25,23 +25,23 @@ export function NumberInput({
   autoBadge,
   ...rest
 }: Props) {
-  const { unitSystem } = useAppTheme();
+  const { unitSystem, colors } = useAppTheme();
   // If unit is "g", use the dynamic weight unit; otherwise keep as-is
   const displayUnit = unit === 'g' ? weightUnit(unitSystem) : unit;
 
   return (
     <View style={styles.row}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, { color: colors.espresso }]}>{label}</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { backgroundColor: colors.white, borderColor: colors.border, color: colors.espresso }]}
         value={value}
         onChangeText={onChangeText}
         keyboardType="decimal-pad"
-        placeholderTextColor={Colors.muted}
+        placeholderTextColor={colors.muted}
         {...rest}
       />
-      {displayUnit && <Text style={styles.unit}>{displayUnit}</Text>}
-      {autoBadge && <Text style={styles.autoBadge}>auto</Text>}
+      {displayUnit && <Text style={[styles.unit, { color: colors.muted }]}>{displayUnit}</Text>}
+      {autoBadge && <Text style={[styles.autoBadge, { color: colors.olive }]}>auto</Text>}
     </View>
   );
 }
@@ -55,31 +55,25 @@ const styles = StyleSheet.create({
   label: {
     width: 90,
     fontSize: FontSize.sm,
-    color: Colors.espresso,
   },
   input: {
     flex: 1,
     maxWidth: 90,
-    height: 36,
-    backgroundColor: Colors.white,
+    minHeight: 44,
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: BorderRadius.sm,
     paddingHorizontal: Spacing.sm,
     fontSize: FontSize.md,
-    color: Colors.espresso,
     textAlign: 'right',
   },
   unit: {
     marginLeft: Spacing.xs + 2,
     fontSize: FontSize.sm,
-    color: Colors.muted,
   },
   autoBadge: {
     marginLeft: Spacing.sm,
     fontSize: FontSize.xs,
     fontStyle: 'italic',
-    color: Colors.olive,
     fontWeight: '600',
   },
 });

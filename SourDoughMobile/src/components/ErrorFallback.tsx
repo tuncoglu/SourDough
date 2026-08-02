@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
+import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
 
 interface Props {
   error: Error;
@@ -8,23 +8,24 @@ interface Props {
 }
 
 export function ErrorFallback({ error, resetError }: Props) {
+  const { colors } = useAppTheme();
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.cream }]}>
       <Text style={styles.emoji}>😔</Text>
-      <Text style={styles.title}>Something went wrong</Text>
-      <Text style={styles.message}>
+      <Text style={[styles.title, { color: colors.espresso }]}>Something went wrong</Text>
+      <Text style={[styles.message, { color: colors.muted }]}>
         Just Dough It encountered an unexpected error. Your recipes and settings are safe.
       </Text>
 
       {__DEV__ && (
-        <View style={styles.devBox}>
-          <Text style={styles.devTitle}>Error details (dev mode)</Text>
-          <Text style={styles.devMessage}>{error.message}</Text>
+        <View style={[styles.devBox, { backgroundColor: colors.warningBg, borderLeftColor: colors.warm }]}>
+          <Text style={[styles.devTitle, { color: colors.muted }]}>Error details (dev mode)</Text>
+          <Text style={[styles.devMessage, { color: colors.error }]}>{error.message}</Text>
         </View>
       )}
 
-      <TouchableOpacity style={styles.btn} onPress={resetError} activeOpacity={0.8}>
-        <Text style={styles.btnText}>Reload</Text>
+      <TouchableOpacity style={[styles.btn, { backgroundColor: colors.terracotta }]} onPress={resetError} activeOpacity={0.8}>
+        <Text style={[styles.btnText, { color: colors.white }]}>Reload</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
@@ -36,8 +37,9 @@ export function ErrorFallback({ error, resetError }: Props) {
           }
         }}
         activeOpacity={0.7}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <Text style={styles.reportText}>Report this issue on GitHub</Text>
+        <Text style={[styles.reportText, { color: colors.muted }]}>Report this issue on GitHub</Text>
       </TouchableOpacity>
     </View>
   );
@@ -48,30 +50,29 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: Colors.cream,
     padding: Spacing.xl,
   },
   emoji: { fontSize: 48, marginBottom: Spacing.md },
   title: {
-    fontSize: FontSize.xl, fontWeight: '800', color: Colors.espresso,
+    fontSize: FontSize.xl, fontWeight: '800',
     marginBottom: Spacing.sm, textAlign: 'center',
   },
   message: {
-    fontSize: FontSize.sm, color: Colors.muted, textAlign: 'center',
+    fontSize: FontSize.sm, textAlign: 'center',
     lineHeight: 20, marginBottom: Spacing.xl,
   },
   devBox: {
-    backgroundColor: '#FFF5F0', borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.md,
     padding: Spacing.md, marginBottom: Spacing.xl, width: '100%',
-    borderLeftWidth: 3, borderLeftColor: Colors.warm,
+    borderLeftWidth: 3,
   },
-  devTitle: { fontSize: FontSize.xs, fontWeight: '700', color: Colors.muted, marginBottom: Spacing.xs },
-  devMessage: { fontSize: FontSize.xs, color: Colors.error, fontFamily: 'SpaceMono' },
+  devTitle: { fontSize: FontSize.xs, fontWeight: '700', marginBottom: Spacing.xs },
+  devMessage: { fontSize: FontSize.xs, fontFamily: 'SpaceMono' },
   btn: {
-    backgroundColor: Colors.terracotta, borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.md,
     paddingVertical: Spacing.md, paddingHorizontal: Spacing.xxl, marginBottom: Spacing.md,
   },
-  btnText: { color: Colors.white, fontSize: FontSize.md, fontWeight: '700' },
-  reportBtn: { paddingVertical: Spacing.sm },
-  reportText: { fontSize: FontSize.xs, color: Colors.muted, textDecorationLine: 'underline' },
+  btnText: { fontSize: FontSize.md, fontWeight: '700' },
+  reportBtn: { minHeight: 44, justifyContent: 'center', paddingVertical: Spacing.sm },
+  reportText: { fontSize: FontSize.xs, textDecorationLine: 'underline' },
 });

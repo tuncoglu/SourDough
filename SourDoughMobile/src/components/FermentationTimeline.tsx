@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
+import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
 import { formatTempValue, formatTemp } from '../lib/unitConversion';
 import { DynamicFermentation, RecipePreset } from '../models/types';
 import { PROOF_FRACTION } from '../lib/calculations';
@@ -48,7 +48,7 @@ export function FermentationTimeline({
   fdt,
   preset,
 }: Props) {
-  const { unitSystem } = useAppTheme();
+  const { unitSystem, colors } = useAppTheme();
   const now = new Date();
   const fermentHours = dynamic?.bulkHours ?? staticHours;
   const totalFermentHours = dynamic?.totalHours ?? staticHours;
@@ -58,50 +58,50 @@ export function FermentationTimeline({
   const readyTime = new Date(now.getTime() + totalProcessHours * 3600000);
 
   return (
-    <View style={styles.card}>
-      <Text style={styles.title}>⏱️  Fermentation</Text>
+    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Text style={[styles.title, { color: colors.muted }]}>⏱️  Fermentation</Text>
 
       <View style={styles.summary}>
         {dynamic ? (
           <>
             <View style={styles.hoursRow}>
-              <Text style={styles.hours}>
+              <Text style={[styles.hours, { color: colors.espresso }]}>
                 ~{totalFermentHours.toFixed(1)}h total
               </Text>
-              <Text style={styles.readyLabel}>
-                Ready ≈ <Text style={styles.readyTime}>{formatClockTime(readyTime)}</Text>
+              <Text style={[styles.readyLabel, { color: colors.muted }]}>
+                Ready ≈ <Text style={[styles.readyTime, { color: colors.terracotta }]}>{formatClockTime(readyTime)}</Text>
               </Text>
             </View>
-            <Text style={styles.breakdown}>
+            <Text style={[styles.breakdown, { color: colors.muted }]}>
               Bulk ~{fermentHours.toFixed(1)}h + proof ~{proofHours.toFixed(1)}h
             </Text>
             {preset && preset.id !== 'custom' && (
-              <Text style={styles.breakdown}>
+              <Text style={[styles.breakdown, { color: colors.muted }]}>
                 Full process ~{totalProcessHours.toFixed(1)}h: autolyse {preset.process.autolyseMinutes}min + bulk ~{fermentHours.toFixed(1)}h + proof ~{proofHours.toFixed(1)}h + bench/shape/bake
               </Text>
             )}
-            <Text style={styles.meta}>
+            <Text style={[styles.meta, { color: colors.muted }]}>
               Avg ambient: {formatTemp(dynamic.avgAmbient, unitSystem)} · Peak rate: {dynamic.peakRate}× baseline
             </Text>
           </>
         ) : (
           <>
             <View style={styles.hoursRow}>
-              <Text style={styles.hours}>~{staticHours.toFixed(1)}h bulk</Text>
-              <Text style={styles.readyLabel}>
-                Ready ≈ <Text style={styles.readyTime}>{formatClockTime(readyTime)}</Text>
+              <Text style={[styles.hours, { color: colors.espresso }]}>~{staticHours.toFixed(1)}h bulk</Text>
+              <Text style={[styles.readyLabel, { color: colors.muted }]}>
+                Ready ≈ <Text style={[styles.readyTime, { color: colors.terracotta }]}>{formatClockTime(readyTime)}</Text>
               </Text>
             </View>
-            <Text style={styles.breakdown}>
+            <Text style={[styles.breakdown, { color: colors.muted }]}>
               Bulk ~{fermentHours.toFixed(1)}h + proof ~{proofHours.toFixed(1)}h
             </Text>
             {preset && preset.id !== 'custom' && (
-              <Text style={styles.breakdown}>
+              <Text style={[styles.breakdown, { color: colors.muted }]}>
                 Full process ~{totalProcessHours.toFixed(1)}h: autolyse {preset.process.autolyseMinutes}min + bulk ~{fermentHours.toFixed(1)}h + proof ~{proofHours.toFixed(1)}h + bench/shape/bake
               </Text>
             )}
-            <Text style={styles.meta}>{staticNote}</Text>
-            <Text style={styles.noForecast}>
+            <Text style={[styles.meta, { color: colors.muted }]}>{staticNote}</Text>
+            <Text style={[styles.noForecast, { color: colors.muted }]}>
               ⚡ No hourly forecast — using constant-temp estimate
             </Text>
           </>
@@ -117,9 +117,7 @@ export function FermentationTimeline({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.card,
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
     marginBottom: Spacing.md,
@@ -127,7 +125,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: FontSize.xs,
     fontWeight: '700',
-    color: Colors.muted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: Spacing.sm,
@@ -144,31 +141,25 @@ const styles = StyleSheet.create({
   hours: {
     fontSize: FontSize.xl,
     fontWeight: '700',
-    color: Colors.espresso,
   },
   readyLabel: {
     fontSize: FontSize.sm,
-    color: Colors.muted,
   },
   readyTime: {
     fontSize: FontSize.sm,
     fontWeight: '700',
-    color: Colors.terracotta,
   },
   breakdown: {
     fontSize: FontSize.xs,
-    color: Colors.muted,
     marginTop: 2,
     fontStyle: 'italic',
   },
   meta: {
     fontSize: FontSize.sm,
-    color: Colors.muted,
     marginTop: 2,
   },
   noForecast: {
     fontSize: FontSize.xs,
-    color: Colors.muted,
     fontStyle: 'italic',
     marginTop: 4,
   },
@@ -178,7 +169,6 @@ const styles = StyleSheet.create({
   tableHeader: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
     paddingBottom: 4,
     marginBottom: 4,
   },
@@ -189,7 +179,6 @@ const styles = StyleSheet.create({
   },
   col: {
     fontSize: FontSize.xs,
-    color: Colors.espresso,
   },
   colHour: {
     width: 48,
@@ -219,7 +208,6 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
     bottom: 0,
-    backgroundColor: '#F0EBE5',
     borderRadius: 3,
   },
   barFill: {
@@ -227,13 +215,11 @@ const styles = StyleSheet.create({
     left: 0,
     top: 0,
     bottom: 0,
-    backgroundColor: Colors.olive,
     borderRadius: 3,
     opacity: 0.6,
   },
   barLabel: {
     fontSize: FontSize.xs,
-    color: Colors.espresso,
     fontWeight: '600',
     marginLeft: 4,
     zIndex: 1,
@@ -241,15 +227,15 @@ const styles = StyleSheet.create({
 });
 
 // Text-specific styles (cannot be applied to View)
-const textColHour = { fontSize: FontSize.xs, color: Colors.espresso, width: 48, fontWeight: '600' as const };
-const textColTemp = { fontSize: FontSize.xs, color: Colors.espresso, width: 44, textAlign: 'right' as const };
-const textColRate = { fontSize: FontSize.xs, color: Colors.espresso, width: 44, textAlign: 'right' as const };
-const textColProgress = { fontSize: FontSize.xs, color: Colors.espresso, flex: 1, marginLeft: Spacing.sm };
+const textColHour = { fontSize: FontSize.xs, width: 48, fontWeight: '600' as const };
+const textColTemp = { fontSize: FontSize.xs, width: 44, textAlign: 'right' as const };
+const textColRate = { fontSize: FontSize.xs, width: 44, textAlign: 'right' as const };
+const textColProgress = { fontSize: FontSize.xs, flex: 1, marginLeft: Spacing.sm };
 
 // ── Dynamic Profile Table (collapsible) ──────────────────────────────────
 
 function DynamicProfileTable({ profile }: { profile: DynamicFermentation['profile'] }) {
-  const { unitSystem } = useAppTheme();
+  const { unitSystem, colors } = useAppTheme();
   const [showAll, setShowAll] = useState(false);
   const INITIAL_ROWS = 12;
   const visible = showAll ? profile : profile.slice(0, INITIAL_ROWS);
@@ -257,26 +243,26 @@ function DynamicProfileTable({ profile }: { profile: DynamicFermentation['profil
 
   return (
     <View style={styles.timeline}>
-      <View style={styles.tableHeader}>
-        <Text style={textColHour}>Time</Text>
-        <Text style={textColTemp}>Amb</Text>
-        <Text style={textColTemp}>Dough</Text>
-        <Text style={textColRate}>Rate</Text>
-        <Text style={textColProgress}>Progress</Text>
+      <View style={[styles.tableHeader, { borderBottomColor: colors.border }]}>
+        <Text style={[textColHour, { color: colors.espresso }]}>Time</Text>
+        <Text style={[textColTemp, { color: colors.espresso }]}>Amb</Text>
+        <Text style={[textColTemp, { color: colors.espresso }]}>Dough</Text>
+        <Text style={[textColRate, { color: colors.espresso }]}>Rate</Text>
+        <Text style={[textColProgress, { color: colors.espresso }]}>Progress</Text>
       </View>
       {visible.map((pt, i) => (
         <View style={styles.timelineRow} key={i}>
-          <Text style={textColHour}>{pt.hour}</Text>
-          <Text style={textColTemp}>{formatTempValue(pt.ambient, unitSystem)}°</Text>
-          <Text style={textColTemp}>{formatTempValue(pt.dough, unitSystem)}°</Text>
-          <Text style={textColRate}>{pt.rate}×</Text>
+          <Text style={[textColHour, { color: colors.espresso }]}>{pt.hour}</Text>
+          <Text style={[textColTemp, { color: colors.espresso }]}>{formatTempValue(pt.ambient, unitSystem)}°</Text>
+          <Text style={[textColTemp, { color: colors.espresso }]}>{formatTempValue(pt.dough, unitSystem)}°</Text>
+          <Text style={[textColRate, { color: colors.espresso }]}>{pt.rate}×</Text>
           <View style={styles.colProgress}>
             <View style={styles.barContainer}>
-              <View style={styles.barBg} />
+              <View style={[styles.barBg, { backgroundColor: colors.border }]} />
               <View
-                style={[styles.barFill, { width: `${pt.progress}%` }]}
+                style={[styles.barFill, { backgroundColor: colors.olive, width: `${pt.progress}%` }]}
               />
-              <Text style={styles.barLabel}>{pt.progress}%</Text>
+              <Text style={[styles.barLabel, { color: colors.espresso }]}>{pt.progress}%</Text>
             </View>
           </View>
         </View>
@@ -287,7 +273,7 @@ function DynamicProfileTable({ profile }: { profile: DynamicFermentation['profil
           onPress={() => setShowAll(!showAll)}
           activeOpacity={0.7}
         >
-          <Text style={toggleStyles.text}>
+          <Text style={[toggleStyles.text, { color: colors.terracotta }]}>
             {showAll ? 'Show less ▲' : `Show all ${profile.length} rows ▼`}
           </Text>
         </TouchableOpacity>
@@ -304,7 +290,6 @@ const toggleStyles = StyleSheet.create({
   },
   text: {
     fontSize: FontSize.xs,
-    color: Colors.terracotta,
     fontWeight: '600',
   },
 });

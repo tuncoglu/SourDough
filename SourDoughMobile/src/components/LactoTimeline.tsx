@@ -51,7 +51,7 @@ export function LactoTimeline({ timeline, results }: Props) {
       </View>
 
       {/* pH note */}
-      <View style={[styles.phNote, { backgroundColor: '#F0F7EB', borderColor: colors.olive }]}>
+      <View style={[styles.phNote, { backgroundColor: colors.successBg, borderColor: colors.olive }]}>
         <Text style={[styles.phText, { color: colors.olive }]}>
           🛡️ Target pH: ≤{results.targetPH} &nbsp;|&nbsp; Safe below pH 4.6 &nbsp;|&nbsp;
           Fridge when you like the taste

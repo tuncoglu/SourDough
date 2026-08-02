@@ -4,6 +4,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useColorScheme } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { ThemeMode, UnitSystem } from '../models/types';
 
@@ -34,6 +35,13 @@ export const LightColors = {
   warm: '#A8681A',
   hot: '#9E3528',
 
+  // Semantic backgrounds
+  tipBg: '#FFF8F0',
+  warningBg: '#FFF5F2',
+  coldBg: '#F0F4FA',
+  successBg: '#F0F6EC',
+  badgeBg: '#F5EDE4',
+
   // Misc
   border: '#CFC0B4',
   disabled: '#82776E',
@@ -51,7 +59,7 @@ export const DarkColors = {
   // Text
   espresso: '#F0E8E0',
   muted: '#A09890',
-  lightText: '#6B6360',
+  lightText: '#9B938C',
 
   // Accent — slightly lightened for dark bg contrast
   terracotta: '#D48B5F',
@@ -65,6 +73,13 @@ export const DarkColors = {
   ideal: '#8CB369',
   warm: '#F0B860',
   hot: '#E06050',
+
+  // Semantic backgrounds
+  tipBg: '#2A2218',
+  warningBg: '#2A1F1C',
+  coldBg: '#1C232E',
+  successBg: '#1C2418',
+  badgeBg: '#352E29',
 
   // Misc
   border: '#3D3530',
@@ -98,6 +113,11 @@ export interface AppColors {
   disabledBg: string;
   error: string;
   success: string;
+  tipBg: string;
+  warningBg: string;
+  coldBg: string;
+  successBg: string;
+  badgeBg: string;
 }
 
 interface ThemeContextValue {
@@ -150,10 +170,13 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
   const isDark = themeMode === 'system' ? systemScheme === 'dark' : themeMode === 'dark';
   const colors = isDark ? DarkColors : LightColors;
 
-  return React.createElement(
-    ThemeContext.Provider,
-    { value: { colors, themeMode, setThemeMode, isDark, unitSystem, setUnitSystem } },
-    children,
+  return (
+    <>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <ThemeContext.Provider value={{ colors, themeMode, setThemeMode, isDark, unitSystem, setUnitSystem }}>
+        {children}
+      </ThemeContext.Provider>
+    </>
   );
 }
 

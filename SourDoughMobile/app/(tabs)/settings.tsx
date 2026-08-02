@@ -6,9 +6,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors, Spacing, FontSize, BorderRadius, MaxWidth, useAppTheme } from '../../src/theme';
+import { Spacing, FontSize, BorderRadius, MaxWidth, useAppTheme } from '../../src/theme';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { UserSettings, DEFAULT_SETTINGS, ThemeMode, UnitSystem } from '../../src/models/types';
 import { getSettings, updateSettings } from '../../src/store/settingsCache';
@@ -61,14 +62,23 @@ export default function SettingsScreen() {
     ]);
   };
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.cream }]} edges={['top']}>
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator size="large" color={colors.terracotta} />
+          <Text style={[styles.loadingText, { color: colors.muted }]}>Loading settings…</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const content = (
     <>
       {/* Defaults */}
       <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={styles.cardTitle}>DEFAULT VALUES</Text>
-        <Text style={styles.description}>
+        <Text style={[styles.cardTitle, { color: colors.muted }]}>DEFAULT VALUES</Text>
+        <Text style={[styles.description, { color: colors.muted }]}>
           These defaults are pre-filled when you open the calculator.
         </Text>
 
@@ -83,7 +93,7 @@ export default function SettingsScreen() {
         />
 
         <View style={styles.flourRow}>
-          <Text style={styles.flourLabel}>Flour type</Text>
+          <Text style={[styles.flourLabel, { color: colors.espresso }]}>Flour type</Text>
           <FlourPicker
             value={flourLabel}
             onSelect={(f) => setFlourLabel(f.label)}
@@ -123,8 +133,8 @@ export default function SettingsScreen() {
 
       {/* Water Hardness Override */}
       <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={styles.cardTitle}>WATER HARDNESS OVERRIDE (OPTIONAL)</Text>
-        <Text style={styles.description}>
+        <Text style={[styles.cardTitle, { color: colors.muted }]}>WATER HARDNESS OVERRIDE (OPTIONAL)</Text>
+        <Text style={[styles.description, { color: colors.muted }]}>
           Leave at 0 for auto-detect. Enter your local water hardness in mg/L CaCO₃{'\n'}
           (check your water company's website or use a test kit).
         </Text>
@@ -142,9 +152,9 @@ export default function SettingsScreen() {
 
       {/* Theme */}
       <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={styles.cardTitle}>APPEARANCE</Text>
+        <Text style={[styles.cardTitle, { color: colors.muted }]}>APPEARANCE</Text>
 
-        <Text style={styles.sectionLabel}>Theme</Text>
+        <Text style={[styles.sectionLabel, { color: colors.muted }]}>Theme</Text>
         <View style={styles.themeRow}>
           {THEME_OPTIONS.map((opt) => (
             <TouchableOpacity
@@ -171,7 +181,7 @@ export default function SettingsScreen() {
           ))}
         </View>
 
-        <Text style={[styles.sectionLabel, { marginTop: Spacing.md }]}>Units</Text>
+        <Text style={[styles.sectionLabel, { color: colors.muted, marginTop: Spacing.md }]}>Units</Text>
         <View style={styles.themeRow}>
           {(['metric', 'imperial'] as UnitSystem[]).map((opt) => (
             <TouchableOpacity
@@ -200,21 +210,26 @@ export default function SettingsScreen() {
       </View>
 
       {/* Actions */}
-      <TouchableOpacity style={styles.saveBtn} onPress={handleSave} activeOpacity={0.8}>
-        <Text style={styles.saveBtnText}>Save Defaults</Text>
+      <TouchableOpacity
+        style={[styles.saveBtn, { backgroundColor: colors.terracotta }]}
+        onPress={handleSave}
+        activeOpacity={0.8}
+        accessibilityRole="button"
+      >
+        <Text style={[styles.saveBtnText, { color: colors.white }]}>Save Defaults</Text>
       </TouchableOpacity>
 
       <View style={{ height: 1, backgroundColor: colors.border, marginTop: Spacing.lg, marginBottom: Spacing.md }} />
 
       <View style={{ backgroundColor: colors.card, borderRadius: BorderRadius.md, padding: Spacing.md }}>
-        <TouchableOpacity style={styles.resetBtn} onPress={handleReset} activeOpacity={0.7}>
-          <Text style={styles.resetBtnText}>Reset to Factory Defaults</Text>
+        <TouchableOpacity style={styles.resetBtn} onPress={handleReset} activeOpacity={0.7} accessibilityRole="button">
+          <Text style={[styles.resetBtnText, { color: colors.error }]}>Reset to Factory Defaults</Text>
         </TouchableOpacity>
       </View>
 
       {/* About */}
       <View style={[styles.card, styles.aboutCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={styles.cardTitle}>ABOUT</Text>
+        <Text style={[styles.cardTitle, { color: colors.muted }]}>ABOUT</Text>
         <Text style={[styles.aboutText, { color: colors.espresso }]}>
           🥖 Just Dough It v3.0
         </Text>
@@ -223,7 +238,7 @@ export default function SettingsScreen() {
           to calculate exact ingredient weights and predict fermentation time
           dynamically based on the weather forecast.
         </Text>
-        <Text style={[styles.aboutText, styles.aboutCredit]}>
+        <Text style={[styles.aboutText, styles.aboutCredit, { color: colors.muted }]}>
           Flour catalogue: Shipton Mill + generics.{'\n'}
           Weather: Open-Meteo (free, no API key).{'\n'}
           Geocoding: OpenStreetMap Nominatim.
@@ -259,7 +274,16 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.cream,
+  },
+  loadingWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  loadingText: {
+    fontSize: FontSize.sm,
+    fontWeight: '500',
   },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md },
@@ -269,14 +293,11 @@ const styles = StyleSheet.create({
   header: {
     fontSize: FontSize.xl,
     fontWeight: '800',
-    color: Colors.espresso,
     textAlign: 'center',
     marginBottom: Spacing.lg,
   },
   card: {
-    backgroundColor: Colors.card,
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
     marginBottom: Spacing.md,
@@ -284,14 +305,12 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: FontSize.xs,
     fontWeight: '700',
-    color: Colors.muted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: Spacing.sm,
   },
   description: {
     fontSize: FontSize.xs,
-    color: Colors.muted,
     marginBottom: Spacing.md,
     lineHeight: 18,
   },
@@ -303,27 +322,25 @@ const styles = StyleSheet.create({
   flourLabel: {
     width: 90,
     fontSize: FontSize.sm,
-    color: Colors.espresso,
   },
   saveBtn: {
-    backgroundColor: Colors.terracotta,
     borderRadius: BorderRadius.md,
     paddingVertical: Spacing.md,
     alignItems: 'center',
     marginBottom: Spacing.sm,
   },
   saveBtnText: {
-    color: Colors.white,
     fontSize: FontSize.md,
     fontWeight: '700',
   },
   resetBtn: {
+    minHeight: 44,
+    justifyContent: 'center',
     paddingVertical: Spacing.md,
     alignItems: 'center',
     marginBottom: Spacing.md,
   },
   resetBtnText: {
-    color: Colors.error,
     fontSize: FontSize.sm,
   },
   aboutCard: {
@@ -331,12 +348,10 @@ const styles = StyleSheet.create({
   },
   aboutText: {
     fontSize: FontSize.sm,
-    color: Colors.espresso,
     lineHeight: 20,
     marginBottom: Spacing.sm,
   },
   aboutCredit: {
-    color: Colors.muted,
     fontSize: FontSize.xs,
   },
   themeRow: {
@@ -345,6 +360,8 @@ const styles = StyleSheet.create({
   },
   themeChip: {
     flex: 1,
+    minHeight: 44,
+    justifyContent: 'center',
     paddingVertical: Spacing.sm + 2,
     paddingHorizontal: Spacing.md,
     borderRadius: BorderRadius.sm,
@@ -357,7 +374,6 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: FontSize.xs,
-    color: Colors.muted,
     fontWeight: '600',
     marginBottom: Spacing.sm,
   },

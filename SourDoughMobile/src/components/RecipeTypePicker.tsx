@@ -9,7 +9,7 @@ import {
   Pressable,
   useWindowDimensions,
 } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius, Breakpoints } from '../theme';
+import { Spacing, FontSize, BorderRadius, Breakpoints, useAppTheme } from '../theme';
 import { RecipePreset, BreadType } from '../models/types';
 import { RECIPE_PRESETS } from '../data/recipePresets';
 
@@ -19,6 +19,7 @@ interface Props {
 }
 
 export function RecipeTypePicker({ selected, onSelect }: Props) {
+  const { colors } = useAppTheme();
   const [visible, setVisible] = useState(false);
   const { width } = useWindowDimensions();
   const isDesktop = width >= Breakpoints.desktop;
@@ -46,16 +47,20 @@ export function RecipeTypePicker({ selected, onSelect }: Props) {
                 key={preset.id}
                 style={[
                   mobileStyles.chip,
-                  isSelected && mobileStyles.chipSelected,
+                  { backgroundColor: colors.white, borderColor: colors.border },
+                  isSelected && { backgroundColor: colors.terracotta, borderColor: colors.terracotta },
                 ]}
                 onPress={() => handleSelect(preset)}
                 activeOpacity={0.7}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: isSelected }}
+                accessibilityLabel={preset.name}
               >
                 <Text style={mobileStyles.chipEmoji}>{preset.emoji}</Text>
                 <Text
                   style={[
                     mobileStyles.chipLabel,
-                    isSelected && mobileStyles.chipLabelSelected,
+                    { color: isSelected ? colors.white : colors.espresso },
                   ]}
                   numberOfLines={1}
                 >
@@ -73,9 +78,11 @@ export function RecipeTypePicker({ selected, onSelect }: Props) {
   return (
     <View style={desktopStyles.wrapper}>
       <TouchableOpacity
-        style={desktopStyles.trigger}
+        style={[desktopStyles.trigger, { backgroundColor: colors.white, borderColor: colors.border }]}
         onPress={() => setVisible(true)}
         activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel="Choose recipe type"
       >
         <Text style={desktopStyles.triggerEmoji}>
           {selectedPreset?.emoji ?? '🥖'}
@@ -83,13 +90,13 @@ export function RecipeTypePicker({ selected, onSelect }: Props) {
         <Text
           style={[
             desktopStyles.triggerText,
-            { color: selectedPreset ? Colors.espresso : Colors.muted },
+            { color: selectedPreset ? colors.espresso : colors.muted },
           ]}
           numberOfLines={1}
         >
           {selectedPreset?.name ?? 'Select recipe type…'}
         </Text>
-        <Text style={desktopStyles.chevron}>▼</Text>
+        <Text style={[desktopStyles.chevron, { color: colors.muted }]}>▼</Text>
       </TouchableOpacity>
 
       <Modal
@@ -103,10 +110,10 @@ export function RecipeTypePicker({ selected, onSelect }: Props) {
           onPress={() => setVisible(false)}
         >
           <Pressable
-            style={desktopStyles.popover}
+            style={[desktopStyles.popover, { backgroundColor: colors.white, borderColor: colors.border }]}
             onPress={(e) => e.stopPropagation()}
           >
-            <Text style={desktopStyles.popoverTitle}>Choose a Recipe</Text>
+            <Text style={[desktopStyles.popoverTitle, { color: colors.espresso }]}>Choose a Recipe</Text>
             <ScrollView
               style={desktopStyles.gridScroll}
               showsVerticalScrollIndicator={false}
@@ -119,22 +126,26 @@ export function RecipeTypePicker({ selected, onSelect }: Props) {
                       key={preset.id}
                       style={[
                         desktopStyles.card,
-                        isSelected && desktopStyles.cardSelected,
+                        { backgroundColor: colors.card, borderColor: colors.border },
+                        isSelected && { borderColor: colors.terracotta, backgroundColor: colors.tipBg },
                       ]}
                       onPress={() => handleSelect(preset)}
                       activeOpacity={0.7}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: isSelected }}
+                      accessibilityLabel={preset.name}
                     >
                       <Text style={desktopStyles.cardEmoji}>
                         {preset.emoji}
                       </Text>
-                      <Text style={desktopStyles.cardName}>
+                      <Text style={[desktopStyles.cardName, { color: colors.espresso }]}>
                         {preset.name}
                       </Text>
-                      <Text style={desktopStyles.cardDesc} numberOfLines={2}>
+                      <Text style={[desktopStyles.cardDesc, { color: colors.muted }]} numberOfLines={2}>
                         {preset.description}
                       </Text>
                       <View style={desktopStyles.cardMeta}>
-                        <Text style={desktopStyles.cardHydration}>
+                        <Text style={[desktopStyles.cardHydration, { color: colors.muted }]}>
                           {preset.id !== 'custom'
                             ? `${preset.dough.typicalHydration}% hyd.`
                             : 'Manual'}
@@ -142,10 +153,15 @@ export function RecipeTypePicker({ selected, onSelect }: Props) {
                         <Text
                           style={[
                             desktopStyles.difficultyBadge,
-                            preset.difficulty === 'advanced' &&
-                              desktopStyles.difficultyAdvanced,
-                            preset.difficulty === 'medium' &&
-                              desktopStyles.difficultyMedium,
+                            { color: colors.olive, backgroundColor: colors.successBg },
+                            preset.difficulty === 'advanced' && {
+                              color: colors.terracotta,
+                              backgroundColor: colors.warningBg,
+                            },
+                            preset.difficulty === 'medium' && {
+                              color: colors.warm,
+                              backgroundColor: colors.tipBg,
+                            },
                           ]}
                         >
                           {preset.difficulty}
@@ -175,16 +191,11 @@ const mobileStyles = StyleSheet.create({
   chip: {
     flexDirection: 'row' as const,
     alignItems: 'center',
+    minHeight: 44,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
-    backgroundColor: Colors.white,
     borderRadius: BorderRadius.xl,
     borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  chipSelected: {
-    backgroundColor: Colors.terracotta,
-    borderColor: Colors.terracotta,
   },
   chipEmoji: {
     fontSize: 14,
@@ -192,12 +203,8 @@ const mobileStyles = StyleSheet.create({
   },
   chipLabel: {
     fontSize: FontSize.xs,
-    color: Colors.espresso,
     fontWeight: '500',
     maxWidth: 80,
-  },
-  chipLabelSelected: {
-    color: Colors.white,
   },
 });
 
@@ -209,10 +216,8 @@ const desktopStyles = StyleSheet.create({
   trigger: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 40,
-    backgroundColor: Colors.white,
+    minHeight: 44,
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: BorderRadius.sm,
     paddingHorizontal: Spacing.md,
   },
@@ -223,12 +228,10 @@ const desktopStyles = StyleSheet.create({
   triggerText: {
     flex: 1,
     fontSize: FontSize.sm,
-    color: Colors.espresso,
     fontWeight: '500',
   },
   chevron: {
     fontSize: FontSize.xs,
-    color: Colors.muted,
   },
   backdrop: {
     // web-only: 'fixed' not in RN's position type ('absolute'|'relative')
@@ -244,9 +247,7 @@ const desktopStyles = StyleSheet.create({
     padding: 40,
   },
   popover: {
-    backgroundColor: Colors.white,
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: BorderRadius.lg,
     zIndex: 100,
     elevation: 10,
@@ -262,7 +263,6 @@ const desktopStyles = StyleSheet.create({
   popoverTitle: {
     fontSize: FontSize.lg,
     fontWeight: '700',
-    color: Colors.espresso,
     marginBottom: Spacing.md,
   },
   gridScroll: {
@@ -275,17 +275,11 @@ const desktopStyles = StyleSheet.create({
   },
   card: {
     width: '31%' as const,
-    backgroundColor: Colors.card,
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
     flexGrow: 0,
     flexShrink: 0,
-  },
-  cardSelected: {
-    borderColor: Colors.terracotta,
-    backgroundColor: '#FFF5EF',
   },
   cardEmoji: {
     fontSize: 24,
@@ -294,12 +288,10 @@ const desktopStyles = StyleSheet.create({
   cardName: {
     fontSize: FontSize.sm,
     fontWeight: '700',
-    color: Colors.espresso,
     marginBottom: 2,
   },
   cardDesc: {
     fontSize: FontSize.xs,
-    color: Colors.muted,
     lineHeight: 15,
     marginBottom: Spacing.sm,
   },
@@ -310,26 +302,15 @@ const desktopStyles = StyleSheet.create({
   },
   cardHydration: {
     fontSize: FontSize.xs,
-    color: Colors.muted,
     fontWeight: '500',
   },
   difficultyBadge: {
     fontSize: 10,
     fontWeight: '700',
-    color: Colors.olive,
-    backgroundColor: '#EDF2E5',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: BorderRadius.sm,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-  },
-  difficultyMedium: {
-    color: '#8A6510',
-    backgroundColor: '#FFF8E7',
-  },
-  difficultyAdvanced: {
-    color: Colors.terracotta,
-    backgroundColor: '#FFF0EB',
   },
 });

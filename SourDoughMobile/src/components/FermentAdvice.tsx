@@ -1,19 +1,20 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius } from '../theme';
+import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
 
 interface Props {
   warnings: string[];
 }
 
 export function AdviceCards({ warnings }: Props) {
+  const { colors } = useAppTheme();
   if (warnings.length === 0) return null;
 
   return (
-    <View style={[styles.card, styles.warningCard]}>
-      <Text style={styles.title}>⚠️  Warnings</Text>
+    <View style={[styles.card, { backgroundColor: colors.warningBg, borderColor: colors.hot }]}>
+      <Text style={[styles.title, { color: colors.muted }]}>⚠️  Warnings</Text>
       {warnings.map((w, i) => (
-        <Text key={i} style={styles.warningText}>{w}</Text>
+        <Text key={i} style={[styles.warningText, { color: colors.error }]}>{w}</Text>
       ))}
     </View>
   );
@@ -21,28 +22,20 @@ export function AdviceCards({ warnings }: Props) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: Colors.card,
     borderWidth: 1,
-    borderColor: Colors.border,
     borderRadius: BorderRadius.md,
     padding: Spacing.md,
     marginBottom: Spacing.md,
   },
-  warningCard: {
-    borderColor: '#F0C0B0',
-    backgroundColor: '#FFF5F2',
-  },
   title: {
     fontSize: FontSize.xs,
     fontWeight: '700',
-    color: Colors.muted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: Spacing.sm,
   },
   warningText: {
     fontSize: FontSize.sm,
-    color: Colors.error,
     lineHeight: 20,
     marginBottom: 2,
   },
