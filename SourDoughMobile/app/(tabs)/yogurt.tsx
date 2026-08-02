@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useYogurtCalculator } from '@/src/hooks/useYogurtCalculator';
 import { KeyboardScreen } from '@/src/components/KeyboardScreen';
+import { Chip } from '@/src/components/Chip';
 import { YogurtResultCard } from '@/src/components/YogurtResultCard';
 import { YogurtTimeline } from '@/src/components/YogurtTimeline';
 import { YogurtAdvice } from '@/src/components/YogurtAdvice';
@@ -105,36 +106,20 @@ export default function YogurtScreen() {
           style={styles.chipScroll}
           contentContainerStyle={styles.chipRow}
         >
-          {calc.thermophilicCultures.map(({ id, preset }) => {
-            const active = calc.yogurtType === id;
-            return (
-              <TouchableOpacity
+          {calc.thermophilicCultures.map(({ id, preset }) => (
+              <Chip
                 key={id}
-                style={[
-                  styles.presetChip,
-                  {
-                    backgroundColor: active ? colors.terracotta : colors.card,
-                    borderColor: active ? colors.terracotta : colors.border,
-                  },
-                ]}
+                selected={calc.yogurtType === id}
                 onPress={() => calc.selectPreset(id as YogurtType)}
-                activeOpacity={0.7}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: active }}
-                accessibilityLabel={preset.name}
+                label={preset.name}
+                colorScheme="terracotta"
               >
                 <Text style={styles.presetEmoji}>{preset.emoji}</Text>
-                <Text
-                  style={[
-                    styles.presetName,
-                    { color: active ? '#FFF' : colors.espresso },
-                  ]}
-                >
+                <Text style={[styles.presetName, { color: calc.yogurtType === id ? colors.white : colors.espresso }]}>
                   {preset.name}
                 </Text>
-              </TouchableOpacity>
-            );
-          })}
+              </Chip>
+            ))}
         </ScrollView>
 
         {/* Mesophilic */}
@@ -147,36 +132,20 @@ export default function YogurtScreen() {
           style={styles.chipScroll}
           contentContainerStyle={styles.chipRow}
         >
-          {calc.mesophilicCultures.map(({ id, preset }) => {
-            const active = calc.yogurtType === id;
-            return (
-              <TouchableOpacity
+          {calc.mesophilicCultures.map(({ id, preset }) => (
+              <Chip
                 key={id}
-                style={[
-                  styles.presetChip,
-                  {
-                    backgroundColor: active ? colors.terracotta : colors.card,
-                    borderColor: active ? colors.terracotta : colors.border,
-                  },
-                ]}
+                selected={calc.yogurtType === id}
                 onPress={() => calc.selectPreset(id as YogurtType)}
-                activeOpacity={0.7}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: active }}
-                accessibilityLabel={preset.name}
+                label={preset.name}
+                colorScheme="terracotta"
               >
                 <Text style={styles.presetEmoji}>{preset.emoji}</Text>
-                <Text
-                  style={[
-                    styles.presetName,
-                    { color: active ? '#FFF' : colors.espresso },
-                  ]}
-                >
+                <Text style={[styles.presetName, { color: calc.yogurtType === id ? colors.white : colors.espresso }]}>
                   {preset.name}
                 </Text>
-              </TouchableOpacity>
-            );
-          })}
+              </Chip>
+            ))}
         </ScrollView>
 
         {/* Culture description */}
@@ -197,42 +166,29 @@ export default function YogurtScreen() {
           style={styles.chipScroll}
           contentContainerStyle={styles.chipRow}
         >
-          {MILK_TYPES.map((m) => {
-            const active = calc.milkId === m.id;
-            return (
-              <TouchableOpacity
+          {MILK_TYPES.map((m) => (
+              <Chip
                 key={m.id}
-                style={[
-                  styles.milkChip,
-                  {
-                    backgroundColor: active ? colors.oliveLight : colors.card,
-                    borderColor: active ? colors.olive : colors.border,
-                  },
-                ]}
+                selected={calc.milkId === m.id}
                 onPress={() => calc.selectMilk(m.id)}
-                activeOpacity={0.7}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: active }}
-                accessibilityLabel={m.name}
+                label={m.name}
+                colorScheme="olive"
+                style={styles.milkChip}
               >
                 <Text style={styles.milkEmoji}>{m.emoji}</Text>
                 <View style={styles.milkInfo}>
                   <Text
-                    style={[
-                      styles.milkName,
-                      { color: active ? '#FFF' : colors.espresso },
-                    ]}
+                    style={[styles.milkName, { color: calc.milkId === m.id ? colors.white : colors.espresso }]}
                     numberOfLines={1}
                   >
                     {m.name}
                   </Text>
-                  <Text style={[styles.milkMacros, { color: active ? 'rgba(255,255,255,0.8)' : colors.lightText }]}>
+                  <Text style={[styles.milkMacros, { color: calc.milkId === m.id ? 'rgba(255,255,255,0.8)' : colors.lightText }]}>
                     {m.fatPct}% fat · {m.proteinPct}% protein
                   </Text>
                 </View>
-              </TouchableOpacity>
-            );
-          })}
+              </Chip>
+            ))}
         </ScrollView>
 
         {/* ── Inputs ── */}

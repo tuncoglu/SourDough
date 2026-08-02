@@ -9,6 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLactoCalculator } from '@/src/hooks/useLactoCalculator';
 import { KeyboardScreen } from '@/src/components/KeyboardScreen';
+import { Chip } from '@/src/components/Chip';
 import { LactoResultCard } from '@/src/components/LactoResultCard';
 import { LactoTimeline } from '@/src/components/LactoTimeline';
 import { LactoAdvice } from '@/src/components/LactoAdvice';
@@ -98,36 +99,20 @@ export default function FermentsScreen() {
           style={styles.chipScroll}
           contentContainerStyle={styles.chipRow}
         >
-          {FERMENT_TYPE_ORDER.map(({ id, preset }) => {
-            const active = calc.fermentType === id;
-            return (
-              <TouchableOpacity
+          {FERMENT_TYPE_ORDER.map(({ id, preset }) => (
+              <Chip
                 key={id}
-                style={[
-                  styles.presetChip,
-                  {
-                    backgroundColor: active ? colors.terracotta : colors.card,
-                    borderColor: active ? colors.terracotta : colors.border,
-                  },
-                ]}
+                selected={calc.fermentType === id}
                 onPress={() => calc.selectPreset(id as FermentType)}
-                activeOpacity={0.7}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: active }}
-                accessibilityLabel={preset.name}
+                label={preset.name}
+                colorScheme="terracotta"
               >
                 <Text style={styles.presetEmoji}>{preset.emoji}</Text>
-                <Text
-                  style={[
-                    styles.presetName,
-                    { color: active ? '#FFF' : colors.espresso },
-                  ]}
-                >
+                <Text style={[styles.presetName, { color: calc.fermentType === id ? colors.white : colors.espresso }]}>
                   {preset.name}
                 </Text>
-              </TouchableOpacity>
-            );
-          })}
+              </Chip>
+            ))}
         </ScrollView>
 
         {/* ── Vegetable / Fruit Picker ── */}
@@ -157,36 +142,25 @@ export default function FermentsScreen() {
                   showsHorizontalScrollIndicator={false}
                   contentContainerStyle={styles.vegChipRow}
                 >
-                  {items.map((veg) => {
-                    const active = calc.vegId === veg.id;
-                    return (
-                      <TouchableOpacity
+                  {items.map((veg) => (
+                      <Chip
                         key={veg.id}
-                        style={[
-                          styles.vegChip,
-                          {
-                            backgroundColor: active ? colors.oliveLight : colors.white,
-                            borderColor: active ? colors.olive : colors.border,
-                          },
-                        ]}
+                        selected={calc.vegId === veg.id}
                         onPress={() => calc.selectVeg(veg.id)}
-                        activeOpacity={0.7}
-                        accessibilityRole="radio"
-                        accessibilityState={{ selected: active }}
-                        accessibilityLabel={veg.name}
+                        label={veg.name}
+                        colorScheme="olive"
+                        inactiveBg={colors.white}
+                        style={styles.vegChip}
                       >
                         <Text style={styles.vegChipEmoji}>{veg.emoji}</Text>
                         <Text
-                          style={[
-                            styles.vegChipName,
-                            { color: active ? '#FFF' : colors.espresso },
-                          ]}
+                          style={[styles.vegChipName, { color: calc.vegId === veg.id ? colors.white : colors.espresso }]}
                           numberOfLines={1}
                         >
                           {veg.name}
                         </Text>
-                      </TouchableOpacity>
-                    );
+                      </Chip>
+                    ))}
                   })}
                 </ScrollView>
               </View>
@@ -235,35 +209,21 @@ export default function FermentsScreen() {
             showsHorizontalScrollIndicator={false}
             style={styles.chipScroll}
           >
-            {SALT_TYPE_ORDER.map((st) => {
-              const active = calc.saltType === st;
-              return (
-                <TouchableOpacity
+            {SALT_TYPE_ORDER.map((st) => (
+                <Chip
                   key={st}
-                  style={[
-                    styles.saltChip,
-                    {
-                      backgroundColor: active ? colors.olive : colors.white,
-                      borderColor: active ? colors.olive : colors.border,
-                    },
-                  ]}
+                  selected={calc.saltType === st}
                   onPress={() => calc.setSaltType(st)}
-                  activeOpacity={0.7}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: active }}
-                  accessibilityLabel={SALT_LABELS[st]}
+                  label={SALT_LABELS[st]}
+                  colorScheme="olive"
+                  inactiveBg={colors.white}
+                  style={styles.saltChip}
                 >
-                  <Text
-                    style={[
-                      styles.saltChipText,
-                      { color: active ? '#FFF' : colors.muted },
-                    ]}
-                  >
+                  <Text style={[styles.saltChipText, { color: calc.saltType === st ? colors.white : colors.muted }]}>
                     {SALT_LABELS[st]}
                   </Text>
-                </TouchableOpacity>
-              );
-            })}
+                </Chip>
+              ))}
           </ScrollView>
         </View>
 

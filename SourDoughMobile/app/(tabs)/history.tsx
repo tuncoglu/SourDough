@@ -17,6 +17,7 @@ import { SavedRecipe, BreadType } from '../../src/models/types';
 import { loadRecipes, deleteRecipe, saveRecipe, generateRecipeId } from '../../src/store/recipeStore';
 import { RecipeCard } from '../../src/components/RecipeCard';
 import { EmptyState } from '../../src/components/EmptyState';
+import { Chip } from '../../src/components/Chip';
 import { RECIPE_PRESETS, getPreset } from '../../src/data/recipePresets';
 
 const FILTER_CHIPS: { key: string; label: string; match: (r: SavedRecipe) => boolean }[] = [
@@ -139,24 +140,19 @@ export default function HistoryScreen() {
       {/* Filter chips */}
       <View style={styles.chipRow}>
         {FILTER_CHIPS.map((chip) => (
-          <TouchableOpacity
+          <Chip
             key={chip.key}
-            style={[
-              styles.chip,
-              {
-                backgroundColor: activeFilter === chip.key ? colors.terracotta : colors.card,
-                borderColor: activeFilter === chip.key ? colors.terracotta : colors.border,
-              },
-            ]}
+            selected={activeFilter === chip.key}
             onPress={() => setActiveFilter(chip.key)}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityState={{ selected: activeFilter === chip.key }}
+            label={chip.label}
+            colorScheme="terracotta"
+            role="button"
+            style={styles.chip}
           >
             <Text style={[styles.chipText, { color: activeFilter === chip.key ? colors.white : colors.muted }]}>
               {chip.label}
             </Text>
-          </TouchableOpacity>
+          </Chip>
         ))}
       </View>
 
