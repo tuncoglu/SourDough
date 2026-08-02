@@ -88,7 +88,7 @@ export const MILK_TYPES: MilkEntry[] = [
     source: 'sheep',
     fatLevel: 'semi-skimmed',
     fatPct: 3.0,
-    proteinPct: 6.5,
+    proteinPct: 6.0,
     carbsPct: 5.0,
     notes: 'Still very high protein. Excellent set even with reduced fat.',
   },
@@ -132,7 +132,7 @@ export const YOGURT_CULTURES: Record<string, YogurtCulturePreset> = {
       'Cool milk to 42°C before adding culture. A clean finger test: feels warm but not hot.',
       'Incubate 8h at 42°C. Longer = tangier. 12h gives a proper Bulgarian-style sharpness.',
       'Chill 4h before eating — the gel continues to set in the fridge.',
-      '🔬 L. bulgaricus produces postbiotic peptides that survive pasteurisation — even heat-treated yogurt has health benefits (German sauerkraut trial parallel, 2025).',
+      '🔬 L. bulgaricus produces bioactive peptides during fermentation that may survive heat treatment.',
     ],
   },
 
@@ -152,7 +152,7 @@ export const YOGURT_CULTURES: Record<string, YogurtCulturePreset> = {
     typicalMilkLitres: 2,
     thickness: 'very-thick',
     strainInfo: 'L. bulgaricus + S. thermophilus (Greek strain selection). Forms a firmer curd; straining removes whey to concentrate protein 2–3×.',
-    healthNote: 'Highest protein yogurt style (10–15g per 100g after straining). Whey removal concentrates casein micelles — slower digestion, more satiating.',
+    healthNote: 'Highest protein yogurt style (~8–10g per 100g after straining; varies with milk and straining duration). Whey removal concentrates casein micelles — slower digestion, more satiating.',
     tips: [
       'After incubation, strain through muslin/cheesecloth for 2–6h in the fridge.',
       'The longer you strain, the thicker it gets. 6h = labneh consistency.',
@@ -181,7 +181,7 @@ export const YOGURT_CULTURES: Record<string, YogurtCulturePreset> = {
       'For authentic ryazhenka: heat milk to 95°C, hold 3–4h until beige/caramel colour develops.',
       'This long heating evaporates water and caramelises lactose — sweeter, nuttier result.',
       'Incubate at 40°C for 10h. The pre-cooked milk sets more firmly.',
-      '🔬 Maillard compounds from baked milk act as prebiotics — gut bacteria ferment them into SCFAs.',
+      '🔬 Maillard compounds from baked milk are partially indigestible and may be fermented by gut bacteria — contributing to the unique flavour and potential digestive benefits.',
     ],
   },
 
@@ -201,7 +201,7 @@ export const YOGURT_CULTURES: Record<string, YogurtCulturePreset> = {
     typicalMilkLitres: 3,
     thickness: 'very-thick',
     strainInfo: 'S. thermophilus + L. bulgaricus + L. acidophilus + Bifidobacterium. Traditional skyr also uses a small amount of rennet for a firmer set.',
-    healthNote: 'Iceland\'s national food for 1,000+ years. Norse settlers brought skyr to Iceland; it died out everywhere else. Extremely high protein (up to 20g per 100g after straining). Low lactose.',
+    healthNote: 'Iceland\'s national food for 1,000+ years. Norse settlers brought skyr to Iceland; it died out everywhere else. High protein (~10–12g per 100g after straining; traditional skyr uses skimmed milk and extensive straining). Low lactose.',
     tips: [
       'For traditional skyr: add 1 drop of liquid rennet per 3L milk at inoculation.',
       'Skyr requires more straining than Greek yogurt — 6–12h for authentic density.',
@@ -277,7 +277,7 @@ export const YOGURT_CULTURES: Record<string, YogurtCulturePreset> = {
     starterRatio: 1,
     typicalMilkLitres: 1,
     thickness: 'medium',
-    strainInfo: 'Lactococcus lactis subsp. cremoris FC + Acetobacter orientis. Unique — includes an acetic acid bacterium alongside LAB, giving a very mild, almost sweet profile.',
+    strainInfo: 'Lactococcus lactis subsp. cremoris FC + Acetobacter orientalis. Unique — includes an acetic acid bacterium alongside LAB, giving a very mild, almost sweet profile.',
     tips: [
       'Mildest of all yogurt cultures — perfect if you find regular yogurt too sharp.',
       'The ropy/elastic texture is normal — caused by exopolysaccharides (EPS) from L. cremoris FC.',

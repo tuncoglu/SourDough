@@ -66,15 +66,17 @@ const WATER_HARDNESS_TABLE: Record<string, [number, string, string]> = {
 const REGION_MAP: Record<string, Record<string, string>> = {
   us: {
     northeast: 'us-northeast', 'new england': 'us-northeast',
-    'new york': 'us-northeast', pennsylvania: 'us-northeast',
+    'new york': 'us-northeast',
+    // PA excluded — predominantly hard water (150–350+ mg/L in limestone regions)
     southeast: 'us-southeast', florida: 'us-southeast',
     georgia: 'us-southeast', carolina: 'us-southeast',
     midwest: 'us-midwest', ohio: 'us-midwest', indiana: 'us-midwest',
     illinois: 'us-midwest', michigan: 'us-midwest',
     southwest: 'us-southwest', texas: 'us-southwest',
     arizona: 'us-southwest', 'new mexico': 'us-southwest',
-    west: 'us-west', colorado: 'us-west', utah: 'us-west',
-    nevada: 'us-west', pacific: 'us-pacific',
+    west: 'us-west', colorado: 'us-west',
+    // UT, NV excluded — predominantly hard water (200–350+ mg/L)
+    pacific: 'us-pacific',
     california: 'us-pacific', oregon: 'us-pacific', washington: 'us-pacific',
   },
   ca: {

@@ -82,9 +82,12 @@ export function calculateFermentSalt(
       // Salt % is of vegetable weight
       saltGrams = vegWeight * (saltPct / 100);
       // Effective brine salinity after veg water is released.
-      // The 0.7 water-release factor is a weighted default. Actual release
-      // varies widely by vegetable (Katz, Shockey):
-      //   - Cabbage: 60–80% (thin leaves, high surface area)
+      // The 0.7 water-release factor is a weighted default, not a precise
+      // measurement. NOTE: it overstates effective salinity for leafy
+      // vegetables — cabbage releases 85–95% of its water under salt, so
+      // assuming only 70% release yields a stronger brine than reality.
+      // Actual release varies widely by vegetable (Katz, Shockey):
+      //   - Cabbage: 85–95% (thin leaves, high surface area)
       //   - Carrots: 20–40% (dense, low surface area)
       //   - Kale:   30–50% (fibrous, moderate release)
       const releasedWater = vegWeight * (waterContentPct / 100) * 0.7;
@@ -152,15 +155,18 @@ export function estimateFermentDuration(
   const rate = speedFactor * Math.pow(Q10, (effectiveTemp - BASE_TEMP) / 10);
   let days = BASE_DAYS / rate;
 
-  // If temp exceeds the effective cap, blend the estimate:
-  // linearly penalise over a 15°C overshoot window toward 2× slower.
+  // If temp exceeds the effective cap, penalise the estimate.
+  // Above 42°C LAB growth effectively stops, so the penalty escalates
+  // more aggressively beyond a 7°C overshoot (i.e. above 42°C).
   if (tempCapped) {
     const overshoot = temp - MAX_EFFECTIVE_TEMP;
-    const penalty = 1 + Math.min(overshoot / 15, 1); // max 2× penalty at +15°C
+    const penalty = overshoot <= 7
+      ? 1 + overshoot / 7                    // ≤42°C: linear 1× → 2× penalty
+      : 2 + (overshoot - 7) * 0.5;           // >42°C: +0.5× penalty per extra °C
     days *= penalty;
   }
 
-  // Range: ±30% for early taste / fully sour
+  // Range: ±40% for early taste / fully sour
   const daysMin = days * 0.6;
   const daysMax = days * 1.4;
 
@@ -217,6 +223,8 @@ export function buildLactoTimeline(estimatedDays: number, method: FermentMethod)
   }
 
   // ~50% — half fermented: transition to L. plantarum
+  // NOTE: pH trajectory is approximated here; real sauerkraut pH drops
+  // faster in the first days and then slows.
   const midDay = Math.round(totalDays * 0.5);
   if (midDay > earlyDay && midDay < totalDays) {
     points.push({
@@ -310,7 +318,7 @@ export function lactoAdvice(
   if (temp < 16) {
     tips.push(`❄️ Cool temperature (${temp}°C) — fermentation will be very slow. Consider a warmer spot if you want results in under 2 weeks.`);
   } else if (temp > 30) {
-    tips.push(`🔥 Warm temperature (${temp}°C) — fermentation will be fast but may produce off-flavours or soft texture. Check daily. Above 30°C favours heterofermentative pathways (more CO₂, ethanol).`);
+    tips.push(`🔥 Warm temperature (${temp}°C) — fermentation will be fast but may produce off-flavours or soft texture. Check daily. Below 20°C favours heterofermentative Leuconostoc (more CO₂, ethanol, acetic acid); above 30°C favours homofermentative L. plantarum (cleaner lactic profile).`);
   } else if (temp > 24) {
     tips.push(`🌡️ Warm room temp (${temp}°C) — consider a variable-temperature strategy: ferment 3 days at room temp, then move to the fridge for cold maturation. 2025 research shows this preserves texture and develops more complex aroma.`);
   }

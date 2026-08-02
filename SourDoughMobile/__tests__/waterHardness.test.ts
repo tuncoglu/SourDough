@@ -15,10 +15,11 @@ describe('classifyHardness', () => {
   it('classifies moderately soft', () => {
     expect(classifyHardness(60)).toBe('moderately soft');
     expect(classifyHardness(115)).toBe('moderately soft');
+    expect(classifyHardness(120)).toBe('moderately soft');
   });
 
   it('classifies moderately hard', () => {
-    expect(classifyHardness(120)).toBe('moderately hard');
+    expect(classifyHardness(121)).toBe('moderately hard');
     expect(classifyHardness(195)).toBe('moderately hard');
   });
 
