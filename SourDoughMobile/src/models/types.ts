@@ -427,3 +427,86 @@ export interface LactoDayPoint {
   label: string;
   description: string;
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// Yogurt Fermentation Types
+// ═══════════════════════════════════════════════════════════════════════
+
+export type YogurtCultureType = 'thermophilic' | 'mesophilic';
+
+export type YogurtType =
+  | 'bulgarian'
+  | 'greek'
+  | 'russian'
+  | 'skyr'
+  | 'vegan-soya'
+  | 'amasi'
+  | 'caspian-sea'
+  | 'filmjolk'
+  | 'piima'
+  | 'viili'
+  | 'custom';
+
+export type MilkSource = 'cow' | 'goat' | 'sheep';
+export type MilkFatLevel = 'whole' | 'semi-skimmed' | 'skimmed';
+
+export interface MilkEntry {
+  id: string;              // e.g. "cow-whole"
+  name: string;            // "Whole cow's milk"
+  emoji: string;
+  source: MilkSource;
+  fatLevel: MilkFatLevel;
+  fatPct: number;          // g per 100ml
+  proteinPct: number;      // g per 100ml
+  carbsPct: number;        // g per 100ml
+  notes?: string;
+}
+
+export interface YogurtCulturePreset {
+  id: YogurtType;
+  name: string;
+  emoji: string;
+  description: string;
+  type: YogurtCultureType;
+  typicalTempC: number;    // ideal incubation temperature
+  tempMinC: number;
+  tempMaxC: number;
+  typicalHours: number;    // typical incubation time at ideal temp
+  hoursMin: number;
+  hoursMax: number;
+  starterRatio: number;    // sachets per litre of milk
+  typicalMilkLitres: number;
+  thickness: 'thin' | 'medium' | 'thick' | 'very-thick';
+  tips?: string[];
+  healthNote?: string;
+  strainInfo?: string;     // key bacterial strains (e.g. "L. bulgaricus + S. thermophilus")
+}
+
+export interface YogurtInputs {
+  yogurtType: YogurtType;
+  cultureType: YogurtCultureType;
+  milkId: string;
+  milkLitres: number;
+  incubationTempC: number;
+  sachetCount: number;
+  preHeatEnabled: boolean;
+}
+
+export interface YogurtResults {
+  milkGrams: number;
+  sachetCount: number;
+  starterRatioDisplay: string;     // e.g. "1 sachet per 2L"
+  incubationHours: number;
+  incubationHoursMin: number;
+  incubationHoursMax: number;
+  estimatedYieldGrams: number;     // accounts for evaporation loss (~5%)
+  estimatedYieldLitres: number;
+  estimatedServings: number;       // based on 150g serving
+  effectiveTemp: number;
+}
+
+export interface YogurtStepPoint {
+  hour: number | null;      // null for pre-heat step (no clock hour)
+  label: string;
+  description: string;
+}

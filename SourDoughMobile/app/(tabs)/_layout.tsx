@@ -22,6 +22,7 @@ function TabEmoji({ emoji }: { emoji: string }) {
 // Icons shared between sidebar (Sidebar.tsx) and tab bar — keep in sync.
 const TAB_ICONS = {
   calculator: '🥖',
+  yogurt: '🥛',
   ferments: '🫙',
   history: '📋',
   settings: '⚙️',
@@ -57,6 +58,13 @@ export default function TabLayout() {
               options={{
                 title: 'Sourdough',
                 tabBarIcon: () => <TabEmoji emoji={TAB_ICONS.calculator} />,
+              }}
+            />
+            <Tabs.Screen
+              name="yogurt"
+              options={{
+                title: 'Yogurt',
+                tabBarIcon: () => <TabEmoji emoji={TAB_ICONS.yogurt} />,
               }}
             />
             <Tabs.Screen

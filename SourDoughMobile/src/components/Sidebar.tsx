@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-nati
 import { useRouter, usePathname } from 'expo-router';
 import { Colors, Spacing, FontSize, BorderRadius, MaxWidth, useAppTheme } from '../theme';
 
-type AppRoute = '/' | '/ferments' | '/history' | '/settings';
+type AppRoute = '/' | '/yogurt' | '/ferments' | '/history' | '/settings';
 
 interface NavItem {
   path: AppRoute;
@@ -13,6 +13,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { path: '/', label: 'Sourdough', icon: '🥖' },
+  { path: '/yogurt', label: 'Yogurt', icon: '🥛' },
   { path: '/ferments', label: 'Lacto-ferment', icon: '🫙' },
   { path: '/history', label: 'History', icon: '📋' },
   { path: '/settings', label: 'Settings', icon: '⚙️' },
