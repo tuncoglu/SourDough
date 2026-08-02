@@ -6,25 +6,10 @@ import {
   WaterHardness,
   RecipePreset,
 } from '../models/types';
-import { runAllCalculations, getBlendProtein } from '../lib/calculations';
-import { classifyHardness } from '../data/ukWaterHardness';
+import { runAllCalculations } from '../lib/calculations';
+import { getBlendProtein, buildFlourTypeLabel } from '../lib/blendUtils';
+import { resolveHardness } from '../lib/hardnessUtils';
 import type { LocationData } from '../lib/location';
-
-function buildManualHardness(mgL: number): WaterHardness {
-  return {
-    mgL,
-    classification: classifyHardness(mgL),
-    note: 'Manual override — user-supplied value',
-    key: 'manual',
-  };
-}
-
-const fallbackHardness: WaterHardness = {
-  mgL: 120,
-  classification: 'moderately soft',
-  note: 'Unknown — assuming moderate',
-  key: 'fallback',
-};
 
 interface CalculateParams {
   blend: FlourBlendEntry[];
@@ -41,6 +26,7 @@ interface CalculateParams {
   starterFlourLabel: string;
   prefermentEnabled: boolean;
   prefermentFlourPct: string;
+  prefermentType?: 'poolish' | 'biga';
   breadType: string;
   locationData: LocationData | null;
   waterHardnessOverride: number;
@@ -61,6 +47,7 @@ export function useRecipeCalculation() {
       blend, totalFlourWeight, hydration, starterWeight, saltPct,
       starterHydrationStr, oilPct, ambientTemp, flourTemp, waterTemp,
       starterTemp, starterFlourLabel, prefermentEnabled, prefermentFlourPct,
+      prefermentType,
       breadType, locationData, waterHardnessOverride,
       coldProofHours, coldProofTemp, coldProofEnabled,
       starterHoursSinceFed,
@@ -111,9 +98,10 @@ export function useRecipeCalculation() {
     const productNo = firstEntry?.productNumber ?? '-';
     const firstEntryProtein = firstEntry?.protein ?? 12.5;
     const manualHw = waterHardnessOverride || 0;
-    const hardness: WaterHardness = (!isNaN(manualHw) && manualHw > 0)
-      ? buildManualHardness(manualHw)
-      : (locationData?.hardness ?? fallbackHardness);
+    const hardness: WaterHardness = resolveHardness(
+      !isNaN(manualHw) ? manualHw : 0,
+      locationData?.hardness,
+    );
 
     const warnings: string[] = [];
     if (wat <= 0) warnings.push('Water is near freezing.');
@@ -121,11 +109,11 @@ export function useRecipeCalculation() {
 
     const flourType = blend.length === 1
       ? blend[0].label
-      : blend.map((e) => `${Math.round(e.percentage)}% ${e.label.replace(/\s*\([^)]*\)$/, '')}`).join(' + ');
+      : buildFlourTypeLabel(blend);
     const flourProtein = blend.length > 1 ? getBlendProtein(blend) : firstEntryProtein;
 
     const prefConfig = prefermentEnabled
-      ? { type: 'poolish' as const, flourPct: parseFloat(prefermentFlourPct) || 30, hydration: 100 }
+      ? { type: (prefermentType || 'poolish') as 'poolish' | 'biga', flourPct: parseFloat(prefermentFlourPct) || 30, hydration: prefermentType === 'biga' ? 55 : 100 }
       : undefined;
 
     const coldH = coldProofEnabled ? (parseFloat(coldProofHours) || 0) : 0;

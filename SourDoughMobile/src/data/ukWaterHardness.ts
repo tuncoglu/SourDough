@@ -291,7 +291,7 @@ export function lookupUkPostcodeHardness(postcode: string): HardnessEntry {
 export function classifyHardness(mgL: number): string {
   if (mgL < 30) return "very soft";
   if (mgL < 60) return "soft";
-  if (mgL < 120) return "moderately soft";
+  if (mgL <= 120) return "moderately soft";
   if (mgL < 200) return "moderately hard";
   if (mgL < 300) return "hard";
   return "very hard";

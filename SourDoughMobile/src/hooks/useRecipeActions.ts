@@ -8,7 +8,7 @@ import {
   FlourBlendEntry,
 } from '../models/types';
 import { saveRecipe, generateRecipeId } from '../store/recipeStore';
-import { getBlendProtein } from '../lib/blendUtils';
+import { getBlendProtein, buildFlourTypeLabel } from '../lib/blendUtils';
 import { formatRecipeTextFromState } from '../lib/recipeFormatter';
 import { copyToClipboard } from '../lib/clipboard';
 import { useAppTheme } from '../theme';
@@ -31,6 +31,7 @@ interface SaveParams {
   starterFlourLabel: string;
   prefermentEnabled: boolean;
   prefermentFlourPct: string;
+  prefermentType?: 'poolish' | 'biga';
   breadType: string;
   results: CalculationResults;
   locationSummary: string;
@@ -48,6 +49,7 @@ interface ShareParams {
   waterTemp: string;
   prefermentEnabled: boolean;
   prefermentFlourPct: string;
+  prefermentType?: 'poolish' | 'biga';
   results: CalculationResults;
   locationSummary: string;
   bakeInfo?: string;
@@ -63,6 +65,7 @@ export function useRecipeActions() {
       blend, totalFlourWeight, hydration, starterWeight, saltPct,
       starterHydrationStr, oilPct, ambientTemp, flourTemp, waterTemp,
       starterTemp, starterFlourLabel, prefermentEnabled, prefermentFlourPct,
+      prefermentType,
       breadType, results, locationSummary,
     } = params;
 
@@ -71,13 +74,13 @@ export function useRecipeActions() {
 
     const flourType = blend.length === 1
       ? blend[0].label
-      : blend.map((e) => `${Math.round(e.percentage)}% ${e.label.replace(/\s*\([^)]*\)$/, '')}`).join(' + ');
+      : buildFlourTypeLabel(blend);
     const flourProtein = blend.length > 1 ? getBlendProtein(blend) : blend[0].protein;
 
     const shyd = parseFloat(starterHydrationStr);
     const oil = parseFloat(oilPct) || 0;
     const prefConfig = prefermentEnabled
-      ? { type: 'poolish' as const, flourPct: parseFloat(prefermentFlourPct) || 30, hydration: 100 }
+      ? { type: (prefermentType || 'poolish') as 'poolish' | 'biga', flourPct: parseFloat(prefermentFlourPct) || 30, hydration: prefermentType === 'biga' ? 55 : 100 }
       : undefined;
 
     const recipe: SavedRecipe = {
@@ -140,7 +143,8 @@ export function useRecipeActions() {
     const {
       blend, totalFlourWeight, hydration, starterWeight, saltPct,
       starterHydrationStr, oilPct, ambientTemp, waterTemp,
-      prefermentEnabled, prefermentFlourPct, results, locationSummary, bakeInfo, unitSystem,
+      prefermentEnabled, prefermentFlourPct, prefermentType,
+      results, locationSummary, bakeInfo, unitSystem,
     } = params;
 
     const text = formatRecipeTextFromState(
@@ -152,9 +156,9 @@ export function useRecipeActions() {
       parseFloat(starterHydrationStr),
       parseFloat(saltPct),
       parseFloat(oilPct) || undefined,
-      prefermentEnabled ? 'poolish' : undefined,
+      prefermentEnabled ? (prefermentType || 'poolish') : undefined,
       prefermentEnabled ? parseFloat(prefermentFlourPct) || undefined : undefined,
-      prefermentEnabled ? 100 : undefined, // poolish = 100% hydration (biga support TBD)
+      prefermentEnabled ? (prefermentType === 'biga' ? 55 : 100) : undefined,
       results,
       bakeInfo,
       unitSystem,

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
 import { SavedRecipe } from '../models/types';
 import { getTempZoneInfo } from '../models/types';
-import { getBlendDisplayLabel } from '../lib/flourSearch';
+import { getBlendDisplayLabel } from '../lib/blendUtils';
 import { formatTemp } from '../lib/unitConversion';
 import { PROOF_FRACTION } from '../lib/calculations';
 

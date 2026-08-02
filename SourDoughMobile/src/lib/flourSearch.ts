@@ -1,4 +1,4 @@
-import { SHIPTON_MILL_FLOURS, FLOUR_LABELS } from '../data/flours';
+import { SHIPTON_MILL_FLOURS } from '../data/flours';
 import { FlourEntry } from '../models/types';
 
 /**
@@ -60,9 +60,3 @@ function getDefault(): FlourEntry {
     }
   );
 }
-
-// ── Blend Utilities ─────────────────────────────────────────────────────
-// Moved to ../lib/blendUtils.ts — re-exported for backward compatibility.
-
-/** @deprecated Import from '../lib/blendUtils' instead. */
-export { getBlend, getBlendDisplayLabel, validateBlend } from './blendUtils';

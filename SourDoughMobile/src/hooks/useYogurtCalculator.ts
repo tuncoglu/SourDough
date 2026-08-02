@@ -6,6 +6,7 @@ import {
   YogurtInputs,
   YogurtResults,
   YogurtStepPoint,
+  YogurtThickness,
   MilkEntry,
   StarterSource,
 } from '../models/types';
@@ -21,7 +22,7 @@ import {
 import { computeFermentTemp, DailyTempSummary, FermentTempResult, waterHardnessFermentAdvice } from '../lib/lactoCalculations';
 import { useLocation } from './useLocation';
 import { getSettings } from '../store/settingsCache';
-import { classifyHardness } from '../data/ukWaterHardness';
+import { resolveHardness as resolveHw } from '../lib/hardnessUtils';
 import type { WaterHardness, UserSettings } from '../models/types';
 
 export interface YogurtCalculatorState {
@@ -47,7 +48,7 @@ export interface YogurtCalculatorState {
   tips: string[];
   presetHealthNote?: string;
   presetStrainInfo?: string;
-  thickness: string;
+  thickness: YogurtThickness;
   cultureDescription: string;
 
   // Location
@@ -159,21 +160,7 @@ export function useYogurtCalculator(): YogurtCalculatorState {
 
   // Resolve effective water hardness: manual override > geolocation > fallback
   const resolveHardness = useCallback((): WaterHardness => {
-    if (waterHardnessOverride > 0) {
-      return {
-        mgL: waterHardnessOverride,
-        classification: classifyHardness(waterHardnessOverride),
-        note: 'Manual override — user-supplied value',
-        key: 'manual',
-      };
-    }
-    if (locationData?.hardness) return locationData.hardness;
-    return {
-      mgL: 120,
-      classification: 'moderately soft',
-      note: 'Unknown — assuming moderate',
-      key: 'fallback',
-    };
+    return resolveHw(waterHardnessOverride, locationData?.hardness);
   }, [waterHardnessOverride, locationData]);
 
   const calculate = useCallback(() => {

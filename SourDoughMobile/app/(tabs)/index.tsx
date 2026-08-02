@@ -15,8 +15,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Spacing, FontSize, BorderRadius, useAppTheme } from '../../src/theme';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { buildSummary } from '../../src/lib/location';
-import { classifyHardness } from '../../src/data/ukWaterHardness';
 import { PROOF_FRACTION } from '../../src/lib/calculations';
+import { buildManualHardness } from '../../src/lib/hardnessUtils';
 import { getRecipe } from '../../src/store/recipeStore';
 import { findFlour } from '../../src/lib/flourSearch';
 import { getPreset } from '../../src/data/recipePresets';
@@ -36,9 +36,6 @@ import { useRecipeCalculation } from '../../src/hooks/useRecipeCalculation';
 import { useRecipeActions } from '../../src/hooks/useRecipeActions';
 import { useDailyRecommendation } from '../../src/hooks/useDailyRecommendation';
 
-function buildManualHardness(mgL: number): WaterHardness {
-  return { mgL, classification: classifyHardness(mgL), note: 'Manual override', key: 'manual' };
-}
 
 export default function CalculatorScreen() {
   const { isDesktop } = useBreakpoint();
@@ -151,6 +148,7 @@ export default function CalculatorScreen() {
       starterFlourLabel: starter.starterFlourLabel,
       prefermentEnabled: preset.prefermentEnabled,
       prefermentFlourPct: preset.prefermentFlourPct,
+      prefermentType: preset.selectedPreset?.dough.preferment?.type,
       breadType: preset.breadType,
       locationData: inputs.locationData,
       waterHardnessOverride: inputs.settings.waterHardnessOverride || 0,
@@ -179,6 +177,7 @@ export default function CalculatorScreen() {
       starterFlourLabel: starter.starterFlourLabel,
       prefermentEnabled: preset.prefermentEnabled,
       prefermentFlourPct: preset.prefermentFlourPct,
+      prefermentType: preset.selectedPreset?.dough.preferment?.type,
       breadType: preset.breadType,
       results: calc.results,
       locationSummary: inputs.locationData?.summary ?? '📍 Unknown location',
@@ -203,6 +202,7 @@ export default function CalculatorScreen() {
       waterTemp: inputs.waterTemp,
       prefermentEnabled: preset.prefermentEnabled,
       prefermentFlourPct: preset.prefermentFlourPct,
+      prefermentType: preset.selectedPreset?.dough.preferment?.type,
       results: calc.results,
       locationSummary: inputs.locationData?.summary ?? '📍 Unknown location',
       bakeInfo,
@@ -597,7 +597,7 @@ export default function CalculatorScreen() {
         blend={inputs.blend}
         totalFlourWeight={inputs.totalFlourWeight}
         starterFlourLabel={starter.starterFlourLabel}
-        preferredType={preset.prefermentEnabled ? 'poolish' : undefined}
+        preferredType={preset.selectedPreset?.dough.preferment?.type}
         selectedPreset={preset.selectedPreset}
         flourTemp={inputs.flourTemp}
         ambientTemp={inputs.ambientTemp}

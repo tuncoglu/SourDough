@@ -95,7 +95,6 @@ function getZone(effectiveHours: number, isInFridge: boolean, hoursSinceFridgeOu
   if (effectiveHours <= 4) return 'just-fed';
   if (effectiveHours <= 8) return 'peak';
   if (effectiveHours <= 14) return 'past-peak';
-  if (effectiveHours <= 24) return 'hungry';
   return 'hungry';
 }
 

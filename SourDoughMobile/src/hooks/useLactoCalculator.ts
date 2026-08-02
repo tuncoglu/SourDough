@@ -14,7 +14,7 @@ import {
 } from '../lib/lactoCalculations';
 import { useLocation } from './useLocation';
 import { getSettings } from '../store/settingsCache';
-import { classifyHardness } from '../data/ukWaterHardness';
+import { resolveHardness as resolveHw } from '../lib/hardnessUtils';
 
 /** Which vegetable each preset defaults to. */
 const PRESET_DEFAULT_VEG: Record<string, string> = {
@@ -105,22 +105,8 @@ export function useLactoCalculator(): LactoCalculatorState {
   }, []);
 
   // Resolve effective water hardness: manual override > geolocation > fallback
-  const resolveHardness = useCallback((): WaterHardness => {
-    if (waterHardnessOverride > 0) {
-      return {
-        mgL: waterHardnessOverride,
-        classification: classifyHardness(waterHardnessOverride),
-        note: 'Manual override — user-supplied value',
-        key: 'manual',
-      };
-    }
-    if (locationData?.hardness) return locationData.hardness;
-    return {
-      mgL: 120,
-      classification: 'moderately soft',
-      note: 'Unknown — assuming moderate',
-      key: 'fallback',
-    };
+  const getHardness = useCallback((): WaterHardness => {
+    return resolveHw(waterHardnessOverride, locationData?.hardness);
   }, [waterHardnessOverride, locationData]);
 
   // Compute temperature from forecast in real time
@@ -212,14 +198,14 @@ export function useLactoCalculator(): LactoCalculatorState {
       estimatedDaysMax: duration.daysMax,
     };
 
-    const h = resolveHardness();
+    const h = getHardness();
 
     setResults(finalResults);
     setTimeline(buildLactoTimeline(finalResults.estimatedDays, method));
     setAdvice(lactoAdvice(method, salt, temp, finalResults.estimatedDays));
     setWaterAdvice(waterHardnessFermentAdvice(h));
     setShowResults(true);
-  }, [vegWeight, waterAmount, saltPct, saltType, fermentType, method, veg, effectiveTemp, locationData, resolveHardness]);
+  }, [vegWeight, waterAmount, saltPct, saltType, fermentType, method, veg, effectiveTemp, locationData, getHardness]);
 
   return {
     fermentType,
@@ -242,7 +228,7 @@ export function useLactoCalculator(): LactoCalculatorState {
     locError,
     onRefreshLocation: detect,
     onPostcodeSubmit: refineWithPostcode,
-    hardness: resolveHardness(),
+    hardness: getHardness(),
     results,
     timeline,
     advice,

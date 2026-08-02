@@ -205,6 +205,13 @@ export function shortenLabel(label: string): string {
   return label.replace(/\s*\([^)]*\)$/, '').replace(/\s*Organic$/, '');
 }
 
+/** Build a compact display label for a multi-flour blend. */
+export function buildFlourTypeLabel(blend: FlourBlendEntry[]): string {
+  return blend
+    .map((e) => `${Math.round(e.percentage)}% ${shortenLabel(e.label)}`)
+    .join(' + ');
+}
+
 /**
  * Category colours for blend visualisation bars.
  * Mapped by FlourCategory to a hex colour representing that flour type.

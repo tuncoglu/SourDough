@@ -469,6 +469,8 @@ export interface MilkEntry {
   notes?: string;
 }
 
+export type YogurtThickness = 'thin' | 'medium' | 'thick' | 'very-thick';
+
 export interface YogurtCulturePreset {
   id: YogurtType;
   name: string;
@@ -483,7 +485,7 @@ export interface YogurtCulturePreset {
   hoursMax: number;
   starterRatio: number;    // sachets per litre of milk
   typicalMilkLitres: number;
-  thickness: 'thin' | 'medium' | 'thick' | 'very-thick';
+  thickness: YogurtThickness;
   tips?: string[];
   healthNote?: string;
   strainInfo?: string;     // key bacterial strains (e.g. "L. bulgaricus + S. thermophilus")

@@ -180,11 +180,25 @@ export function useCalculatorInputs(): CalculatorInputs {
     }
   }, [locationData, markInteracted]);
 
-  // Wrapped setters that mark user interaction (prevents GPS/settings auto-overwrite)
+  // Stable wrapped setters — memoized with empty deps because useState
+  // setters have stable identity. Without this, wrapSet creates new closures
+  // every render, defeating all useMemo/useCallback in the calculator screen.
   const wrapSet = useCallback(<T,>(setter: (v: T) => void) => (v: T) => {
     userInteractedRef.current = true;
     setter(v);
   }, []);
+
+  const wrappedSetters = useMemo(() => ({
+    setHydration: wrapSet(setHydration),
+    setStarterWeight: wrapSet(setStarterWeight),
+    setSaltPct: wrapSet(setSaltPct),
+    setStarterHydrationStr: wrapSet(setStarterHydrationStr),
+    setOilPct: wrapSet(setOilPct),
+    setAmbientTemp: wrapSet(setAmbientTemp),
+    setFlourTemp: wrapSet(setFlourTemp),
+    setWaterTemp: wrapSet(setWaterTemp),
+    setStarterTemp: wrapSet(setStarterTemp),
+  }), []);
 
   return {
     mixRows,
@@ -210,14 +224,6 @@ export function useCalculatorInputs(): CalculatorInputs {
     handleRemoveFlour,
     handleUpdateFlour,
     handleUpdateFlourGrams,
-    setHydration: wrapSet(setHydration),
-    setStarterWeight: wrapSet(setStarterWeight),
-    setSaltPct: wrapSet(setSaltPct),
-    setStarterHydrationStr: wrapSet(setStarterHydrationStr),
-    setOilPct: wrapSet(setOilPct),
-    setAmbientTemp: wrapSet(setAmbientTemp),
-    setFlourTemp: wrapSet(setFlourTemp),
-    setWaterTemp: wrapSet(setWaterTemp),
-    setStarterTemp: wrapSet(setStarterTemp),
+    ...wrappedSetters,
   };
 }
