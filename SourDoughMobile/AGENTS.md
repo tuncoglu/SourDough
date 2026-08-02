@@ -1,11 +1,15 @@
 # Just Dough It — Architecture
 
+## Routes (app/)
+- **Landing** (index.tsx) — Three-card picker: bread, yogurt, or lacto-fermentation. Footer links to saved recipes, about, and settings.
+
 ## Tabs (app/(tabs)/)
 - **Sourdough** (index.tsx) — Bread recipe calculator with flour blends, pre-ferments, cold proof, ready-by planner
 - **Yogurt** (yogurt.tsx) — Yogurt incubation calculator with 10 culture types, milk picker, yield & nutrition
 - **Lacto-ferment** (ferments.tsx) — Vegetable fermentation with salt calculator, 25+ vegetables, day-by-day timeline
 - **History** (history.tsx) — Saved recipes with search, filter chips, edit, duplicate, delete
 - **Settings** (settings.tsx) — Default values, water hardness override, theme (light/dark/system), units (metric/imperial)
+- **About** (about.tsx) — App overview, privacy notice, and acknowledgements
 
 ## Calculation Engines (src/lib/)
 - **calculations.ts** — Bread FDT (mass-weighted specific heat), ingredient weights, Q10 fermentation model, cold proof

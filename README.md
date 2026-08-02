@@ -28,7 +28,8 @@ SourDough adapts everything to where you really are:
 ## Features
 
 Built with Expo SDK 56, React Native 0.85, and TypeScript. Runs on web, iOS,
-and Android from a single codebase.
+and Android from a single codebase. A landing page greets you with three cards —
+pick bread, yogurt, or lacto-fermentation — then dive into the full calculator.
 
 ### 📱 Recipe Engine
 - **Auto-location** — one-tap GPS → weather + water hardness for your exact spot

@@ -116,7 +116,8 @@ npx wrangler pages deploy dist --project-name=sourdough
 SourDoughMobile/
 ├── app/                    # Expo Router screens
 │   ├── _layout.tsx         # Root layout
-│   ├── (tabs)/             # Tab-based navigation
+│   ├── index.tsx           # Landing page (pick bread, yogurt, or lacto)
+│   ├── (tabs)/             # Tab-based navigation (6 tabs)
 │   └── recipe/             # Recipe detail screens
 ├── src/
 │   ├── components/         # Reusable UI components
@@ -150,15 +151,16 @@ SourDoughMobile/
 
 ## Architecture
 
-Five tabs under `app/(tabs)/`, all sharing one Expo SDK 56 codebase:
+A **landing page** (`app/index.tsx`) greets users with three cards — bread, yogurt, lacto-fermentation — routing to six tabs under `app/(tabs)/`:
 
 - **Sourdough** (`index.tsx`) — bread calculator: flour blends, pre-ferments, cold proof, ready-by planner
 - **Yogurt** (`yogurt.tsx`) — incubation calculator with 10 culture types, milk picker, yield & nutrition
 - **Lacto-ferment** (`ferments.tsx`) — vegetable fermentation with salt calculator and day-by-day timeline
 - **History** (`history.tsx`) — saved recipes with search, filter chips, edit, duplicate, delete
 - **Settings** (`settings.tsx`) — defaults, water hardness override, theme, units
+- **About** (`about.tsx`) — app overview, privacy notice, and acknowledgements
 
-**Calculation engines** (`src/lib/`) are pure, React-free functions — `calculations.ts` (bread FDT, Q10 fermentation, cold proof), `yogurtCalculations.ts`, `lactoCalculations.ts`, `blendUtils.ts`, `unitConversion.ts` — fully unit-testable without the RN runtime. **Hooks** (`src/hooks/`) orchestrate UI state; **stores** (`src/store/`) persist to AsyncStorage (recipes, settings, starter) with an in-memory settings cache (60s TTL). The **theme system** (`src/theme/`) provides light/dark palettes, a `useAppTheme()` hook, and design tokens (spacing, font sizes, radii).
+**Calculation engines** (`src/lib/`) are pure, React-free functions — `calculations.ts` (bread FDT, Q10 fermentation, cold proof), `yogurtCalculations.ts`, `lactoCalculations.ts`, `blendUtils.ts`, `unitConversion.ts` — fully unit-testable without the RN runtime. **Hooks** (`src/hooks/`) orchestrate UI state; **stores** (`src/store/`) persist to AsyncStorage (recipes, settings, starter) with an in-memory settings cache (60s TTL). The **theme system** (`src/theme/`) provides light/dark palettes, a `useAppTheme()` hook, and design tokens (spacing, font sizes, radii, `cardStyle`/`cardStyleLg`/`sectionTitleStyle`).
 
 All internal math is metric (g, °C); unit conversion happens only at the display boundary.
 

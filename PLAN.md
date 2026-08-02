@@ -64,6 +64,22 @@ but later phases build on earlier ones.
 
 ---
 
+## Post-Ultrareview Polish (2026-08-02) ✅
+
+Design-system and UX polish following the ultrareview remediation:
+
+- **Landing page** — Three-card picker (bread / yogurt / lacto-ferment) on `app/index.tsx` with footer links to saved recipes, about, and settings
+- **About tab** — New 6th tab at `app/(tabs)/about.tsx` showing app overview, privacy notice, and acknowledgements. Added to sidebar and landing page footer
+- **Shared design tokens** — `cardStyle`, `cardStyleLg`, and `sectionTitleStyle` exported from theme, used across 18 components
+- **Chip component** — `<Chip>` with `colorScheme`, accessibility, and touch target built-in, replaces 7 copy-pasted chip patterns
+- **KeyboardScreen** — Shared KAV wrapper replacing 3 duplicate instances
+- **TouchTarget** / **HitSlop** tokens in theme
+- **Cold-proof logic** flattened in ready-by planner
+- **computeVitalityFactor** / **computeOilRate** shared helpers extracted
+- **buildPrefermentConfig** in blendUtils, used by both recipe hooks
+- **hardnessUtils.ts** consolidation (resolveHardness, FALLBACK_HARDNESS, buildManualHardness)
+- **buildFlourTypeLabel** extracted to blendUtils
+
 ## Phase 0 — Clean Slate (Foundation) ✅
 
 These are standalone cleanups with no dependencies. Do first to clear the

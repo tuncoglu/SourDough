@@ -26,6 +26,7 @@ const TAB_ICONS = {
   ferments: '🫙',
   history: '📋',
   settings: '⚙️',
+  about: 'ℹ️',
 } as const;
 
 export default function TabLayout() {
@@ -86,6 +87,13 @@ export default function TabLayout() {
               options={{
                 title: 'Settings',
                 tabBarIcon: () => <TabEmoji emoji={TAB_ICONS.settings} />,
+              }}
+            />
+            <Tabs.Screen
+              name="about"
+              options={{
+                title: 'About',
+                tabBarIcon: () => <TabEmoji emoji={TAB_ICONS.about} />,
               }}
             />
           </Tabs>

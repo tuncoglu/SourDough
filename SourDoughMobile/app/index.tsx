@@ -97,6 +97,16 @@ export default function LandingScreen() {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
+            onPress={() => router.push('/(tabs)/about')}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="About this app"
+          >
+            <Text style={[styles.footerLink, { color: colors.muted }]}>
+              ℹ️  About
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             onPress={() => router.push('/(tabs)/settings')}
             activeOpacity={0.7}
             accessibilityRole="button"
