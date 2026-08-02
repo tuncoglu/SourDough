@@ -36,17 +36,10 @@ export default function FermentsScreen() {
 
   const locationSummary = calc.locationData?.summary ?? null;
 
-  return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.cream }]} edges={['top']}>
-      <KeyboardScreen>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Header — tap to return home */}
-        <View style={styles.header}>
+  const inputPanels = (
+    <>
+      {/* Header — tap to return home */}
+      <View style={styles.header}>
           <TouchableOpacity onPress={() => router.push('/')} activeOpacity={0.7}>
             <Text style={[styles.heading, { color: colors.espresso }]}>🥖  Just Dough It</Text>
           </TouchableOpacity>
@@ -315,41 +308,57 @@ export default function FermentsScreen() {
         >
           <Text style={[styles.calcBtnText, { color: colors.white }]}>Calculate</Text>
         </TouchableOpacity>
+      </>
+  );
 
-        {/* ── Results ── */}
-        {calc.showResults && calc.results && (
-          <View style={styles.results}>
-            <LactoResultCard results={calc.results} method={calc.method} />
-            <LactoTimeline timeline={calc.timeline} results={calc.results} />
-            <LactoAdvice
-              advice={calc.advice}
-              tips={calc.tips}
-              presetEmoji={calc.presetEmoji}
-              presetName={calc.presetName}
-            />
+  const resultsPanel = calc.showResults && calc.results && (
+    <View style={styles.results}>
+      <LactoResultCard results={calc.results} method={calc.method} />
+      <LactoTimeline timeline={calc.timeline} results={calc.results} />
+      <LactoAdvice
+        advice={calc.advice}
+        tips={calc.tips}
+        presetEmoji={calc.presetEmoji}
+        presetName={calc.presetName}
+      />
 
-            {/* Water hardness card */}
-            {calc.waterAdvice.length > 0 && (
-              <View style={[cardStyleLg, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={[styles.cardTitle, { color: colors.espresso }]}>💧 Water</Text>
-                {calc.waterAdvice.map((line, i) => (
-                  <Text key={i} style={[styles.adviceLine, { color: colors.muted }]}>
-                    {line}
-                  </Text>
-                ))}
-              </View>
-            )}
+      {calc.waterAdvice.length > 0 && (
+        <View style={[cardStyleLg, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.cardTitle, { color: colors.espresso }]}>💧 Water</Text>
+          {calc.waterAdvice.map((line, i) => (
+            <Text key={i} style={[styles.adviceLine, { color: colors.muted }]}>
+              {line}
+            </Text>
+          ))}
+        </View>
+      )}
 
-            {/* Research context */}
-            <LactoScience
+      <LactoScience
               vegResearchNote={calc.veg.researchNote}
               presetHealthNote={calc.presetHealthNote}
             />
           </View>
-        )}
+  );
 
-        <View style={styles.bottomPad} />
-      </ScrollView>
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.cream }]} edges={['top']}>
+      <KeyboardScreen>
+        {isDesktop ? (
+          <View style={desktopStyles.twoCol}>
+            <ScrollView style={desktopStyles.leftCol} contentContainerStyle={desktopStyles.leftContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              {inputPanels}
+            </ScrollView>
+            <ScrollView style={desktopStyles.rightCol} contentContainerStyle={desktopStyles.rightContent} showsVerticalScrollIndicator={false}>
+              {resultsPanel}
+            </ScrollView>
+          </View>
+        ) : (
+          <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            {inputPanels}
+            {resultsPanel}
+            <View style={styles.bottomPad} />
+          </ScrollView>
+        )}
       </KeyboardScreen>
     </SafeAreaView>
   );
@@ -611,4 +620,12 @@ const styles = StyleSheet.create({
   bottomPad: {
     height: 60,
   },
+});
+
+const desktopStyles = StyleSheet.create({
+  twoCol: { flex: 1, flexDirection: 'row', gap: Spacing.lg, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
+  leftCol: { flex: 1, maxWidth: 420 },
+  leftContent: { paddingBottom: 40, paddingTop: Spacing.md },
+  rightCol: { flex: 1.3 },
+  rightContent: { paddingBottom: 40, paddingTop: Spacing.md },
 });

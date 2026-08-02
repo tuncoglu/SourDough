@@ -35,82 +35,75 @@ export default function YogurtScreen() {
 
   const locationSummary = calc.locationData?.summary ?? null;
 
-  return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.cream }]} edges={['top']}>
-      <KeyboardScreen>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Header — tap to return home */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.push('/')} activeOpacity={0.7}>
-            <Text style={[styles.heading, { color: colors.espresso }]}>🥖  Just Dough It</Text>
-          </TouchableOpacity>
-          <Text style={[styles.subtitle, { color: colors.muted }]}>
-            Perfect bread, less guesswork
+  const inputPanels = (
+    <>
+      {/* Header — tap to return home */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.push('/')} activeOpacity={0.7}>
+          <Text style={[styles.heading, { color: colors.espresso }]}>🥖  Just Dough It</Text>
+        </TouchableOpacity>
+        <Text style={[styles.subtitle, { color: colors.muted }]}>
+          Perfect bread, less guesswork
+        </Text>
+      </View>
+
+      {/* ── Location Bar ── */}
+      <LocationBar
+        summary={locationSummary}
+        loading={calc.locLoading}
+        error={calc.locError}
+        onRefresh={calc.onRefreshLocation}
+        showFallbackWarning={!calc.locLoading && !calc.locationData}
+        onPostcodeSubmit={calc.onPostcodeSubmit}
+      />
+
+      {/* ── Temperature Forecast ── */}
+      {calc.dailyTemps.length > 0 && (
+        <View style={[styles.tempCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.tempTitle, { color: colors.espresso }]}>
+            🌡 Ambient temperature
+          </Text>
+          <View style={styles.tempDays}>
+            {calc.dailyTemps.slice(0, 10).map((d, i, arr) => {
+              if (i > 0 && d.high === arr[i - 1].high && d.low === arr[i - 1].low) return null;
+              const dayColor = d.avg > 28 ? colors.hot : d.avg > 24 ? colors.warm : d.avg > 20 ? colors.olive : d.avg > 16 ? colors.cool : colors.cold;
+              const allHigh = Math.max(...arr.slice(0, 10).map(x => x.high));
+              const allLow = Math.min(...arr.slice(0, 10).map(x => x.low));
+              const range = allHigh - allLow || 1;
+              const topPct = ((allHigh - d.high) / range) * 100;
+              const heightPct = ((d.high - d.low) / range) * 100;
+              return (
+              <View key={i} style={styles.tempDay}>
+                <Text style={[styles.tempDayLabel, { color: colors.muted }]}>{d.day}</Text>
+                <Text style={[styles.tempDayHigh, { color: colors.espresso }]}>{d.high}°</Text>
+                <View style={[styles.tempBar, { backgroundColor: colors.border }]}>
+                  <View
+                    style={[
+                      styles.tempBarFill,
+                      {
+                        backgroundColor: dayColor,
+                        top: `${topPct}%`,
+                        height: `${Math.max(8, heightPct)}%`,
+                      },
+                    ]}
+                  />
+                </View>
+                <Text style={[styles.tempDayLow, { color: colors.lightText }]}>{d.low}°</Text>
+              </View>
+              );
+            })}
+          </View>
+          <Text style={[styles.tempSummary, { color: colors.lightText, borderTopColor: colors.border }]}>
+            {calc.tempResult?.summary ?? 'Using weather forecast for ambient temp'}
+            {calc.tempResult?.source === 'fallback' && ' — enable location for local temps'}
+            {calc.cultureType === 'thermophilic' && ' (thermophilic — use a heat source at 40–45°C)'}
+            {calc.cultureType === 'mesophilic' && ' (mesophilic — room temp is your incubation temp)'}
           </Text>
         </View>
+      )}
 
-        {/* ── Location Bar ── */}
-        <LocationBar
-          summary={locationSummary}
-          loading={calc.locLoading}
-          error={calc.locError}
-          onRefresh={calc.onRefreshLocation}
-          showFallbackWarning={!calc.locLoading && !calc.locationData}
-          onPostcodeSubmit={calc.onPostcodeSubmit}
-        />
-
-        {/* ── Temperature Forecast ── */}
-        {calc.dailyTemps.length > 0 && (
-          <View style={[styles.tempCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.tempTitle, { color: colors.espresso }]}>
-              🌡 Ambient temperature
-            </Text>
-            <View style={styles.tempDays}>
-              {calc.dailyTemps.slice(0, 10).map((d, i, arr) => {
-                if (i > 0 && d.high === arr[i - 1].high && d.low === arr[i - 1].low) return null;
-                const dayColor = d.avg > 28 ? colors.hot : d.avg > 24 ? colors.warm : d.avg > 20 ? colors.olive : d.avg > 16 ? colors.cool : colors.cold;
-                const allHigh = Math.max(...arr.slice(0, 10).map(x => x.high));
-                const allLow = Math.min(...arr.slice(0, 10).map(x => x.low));
-                const range = allHigh - allLow || 1;
-                const topPct = ((allHigh - d.high) / range) * 100;
-                const heightPct = ((d.high - d.low) / range) * 100;
-                return (
-                <View key={i} style={styles.tempDay}>
-                  <Text style={[styles.tempDayLabel, { color: colors.muted }]}>{d.day}</Text>
-                  <Text style={[styles.tempDayHigh, { color: colors.espresso }]}>{d.high}°</Text>
-                  <View style={[styles.tempBar, { backgroundColor: colors.border }]}>
-                    <View
-                      style={[
-                        styles.tempBarFill,
-                        {
-                          backgroundColor: dayColor,
-                          top: `${topPct}%`,
-                          height: `${Math.max(8, heightPct)}%`,
-                        },
-                      ]}
-                    />
-                  </View>
-                  <Text style={[styles.tempDayLow, { color: colors.lightText }]}>{d.low}°</Text>
-                </View>
-                );
-              })}
-            </View>
-            <Text style={[styles.tempSummary, { color: colors.lightText, borderTopColor: colors.border }]}>
-              {calc.tempResult?.summary ?? 'Using weather forecast for ambient temp'}
-              {calc.tempResult?.source === 'fallback' && ' — enable location for local temps'}
-              {calc.cultureType === 'thermophilic' && ' (thermophilic — use a heat source at 40–45°C)'}
-              {calc.cultureType === 'mesophilic' && ' (mesophilic — room temp is your incubation temp)'}
-            </Text>
-          </View>
-        )}
-
-        {/* ── Culture Type Picker ── */}
-        <Text style={[styles.sectionLabel, { color: colors.espresso }]}>Starter Culture</Text>
+      {/* ── Culture Type Picker ── */}
+      <Text style={[styles.sectionLabel, { color: colors.espresso }]}>Starter Culture</Text>
 
         {/* Thermophilic */}
         <Text style={[styles.groupLabel, { color: colors.lightText }]}>
@@ -302,46 +295,62 @@ export default function YogurtScreen() {
         >
           <Text style={[styles.calcBtnText, { color: colors.white }]}>Calculate</Text>
         </TouchableOpacity>
+      </>
+  );
 
-        {/* ── Results ── */}
-        {calc.showResults && calc.results && (
-          <View style={styles.results}>
-            <YogurtResultCard
-              results={calc.results}
-              cultureType={calc.cultureType}
-              thickness={calc.thickness}
-              nutrition={calc.nutrition}
-            />
-            <YogurtTimeline timeline={calc.timeline} results={calc.results} />
-            <YogurtAdvice
-              advice={calc.advice}
-              tips={calc.tips}
-              presetEmoji={calc.presetEmoji}
-              presetName={calc.presetName}
-            />
+  const resultsPanel = calc.showResults && calc.results && (
+    <View style={styles.results}>
+      <YogurtResultCard
+        results={calc.results}
+        cultureType={calc.cultureType}
+        thickness={calc.thickness}
+        nutrition={calc.nutrition}
+      />
+      <YogurtTimeline timeline={calc.timeline} results={calc.results} />
+      <YogurtAdvice
+        advice={calc.advice}
+        tips={calc.tips}
+        presetEmoji={calc.presetEmoji}
+        presetName={calc.presetName}
+      />
 
-            {/* Water hardness card */}
-            {calc.waterAdvice.length > 0 && (
-              <View style={[cardStyleLg, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={[styles.cardTitle, { color: colors.espresso }]}>💧 Water</Text>
-                {calc.waterAdvice.map((line, i) => (
-                  <Text key={i} style={[styles.adviceLine, { color: colors.muted }]}>
-                    {line}
-                  </Text>
-                ))}
-              </View>
-            )}
+      {calc.waterAdvice.length > 0 && (
+        <View style={[cardStyleLg, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.cardTitle, { color: colors.espresso }]}>💧 Water</Text>
+          {calc.waterAdvice.map((line, i) => (
+            <Text key={i} style={[styles.adviceLine, { color: colors.muted }]}>
+              {line}
+            </Text>
+          ))}
+        </View>
+      )}
 
-            {/* Research context */}
-            <YogurtScience
-              strainInfo={calc.presetStrainInfo}
-              presetHealthNote={calc.presetHealthNote}
-            />
+      <YogurtScience
+        strainInfo={calc.presetStrainInfo}
+        presetHealthNote={calc.presetHealthNote}
+      />
+    </View>
+  );
+
+  return (
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.cream }]} edges={['top']}>
+      <KeyboardScreen>
+        {isDesktop ? (
+          <View style={desktopStyles.twoCol}>
+            <ScrollView style={desktopStyles.leftCol} contentContainerStyle={desktopStyles.leftContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              {inputPanels}
+            </ScrollView>
+            <ScrollView style={desktopStyles.rightCol} contentContainerStyle={desktopStyles.rightContent} showsVerticalScrollIndicator={false}>
+              {resultsPanel}
+            </ScrollView>
           </View>
+        ) : (
+          <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            {inputPanels}
+            {resultsPanel}
+            <View style={styles.bottomPad} />
+          </ScrollView>
         )}
-
-        <View style={styles.bottomPad} />
-      </ScrollView>
       </KeyboardScreen>
     </SafeAreaView>
   );
@@ -567,4 +576,12 @@ const styles = StyleSheet.create({
   bottomPad: {
     height: 60,
   },
+});
+
+const desktopStyles = StyleSheet.create({
+  twoCol: { flex: 1, flexDirection: 'row', gap: Spacing.lg, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
+  leftCol: { flex: 1, maxWidth: 420 },
+  leftContent: { paddingBottom: 40, paddingTop: Spacing.md },
+  rightCol: { flex: 1.3 },
+  rightContent: { paddingBottom: 40, paddingTop: Spacing.md },
 });
