@@ -22,7 +22,7 @@ import {
 import { computeFermentTemp, DailyTempSummary, FermentTempResult, waterHardnessFermentAdvice } from '../lib/lactoCalculations';
 import { useLocation } from './useLocation';
 import { getSettings } from '../store/settingsCache';
-import { resolveHardness as resolveHw } from '../lib/hardnessUtils';
+import { classifyHardness } from '../data/ukWaterHardness';
 import type { WaterHardness, UserSettings } from '../models/types';
 
 export interface YogurtCalculatorState {
@@ -158,9 +158,12 @@ export function useYogurtCalculator(): YogurtCalculatorState {
     });
   }, []);
 
-  // Resolve effective water hardness: manual override > geolocation > fallback
   const resolveHardness = useCallback((): WaterHardness => {
-    return resolveHw(waterHardnessOverride, locationData?.hardness);
+    if (waterHardnessOverride > 0) {
+      return { mgL: waterHardnessOverride, classification: classifyHardness(waterHardnessOverride), note: 'Manual override', key: 'manual' };
+    }
+    if (locationData?.hardness) return locationData.hardness;
+    return { mgL: 120, classification: 'moderately soft', note: 'Unknown — assuming moderate', key: 'fallback' };
   }, [waterHardnessOverride, locationData]);
 
   const calculate = useCallback(() => {
