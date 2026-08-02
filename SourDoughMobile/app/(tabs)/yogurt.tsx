@@ -311,7 +311,7 @@ export default function YogurtScreen() {
             {/* Water hardness card */}
             {calc.waterAdvice.length > 0 && (
               <View style={[cardStyleLg, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={[cardStyleLgTitle, { color: colors.espresso }]}>💧 Water</Text>
+                <Text style={[styles.cardTitle, { color: colors.espresso }]}>💧 Water</Text>
                 {calc.waterAdvice.map((line, i) => (
                   <Text key={i} style={[styles.adviceLine, { color: colors.muted }]}>
                     {line}
