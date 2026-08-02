@@ -13,6 +13,8 @@ import {
   FermentTempResult,
 } from '../lib/lactoCalculations';
 import { useLocation } from './useLocation';
+import { getSettings } from '../store/settingsCache';
+import { classifyHardness } from '../data/ukWaterHardness';
 
 /** Which vegetable each preset defaults to. */
 const PRESET_DEFAULT_VEG: Record<string, string> = {
@@ -73,13 +75,6 @@ export interface LactoCalculatorState {
   calculate: () => void;
 }
 
-const FALLBACK_HARDNESS: WaterHardness = {
-  mgL: 120,
-  classification: 'moderately soft',
-  note: 'Unknown (default)',
-  key: 'fallback',
-};
-
 export function useLactoCalculator(): LactoCalculatorState {
   const { data: locationData, loading: locLoading, error: locError, detect, refineWithPostcode } = useLocation();
 
@@ -90,6 +85,7 @@ export function useLactoCalculator(): LactoCalculatorState {
   const [saltPct, setSaltPct] = useState('2.0');
   const [saltType, setSaltType] = useState<SaltCrystal>('maldon-flake');
   const [showResults, setShowResults] = useState(false);
+  const [waterHardnessOverride, setWaterHardnessOverride] = useState(0);
 
   const [results, setResults] = useState<FermentResults | null>(null);
   const [timeline, setTimeline] = useState<LactoDayPoint[]>([]);
@@ -100,7 +96,32 @@ export function useLactoCalculator(): LactoCalculatorState {
   const veg = useMemo(() => findVeg(vegId), [vegId]);
   const preset = FERMENT_PRESETS[fermentType]!;
   const method = preset.method;
-  const hardness = locationData?.hardness ?? null;
+
+  // Load water hardness override from settings
+  useEffect(() => {
+    getSettings().then((s) => {
+      setWaterHardnessOverride(s.waterHardnessOverride ?? 0);
+    });
+  }, []);
+
+  // Resolve effective water hardness: manual override > geolocation > fallback
+  const resolveHardness = useCallback((): WaterHardness => {
+    if (waterHardnessOverride > 0) {
+      return {
+        mgL: waterHardnessOverride,
+        classification: classifyHardness(waterHardnessOverride),
+        note: 'Manual override — user-supplied value',
+        key: 'manual',
+      };
+    }
+    if (locationData?.hardness) return locationData.hardness;
+    return {
+      mgL: 120,
+      classification: 'moderately soft',
+      note: 'Unknown — assuming moderate',
+      key: 'fallback',
+    };
+  }, [waterHardnessOverride, locationData]);
 
   // Compute temperature from forecast in real time
   const tempResult = useMemo(() => {
@@ -191,14 +212,14 @@ export function useLactoCalculator(): LactoCalculatorState {
       estimatedDaysMax: duration.daysMax,
     };
 
-    const h = hardness ?? FALLBACK_HARDNESS;
+    const h = resolveHardness();
 
     setResults(finalResults);
     setTimeline(buildLactoTimeline(finalResults.estimatedDays, method));
     setAdvice(lactoAdvice(method, salt, temp, finalResults.estimatedDays));
     setWaterAdvice(waterHardnessFermentAdvice(h));
     setShowResults(true);
-  }, [vegWeight, waterAmount, saltPct, saltType, fermentType, method, veg, hardness, effectiveTemp, locationData]);
+  }, [vegWeight, waterAmount, saltPct, saltType, fermentType, method, veg, effectiveTemp, locationData, resolveHardness]);
 
   return {
     fermentType,
@@ -221,7 +242,7 @@ export function useLactoCalculator(): LactoCalculatorState {
     locError,
     onRefreshLocation: detect,
     onPostcodeSubmit: refineWithPostcode,
-    hardness,
+    hardness: resolveHardness(),
     results,
     timeline,
     advice,

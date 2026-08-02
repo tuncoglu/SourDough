@@ -20,7 +20,9 @@ import {
 } from '../lib/yogurtCalculations';
 import { computeFermentTemp, DailyTempSummary, FermentTempResult, waterHardnessFermentAdvice } from '../lib/lactoCalculations';
 import { useLocation } from './useLocation';
-import type { WaterHardness } from '../models/types';
+import { getSettings } from '../store/settingsCache';
+import { classifyHardness } from '../data/ukWaterHardness';
+import type { WaterHardness, UserSettings } from '../models/types';
 
 export interface YogurtCalculatorState {
   // Inputs
@@ -89,6 +91,7 @@ export function useYogurtCalculator(): YogurtCalculatorState {
   const [previousBatchGrams, setPreviousBatchGrams] = useState('60'); // 30g/L × 2L default
   const [preHeatEnabled, setPreHeatEnabled] = useState(true);
   const [showResults, setShowResults] = useState(false);
+  const [waterHardnessOverride, setWaterHardnessOverride] = useState(0);
 
   const [results, setResults] = useState<YogurtResults | null>(null);
   const [timeline, setTimeline] = useState<YogurtStepPoint[]>([]);
@@ -146,6 +149,32 @@ export function useYogurtCalculator(): YogurtCalculatorState {
       setPreviousBatchGrams(String(litres * 30)); // 30g per litre (≈2 tbsp/L)
     }
   }, [milkLitres, preset]);
+
+  // Load water hardness override from settings
+  useEffect(() => {
+    getSettings().then((s) => {
+      setWaterHardnessOverride(s.waterHardnessOverride ?? 0);
+    });
+  }, []);
+
+  // Resolve effective water hardness: manual override > geolocation > fallback
+  const resolveHardness = useCallback((): WaterHardness => {
+    if (waterHardnessOverride > 0) {
+      return {
+        mgL: waterHardnessOverride,
+        classification: classifyHardness(waterHardnessOverride),
+        note: 'Manual override — user-supplied value',
+        key: 'manual',
+      };
+    }
+    if (locationData?.hardness) return locationData.hardness;
+    return {
+      mgL: 120,
+      classification: 'moderately soft',
+      note: 'Unknown — assuming moderate',
+      key: 'fallback',
+    };
+  }, [waterHardnessOverride, locationData]);
 
   const calculate = useCallback(() => {
     const litres = parseFloat(milkLitres) || 0;
@@ -210,21 +239,21 @@ export function useYogurtCalculator(): YogurtCalculatorState {
       };
 
       setResults(finalResults);
-      setTimeline(buildYogurtTimeline(finalResults.incubationHours, cultureType, preset.thickness, preHeatEnabled));
+      setTimeline(buildYogurtTimeline(finalResults.incubationHours, cultureType, preset.thickness, preHeatEnabled, starterSource, finalResults.previousBatchGrams));
       setAdvice(yogurtAdvice(cultureType, finalTemp, milk.fatLevel, preHeatEnabled, preset.thickness, finalResults.incubationHours));
-      setWaterAdvice(locationData?.hardness ? waterHardnessFermentAdvice(locationData.hardness) : []);
+      setWaterAdvice(waterHardnessFermentAdvice(resolveHardness()));
       setNutrition(calculateYogurtNutrition(milk, preset.thickness));
     } else {
       // Thermophilic — use preset temp directly
       setResults(baseResults);
-      setTimeline(buildYogurtTimeline(baseResults.incubationHours, cultureType, preset.thickness, preHeatEnabled));
+      setTimeline(buildYogurtTimeline(baseResults.incubationHours, cultureType, preset.thickness, preHeatEnabled, starterSource, baseResults.previousBatchGrams));
       setAdvice(yogurtAdvice(cultureType, temp, milk.fatLevel, preHeatEnabled, preset.thickness, baseResults.incubationHours));
-      setWaterAdvice(locationData?.hardness ? waterHardnessFermentAdvice(locationData.hardness) : []);
+      setWaterAdvice(waterHardnessFermentAdvice(resolveHardness()));
       setNutrition(calculateYogurtNutrition(milk, preset.thickness));
     }
 
     setShowResults(true);
-  }, [yogurtType, cultureType, milkId, milkLitres, sachetCount, preHeatEnabled, milk, preset, effectiveTemp, locationData]);
+  }, [yogurtType, cultureType, milkId, milkLitres, sachetCount, starterSource, previousBatchGrams, preHeatEnabled, milk, preset, effectiveTemp, locationData, resolveHardness]);
 
   return {
     yogurtType,

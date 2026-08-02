@@ -7,6 +7,8 @@ import {
   ActivityIndicator,
   Share,
   TouchableOpacity,
+  Platform,
+  Alert,
 } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -23,8 +25,7 @@ import { FermentationTimeline } from '../../src/components/FermentationTimeline'
 import { AdviceCards } from '../../src/components/FermentAdvice';
 import { MethodTimeline } from '../../src/components/MethodTimeline';
 import { getPreset } from '../../src/data/recipePresets';
-
-// generateShareText replaced by imported formatRecipeText below
+import { copyToClipboard } from '../../src/lib/clipboard';
 
 export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -65,7 +66,19 @@ export default function RecipeDetailScreen() {
     if (!recipe) return;
     const text = formatRecipeText(recipe, unitSystem);
     try {
-      await Share.share({ message: text });
+      if (Platform.OS === 'web') {
+        const shared = await (navigator.share
+          ? navigator.share({ text }).then(() => true).catch(() => false)
+          : Promise.resolve(false));
+        if (!shared) {
+          const copied = await copyToClipboard(text);
+          if (copied) {
+            Alert.alert('Copied!', 'Recipe copied to clipboard.');
+          }
+        }
+      } else {
+        await Share.share({ message: text });
+      }
     } catch {
       // User cancelled — no-op
     }

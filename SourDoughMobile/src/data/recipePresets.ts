@@ -433,7 +433,7 @@ export const RECIPE_PRESETS: RecipePreset[] = [
       saltMin: 1.8,
       saltMax: 2.5,
       typicalSalt: 2.0,
-      typicalFlourType: 'Generic: Spelt Flour',
+      typicalFlourType: 'Wholemeal Spelt Organic (407)',
     },
     process: {
       autolyseMinutes: 30,

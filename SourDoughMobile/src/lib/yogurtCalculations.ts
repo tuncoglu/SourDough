@@ -192,9 +192,12 @@ export function buildYogurtTimeline(
   cultureType: YogurtCultureType,
   thickness: string,
   preHeatEnabled: boolean,
+  starterSource?: StarterSource,
+  previousBatchGrams?: number,
 ): YogurtStepPoint[] {
   const points: YogurtStepPoint[] = [];
   const totalH = Math.ceil(incubationHours);
+  const isPreviousBatch = starterSource === 'previous-batch';
 
   // Step 0: Pre-heat (optional)
   if (preHeatEnabled) {
@@ -207,12 +210,20 @@ export function buildYogurtTimeline(
 
   // Inoculation
   const coolTemp = cultureType === 'thermophilic' ? '42°C' : '22°C';
+  const starterInstruction = isPreviousBatch
+    ? `Whisk in ${previousBatchGrams ?? 30}g of yogurt from your previous batch (≈${Math.round((previousBatchGrams ?? 30) / 15)} tbsp) until smooth and fully incorporated.`
+    : `Whisk in starter culture until fully dissolved.`;
+
+  const incubateInstruction = cultureType === 'thermophilic'
+    ? 'Place in yogurt maker or warm spot (oven with light on, dehydrator, thermal flask).'
+    : 'Cover and leave on the counter at room temperature.';
+
   points.push({
     hour: 0,
     label: 'Hour 0 — Inoculate',
     description: preHeatEnabled
-      ? `Cool milk to ${coolTemp}. Whisk in starter culture until fully dissolved. Pour into clean jars. ${cultureType === 'thermophilic' ? 'Place in yogurt maker or warm spot (oven with light on, dehydrator, thermal flask).' : 'Cover and leave on the counter at room temperature.'}`
-      : `Warm milk to ${coolTemp} if needed. Whisk in starter culture until fully dissolved. Pour into clean jars. ${cultureType === 'thermophilic' ? 'Place in yogurt maker or warm spot (oven with light on, dehydrator, thermal flask). Maintain 40–45°C.' : 'Cover and leave on the counter at room temperature (20–25°C).'}`,
+      ? `Cool milk to ${coolTemp}. ${starterInstruction} Pour into clean jars. ${incubateInstruction}`
+      : `Warm milk to ${coolTemp} if needed. ${starterInstruction} Pour into clean jars. ${cultureType === 'thermophilic' ? `${incubateInstruction} Maintain 40–45°C.` : `${incubateInstruction} (20–25°C).`}`,
   });
 
   // Early incubation (~20%)
