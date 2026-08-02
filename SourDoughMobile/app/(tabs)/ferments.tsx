@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLactoCalculator } from '@/src/hooks/useLactoCalculator';
+import { useBreakpoint } from '@/src/hooks/useBreakpoint';
 import { KeyboardScreen } from '@/src/components/KeyboardScreen';
 import { Chip } from '@/src/components/Chip';
 import { LactoResultCard } from '@/src/components/LactoResultCard';
@@ -27,6 +28,7 @@ export default function FermentsScreen() {
   const router = useRouter();
   const calc = useLactoCalculator();
   const { colors } = useAppTheme();
+  const { isDesktop } = useBreakpoint();
 
   const handleCalculate = useCallback(() => {
     calc.calculate();
@@ -111,7 +113,7 @@ export default function FermentsScreen() {
         <Text style={[styles.sectionLabel, { color: colors.espresso }]}>Style</Text>
         <ScrollView
           horizontal
-          showsHorizontalScrollIndicator={false}
+          showsHorizontalScrollIndicator={isDesktop}
           style={styles.chipScroll}
           contentContainerStyle={styles.chipRow}
         >
@@ -135,7 +137,7 @@ export default function FermentsScreen() {
         {calc.vegMix.length === 0 && (
           <View style={[styles.combosCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.combosTitle, { color: colors.muted }]}>SUGGESTED COMBINATIONS</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.combosRow}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={isDesktop} contentContainerStyle={styles.combosRow}>
               {calc.VEG_COMBOS.map((combo) => (
                 <TouchableOpacity
                   key={combo.id}
@@ -180,7 +182,7 @@ export default function FermentsScreen() {
             return (
               <View key={key} style={styles.vegCategory}>
                 <Text style={[styles.vegCatLabel, { color: colors.muted }]}>{label}</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.vegChipRow}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={isDesktop} contentContainerStyle={styles.vegChipRow}>
                   {items.map((veg) => {
                     const inMix = !!calc.vegMix.find(m => m.vegId === veg.id);
                     const isSelected = calc.isMultiVeg ? inMix : calc.vegId === veg.id;
@@ -283,7 +285,7 @@ export default function FermentsScreen() {
           <Text style={[styles.miniLabel, { color: colors.muted }]}>Salt type</Text>
           <ScrollView
             horizontal
-            showsHorizontalScrollIndicator={false}
+            showsHorizontalScrollIndicator={isDesktop}
             style={styles.chipScroll}
           >
             {SALT_TYPE_ORDER.map((st) => (

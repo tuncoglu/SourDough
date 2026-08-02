@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useYogurtCalculator } from '@/src/hooks/useYogurtCalculator';
+import { useBreakpoint } from '@/src/hooks/useBreakpoint';
 import { KeyboardScreen } from '@/src/components/KeyboardScreen';
 import { Chip } from '@/src/components/Chip';
 import { YogurtResultCard } from '@/src/components/YogurtResultCard';
@@ -26,6 +27,7 @@ export default function YogurtScreen() {
   const router = useRouter();
   const calc = useYogurtCalculator();
   const { colors } = useAppTheme();
+  const { isDesktop } = useBreakpoint();
 
   const handleCalculate = useCallback(() => {
     calc.calculate();
@@ -116,7 +118,7 @@ export default function YogurtScreen() {
         </Text>
         <ScrollView
           horizontal
-          showsHorizontalScrollIndicator={false}
+          showsHorizontalScrollIndicator={isDesktop}
           style={styles.chipScroll}
           contentContainerStyle={styles.chipRow}
         >
@@ -142,7 +144,7 @@ export default function YogurtScreen() {
         </Text>
         <ScrollView
           horizontal
-          showsHorizontalScrollIndicator={false}
+          showsHorizontalScrollIndicator={isDesktop}
           style={styles.chipScroll}
           contentContainerStyle={styles.chipRow}
         >
@@ -176,7 +178,7 @@ export default function YogurtScreen() {
         <Text style={[styles.sectionLabel, { color: colors.espresso }]}>Milk</Text>
         <ScrollView
           horizontal
-          showsHorizontalScrollIndicator={false}
+          showsHorizontalScrollIndicator={isDesktop}
           style={styles.chipScroll}
           contentContainerStyle={styles.chipRow}
         >
