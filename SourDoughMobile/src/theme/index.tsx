@@ -229,14 +229,6 @@ export const TouchTarget = {
   justifyContent: 'center' as const,
 } as const;
 
-/** Generous hit slop for small icon-only buttons. */
-export const HitSlop = {
-  top: 8,
-  bottom: 8,
-  left: 8,
-  right: 8,
-} as const;
-
 // ── Shared Style Tokens ─────────────────────────────────────────────────
 
 /** Standard card — used across the bread calculator and settings. */
