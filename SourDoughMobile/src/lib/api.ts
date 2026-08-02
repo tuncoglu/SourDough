@@ -99,12 +99,12 @@ export async function getAmbientTemp(
   return data?.current?.temperature_2m ?? null;
 }
 
-/** Fetch 48-hour temperature forecast */
+/** Fetch 10-day hourly temperature forecast (Open-Meteo free tier supports up to 16 days). */
 export async function fetchHourlyForecast(
   lat: number,
   lon: number,
 ): Promise<HourlyPoint[] | null> {
-  const url = `${OPEN_METEO_BASE}/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m&timezone=auto&forecast_days=2`;
+  const url = `${OPEN_METEO_BASE}/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m&timezone=auto&forecast_days=10`;
   const data = await fetchWithRetry(url, 10000);
   if (!data?.hourly) return null;
 

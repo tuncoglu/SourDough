@@ -69,12 +69,12 @@ export default function FermentsScreen() {
               🌡 Fermentation temperature
             </Text>
             <View style={styles.tempDays}>
-              {calc.dailyTemps.slice(0, 5).map((d, i, arr) => {
+              {calc.dailyTemps.slice(0, 7).map((d, i, arr) => {
                 // Show only actual forecast days — stop before repeated data
                 if (i > 0 && d.high === arr[i - 1].high && d.low === arr[i - 1].low) return null;
                 const dayColor = d.avg > 24 ? colors.hot : d.avg > 20 ? colors.olive : d.avg > 16 ? colors.cool : colors.cold;
-                const allHigh = Math.max(...arr.slice(0, 5).map(x => x.high));
-                const allLow = Math.min(...arr.slice(0, 5).map(x => x.low));
+                const allHigh = Math.max(...arr.slice(0, 7).map(x => x.high));
+                const allLow = Math.min(...arr.slice(0, 7).map(x => x.low));
                 const range = allHigh - allLow || 1;
                 const topPct = ((allHigh - d.high) / range) * 100;
                 const heightPct = ((d.high - d.low) / range) * 100;
