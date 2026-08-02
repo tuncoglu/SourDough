@@ -50,7 +50,7 @@ export default function CalculatorScreen() {
   const actions = useRecipeActions();
 
   // ── H1: Location fallback → Settings (water hardness override) ───────
-  const prefermentType = prefermentType;
+  const prefermentType = preset.selectedPreset?.dough.preferment?.type;
 
   const { recommendation, dismiss: dismissRec } = useDailyRecommendation(
     inputs.ambientTemp, preset.breadType,
