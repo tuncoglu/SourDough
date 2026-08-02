@@ -215,6 +215,7 @@ export function useLactoCalculator(): LactoCalculatorState {
     const p = FERMENT_PRESETS[type]!;
     setFermentType(type);
     setShowResults(false);
+    setVegMix([]); // reset multi-veg mix when switching presets
 
     const defaultVegId = PRESET_DEFAULT_VEG[type] ?? 'green-cabbage';
     const defaultVeg = findVeg(defaultVegId);
