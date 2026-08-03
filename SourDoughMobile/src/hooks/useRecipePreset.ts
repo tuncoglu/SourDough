@@ -19,11 +19,11 @@ export interface RecipePresetActions {
     preset: RecipePreset,
     mixRows: MixRow[],
     setMixRows: (updater: (prev: MixRow[]) => MixRow[]) => void,
-    currentHydration: string,
+    currentWaterGrams: string,
     currentStarterWeight: string,
     currentSaltPct: string,
     currentOilPct: string,
-    setHydration: (v: string) => void,
+    setWaterGrams: (v: string) => void,
     setStarterWeight: (v: string) => void,
     setSaltPct: (v: string) => void,
   ) => void;
@@ -47,11 +47,11 @@ export function useRecipePreset(): RecipePresetState & RecipePresetActions {
     preset: RecipePreset,
     mixRows: MixRow[],
     setMixRows: (updater: (prev: MixRow[]) => MixRow[]) => void,
-    currentHydration: string,
+    currentWaterGrams: string,
     currentStarterWeight: string,
     currentSaltPct: string,
     currentOilPct: string,
-    setHydration: (v: string) => void,
+    setWaterGrams: (v: string) => void,
     setStarterWeight: (v: string) => void,
     setSaltPct: (v: string) => void,
   ) => {
@@ -59,8 +59,10 @@ export function useRecipePreset(): RecipePresetState & RecipePresetActions {
     // Starter weight depends on total flour weight (varies per recipe), so we cannot
     // trivially reverse it — always preserve the user's starter value on preset switch.
     const prevPreset = selectedPreset;
+    const totalFlour = mixRows.reduce((sum, r) => sum + (parseFloat(r.grams) || 0), 0);
+    const presetWaterGrams = String(Math.round(totalFlour * preset.dough.typicalHydration / 100));
     const userCustomizedHydration = !prevPreset ||
-      parseFloat(currentHydration) !== prevPreset.dough.typicalHydration;
+      parseFloat(currentWaterGrams) !== parseFloat(presetWaterGrams);
     const userCustomizedStarter = prevPreset !== null; // always preserve starter edits
     const userCustomizedSalt = !prevPreset ||
       parseFloat(currentSaltPct) !== prevPreset.dough.typicalSalt;
@@ -80,10 +82,9 @@ export function useRecipePreset(): RecipePresetState & RecipePresetActions {
 
     // Only overwrite fields the user hasn't manually customized
     if (!userCustomizedHydration) {
-      setHydration(String(preset.dough.typicalHydration));
+      setWaterGrams(presetWaterGrams);
     }
     if (!userCustomizedStarter) {
-      const totalFlour = mixRows.reduce((sum, r) => sum + (parseFloat(r.grams) || 0), 0);
       const starterG = Math.round(totalFlour * preset.dough.typicalInoculation / 100);
       setStarterWeight(String(starterG));
     }

@@ -11,7 +11,7 @@ import type { MixRow } from '../hooks/useCalculatorInputs';
 interface Props {
   mixRows: MixRow[];
   totalFlourWeight: number;
-  hydration: string;
+  waterGrams: string;
   starterWeight: string;
   saltPct: string;
   oilPct: string;
@@ -20,7 +20,7 @@ interface Props {
   onRemoveFlour: (key: string) => void;
   onUpdateFlour: (key: string, flour: Parameters<typeof FlourPicker>[0]['onSelect'] extends (f: infer F) => void ? F : never) => void;
   onUpdateFlourGrams: (key: string, grams: string) => void;
-  setHydration: (v: string) => void;
+  setWaterGrams: (v: string) => void;
   setStarterWeight: (v: string) => void;
   setSaltPct: (v: string) => void;
   setOilPct: (v: string) => void;
@@ -29,7 +29,7 @@ interface Props {
 export function FlourBlendCard({
   mixRows,
   totalFlourWeight,
-  hydration,
+  waterGrams,
   starterWeight,
   saltPct,
   oilPct,
@@ -38,7 +38,7 @@ export function FlourBlendCard({
   onRemoveFlour,
   onUpdateFlour,
   onUpdateFlourGrams,
-  setHydration,
+  setWaterGrams,
   setStarterWeight,
   setSaltPct,
   setOilPct,
@@ -130,7 +130,7 @@ export function FlourBlendCard({
         </TouchableOpacity>
       )}
 
-      <NumberInput label="Hydration" value={hydration} onChangeText={setHydration} unit="%" />
+      <NumberInput label="Water" value={waterGrams} onChangeText={setWaterGrams} unit="g" />
       <NumberInput label="Starter" value={starterWeight} onChangeText={setStarterWeight} unit="g" />
       <NumberInput label="Salt" value={saltPct} onChangeText={setSaltPct} unit="%" />
 

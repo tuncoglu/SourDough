@@ -74,7 +74,12 @@ export default function CalculatorScreen() {
           })),
         );
       }
-      inputs.setHydration(String(ri.hydration));
+      // Restore water grams from saved recipe (legacy: derive from hydration %)
+      inputs.setWaterGrams(
+        ri.addedWaterGrams !== undefined
+          ? String(ri.addedWaterGrams)
+          : String(Math.round(ri.hydration / 100 * ri.flourWeight)),
+      );
       inputs.setStarterWeight(String(ri.starterWeight));
       inputs.setSaltPct(String(ri.saltPct));
       inputs.setStarterHydrationStr(String(ri.starterHydration));
@@ -114,7 +119,7 @@ export default function CalculatorScreen() {
   // ── D2: Stale-results detection (derived, no extra render) ──────────────
   const calculatedSignature = React.useRef<string | null>(null);
   const inputSignature = [
-    inputs.hydration, inputs.starterWeight, inputs.saltPct,
+    inputs.waterGrams, inputs.starterWeight, inputs.saltPct,
     inputs.ambientTemp, inputs.flourTemp, inputs.waterTemp, inputs.starterTemp,
     preset.oilPct, preset.prefermentFlourPct, preset.prefermentEnabled,
     inputs.mixRows.map((r) => `${r.flour.label}:${r.grams}`).join(','),
@@ -135,7 +140,7 @@ export default function CalculatorScreen() {
     calc.doCalculate({
       blend: inputs.blend,
       totalFlourWeight: inputs.totalFlourWeight,
-      hydration: inputs.hydration,
+      waterGrams: inputs.waterGrams,
       starterWeight: inputs.starterWeight,
       saltPct: inputs.saltPct,
       starterHydrationStr: inputs.starterHydrationStr,
@@ -164,7 +169,7 @@ export default function CalculatorScreen() {
     actions.handleSave({
       blend: inputs.blend,
       totalFlourWeight: inputs.totalFlourWeight,
-      hydration: inputs.hydration,
+      waterGrams: inputs.waterGrams,
       starterWeight: inputs.starterWeight,
       saltPct: inputs.saltPct,
       starterHydrationStr: inputs.starterHydrationStr,
@@ -195,7 +200,7 @@ export default function CalculatorScreen() {
     actions.handleShare({
       blend: inputs.blend,
       totalFlourWeight: inputs.totalFlourWeight,
-      hydration: inputs.hydration,
+      waterGrams: inputs.waterGrams,
       starterWeight: inputs.starterWeight,
       saltPct: inputs.saltPct,
       starterHydrationStr: inputs.starterHydrationStr,
@@ -303,8 +308,8 @@ export default function CalculatorScreen() {
               <TouchableOpacity
                 onPress={() => preset.handlePresetSelect(
                   recommendation.preset, inputs.mixRows, inputs.setMixRows,
-                  inputs.hydration, inputs.starterWeight, inputs.saltPct, preset.oilPct,
-                  inputs.setHydration, inputs.setStarterWeight, inputs.setSaltPct,
+                  inputs.waterGrams, inputs.starterWeight, inputs.saltPct, preset.oilPct,
+                  inputs.setWaterGrams, inputs.setStarterWeight, inputs.setSaltPct,
                 )}
                 activeOpacity={0.7}
                 hitSlop={{ top: 8, bottom: 8 }}
@@ -332,8 +337,8 @@ export default function CalculatorScreen() {
           selected={preset.breadType}
           onSelect={(p) => preset.handlePresetSelect(
             p, inputs.mixRows, inputs.setMixRows,
-            inputs.hydration, inputs.starterWeight, inputs.saltPct, preset.oilPct,
-            inputs.setHydration, inputs.setStarterWeight, inputs.setSaltPct,
+            inputs.waterGrams, inputs.starterWeight, inputs.saltPct, preset.oilPct,
+            inputs.setWaterGrams, inputs.setStarterWeight, inputs.setSaltPct,
           )}
         />
         {preset.selectedPreset && (
@@ -348,7 +353,7 @@ export default function CalculatorScreen() {
       <FlourBlendCard
         mixRows={inputs.mixRows}
         totalFlourWeight={inputs.totalFlourWeight}
-        hydration={inputs.hydration}
+        waterGrams={inputs.waterGrams}
         starterWeight={inputs.starterWeight}
         saltPct={inputs.saltPct}
         oilPct={preset.oilPct}
@@ -357,7 +362,7 @@ export default function CalculatorScreen() {
         onRemoveFlour={inputs.handleRemoveFlour}
         onUpdateFlour={inputs.handleUpdateFlour}
         onUpdateFlourGrams={inputs.handleUpdateFlourGrams}
-        setHydration={inputs.setHydration}
+        setWaterGrams={inputs.setWaterGrams}
         setStarterWeight={inputs.setStarterWeight}
         setSaltPct={inputs.setSaltPct}
         setOilPct={preset.setOilPct}
@@ -555,10 +560,10 @@ export default function CalculatorScreen() {
     preset.breadType, preset.selectedPreset, preset.oilPct, preset.showOil,
     preset.prefermentEnabled, preset.prefermentFlourPct, preset.handlePresetSelect,
     preset.setPrefermentEnabled, preset.setPrefermentFlourPct,
-    inputs.mixRows, inputs.totalFlourWeight, inputs.hydration, inputs.starterWeight,
+    inputs.mixRows, inputs.totalFlourWeight, inputs.waterGrams, inputs.starterWeight,
     inputs.saltPct, inputs.handleAddFlour, inputs.handleRemoveFlour,
     inputs.handleUpdateFlour, inputs.handleUpdateFlourGrams,
-    inputs.setHydration, inputs.setStarterWeight, inputs.setSaltPct,
+    inputs.setWaterGrams, inputs.setStarterWeight, inputs.setSaltPct,
     inputs.ambientTemp, inputs.flourTemp, inputs.waterTemp, inputs.starterTemp,
     inputs.locationData, inputs.setAmbientTemp, inputs.setFlourTemp,
     inputs.setWaterTemp, inputs.setStarterTemp,

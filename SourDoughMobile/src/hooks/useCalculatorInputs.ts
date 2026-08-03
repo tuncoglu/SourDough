@@ -20,7 +20,7 @@ export interface CalculatorInputs {
   blend: FlourBlendEntry[];
 
   // Ingredient inputs
-  hydration: string;
+  waterGrams: string;
   starterWeight: string;
   saltPct: string;
   starterHydrationStr: string;
@@ -48,7 +48,7 @@ export interface CalculatorInputs {
   handleRemoveFlour: (key: string) => void;
   handleUpdateFlour: (key: string, flour: FlourEntry) => void;
   handleUpdateFlourGrams: (key: string, grams: string) => void;
-  setHydration: (v: string) => void;
+  setWaterGrams: (v: string) => void;
   setStarterWeight: (v: string) => void;
   setSaltPct: (v: string) => void;
   setStarterHydrationStr: (v: string) => void;
@@ -72,7 +72,7 @@ export function useCalculatorInputs(): CalculatorInputs {
   const [mixRows, setMixRows] = useState<MixRow[]>([
     { key: nextMixKey(), flour: findFlour(DEFAULT_SETTINGS.defaultFlourType), grams: String(DEFAULT_SETTINGS.defaultFlourWeight) },
   ]);
-  const [hydration, setHydration] = useState(String(DEFAULT_SETTINGS.defaultHydration));
+  const [waterGrams, setWaterGrams] = useState(String(DEFAULT_SETTINGS.defaultWaterGrams));
   const [starterWeight, setStarterWeight] = useState('100');
   const [saltPct, setSaltPct] = useState(String(DEFAULT_SETTINGS.defaultSaltPct));
   const [starterHydrationStr, setStarterHydrationStr] = useState('100');
@@ -144,7 +144,7 @@ export function useCalculatorInputs(): CalculatorInputs {
       setSettings(s);
       if (!userInteractedRef.current) {
         setMixRows([{ key: nextMixKey(), flour: findFlour(s.defaultFlourType), grams: String(s.defaultFlourWeight) }]);
-        setHydration(String(s.defaultHydration));
+        setWaterGrams(String(s.defaultWaterGrams));
         setSaltPct(String(s.defaultSaltPct));
         setStarterHydrationStr(String(s.defaultStarterHydration));
       }
@@ -189,7 +189,7 @@ export function useCalculatorInputs(): CalculatorInputs {
   }, []);
 
   const wrappedSetters = useMemo(() => ({
-    setHydration: wrapSet(setHydration),
+    setWaterGrams: wrapSet(setWaterGrams),
     setStarterWeight: wrapSet(setStarterWeight),
     setSaltPct: wrapSet(setSaltPct),
     setStarterHydrationStr: wrapSet(setStarterHydrationStr),
@@ -205,7 +205,7 @@ export function useCalculatorInputs(): CalculatorInputs {
     setMixRows,
     totalFlourWeight,
     blend,
-    hydration,
+    waterGrams,
     starterWeight,
     saltPct,
     starterHydrationStr,

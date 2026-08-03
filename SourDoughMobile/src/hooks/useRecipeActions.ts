@@ -19,7 +19,7 @@ const REVIEW_REQUESTED_KEY = 'sourdough_review_requested';
 interface SaveParams {
   blend: FlourBlendEntry[];
   totalFlourWeight: number;
-  hydration: string;
+  waterGrams: string;
   starterWeight: string;
   saltPct: string;
   starterHydrationStr: string;
@@ -43,7 +43,7 @@ interface SaveParams {
 interface ShareParams {
   blend: FlourBlendEntry[];
   totalFlourWeight: number;
-  hydration: string;
+  waterGrams: string;
   starterWeight: string;
   saltPct: string;
   starterHydrationStr: string;
@@ -67,7 +67,7 @@ export function useRecipeActions() {
 
   const handleSave = useCallback(async (params: SaveParams) => {
     const {
-      blend, totalFlourWeight, hydration, starterWeight, saltPct,
+      blend, totalFlourWeight, waterGrams, starterWeight, saltPct,
       starterHydrationStr, oilPct, ambientTemp, flourTemp, waterTemp,
       starterTemp, starterFlourLabel, prefermentEnabled, prefermentFlourPct,
       prefermentType,
@@ -98,7 +98,8 @@ export function useRecipeActions() {
         flourProtein,
         flourProductNo: blend[0].productNumber,
         flourBlend: blend,
-        hydration: parseFloat(hydration),
+        hydration: results.ingredients.hydrationPct,
+        addedWaterGrams: parseFloat(waterGrams) || undefined,
         starterWeight: parseFloat(starterWeight),
         starterHydration: shyd,
         starterFlourType: starterFlourLabel,
@@ -149,7 +150,7 @@ export function useRecipeActions() {
 
   const handleShare = useCallback(async (params: ShareParams) => {
     const {
-      blend, totalFlourWeight, hydration, starterWeight, saltPct,
+      blend, totalFlourWeight, waterGrams, starterWeight, saltPct,
       starterHydrationStr, oilPct, ambientTemp, waterTemp,
       prefermentEnabled, prefermentFlourPct, prefermentType,
       results, locationSummary, bakeInfo, unitSystem,
@@ -159,7 +160,7 @@ export function useRecipeActions() {
       locationSummary,
       totalFlourWeight,
       blend,
-      parseFloat(hydration),
+      results.ingredients.hydrationPct,
       parseFloat(starterWeight),
       parseFloat(starterHydrationStr),
       parseFloat(saltPct),

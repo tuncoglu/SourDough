@@ -101,13 +101,13 @@ export default function SettingsScreen() {
         </View>
 
         <NumberInput
-          label="Hydration"
-          value={String(settings.defaultHydration)}
+          label="Water"
+          value={String(settings.defaultWaterGrams)}
           onChangeText={(v) => {
             const n = parseFloat(v);
-            if (!isNaN(n)) setSettings({ ...settings, defaultHydration: n });
+            if (!isNaN(n)) setSettings({ ...settings, defaultWaterGrams: n });
           }}
-          unit="%"
+          unit="g"
         />
 
         <NumberInput

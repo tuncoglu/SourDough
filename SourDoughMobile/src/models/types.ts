@@ -69,7 +69,8 @@ export interface RecipeInputs {
   flourProtein: number;      // % (weighted average for blends)
   flourProductNo: string;    // first flour's product no (or composite for blends)
   flourBlend?: FlourBlendEntry[]; // detailed blend breakdown (undefined on legacy recipes)
-  hydration: number;         // %
+  hydration: number;         // % (derived display value when addedWaterGrams is set)
+  addedWaterGrams?: number;  // g — bowl water (new saves; undefined on legacy recipes)
   starterWeight: number;     // g
   starterHydration: number;  // %
   starterFlourType?: string; // flour label used to feed the starter (undefined on legacy recipes)
@@ -191,7 +192,7 @@ export type UnitSystem = 'metric' | 'imperial';
 export interface UserSettings {
   defaultFlourType: string;
   defaultFlourWeight: number;
-  defaultHydration: number;
+  defaultWaterGrams: number;       // g — default bowl water
   defaultStarterHydration: number; // starter hydration % (default 100)
   defaultSaltPct: number;
   waterHardnessOverride: number; // mg/L CaCO₃, 0 = auto-detect
@@ -200,7 +201,7 @@ export interface UserSettings {
 export const DEFAULT_SETTINGS: UserSettings = {
   defaultFlourType: 'No. 4 Organic White (105)',
   defaultFlourWeight: 500,
-  defaultHydration: 75,
+  defaultWaterGrams: 375,          // 75% of 500g
   defaultStarterHydration: 100,
   defaultSaltPct: 2.0,
   waterHardnessOverride: 0,

@@ -127,6 +127,12 @@ export default function RecipeDetailScreen() {
         </>
       )}
 
+      {recipe.inputs.addedWaterGrams != null && recipe.inputs.addedWaterGrams > 0 && (
+        <View style={styles.row}>
+          <Text style={[styles.label, { color: colors.espresso }]}>Water</Text>
+          <Text style={[styles.value, { color: colors.espresso }]}>{formatWeight(recipe.inputs.addedWaterGrams, unitSystem, 0)}</Text>
+        </View>
+      )}
       <View style={styles.row}>
         <Text style={[styles.label, { color: colors.espresso }]}>Hydration</Text>
         <Text style={[styles.value, { color: colors.espresso }]}>{recipe.inputs.hydration.toFixed(0)}%</Text>

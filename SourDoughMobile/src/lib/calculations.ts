@@ -162,6 +162,9 @@ export function calculateFDT(
  * Pre-ferment (poolish or biga) is decomposed identically to starter:
  * its flour is subtracted from the bowl flour, its water from the added water.
  * Oil is added after and included in total dough weight.
+ *
+ * When `addedWaterGrams` is provided, it is used as the bowl water and
+ * hydration % is derived from it. Otherwise, hydrationPct is used directly.
  */
 export function calculateIngredients(
   freshFlour: number,
@@ -171,6 +174,7 @@ export function calculateIngredients(
   starterHydration: number,
   oilPct?: number,
   preferment?: { type: 'poolish' | 'biga'; flourPct: number; hydration: number },
+  addedWaterGrams?: number,
 ): IngredientResults {
   // Split starter into flour and water components
   const starterFlourPct = 100.0 / (100.0 + starterHydration);
@@ -196,9 +200,20 @@ export function calculateIngredients(
   // Bowl flour: fresh flour minus what's in the pre-ferment
   const bowlFlour = Math.max(0, freshFlour - prefermentFlour);
 
-  const waterTotal = (hydrationPct / 100.0) * totalFlour;
-  // Added water = total water – water in starter – water in pre-ferment
-  const addedWater = Math.max(0, waterTotal - starterWater - prefermentWater);
+  // When water grams are provided directly, derive hydration from them.
+  // Otherwise use the hydrationPct parameter (backward compat / tests).
+  let waterTotal: number;
+  let addedWater: number;
+  let effectiveHydrationPct: number;
+  if (addedWaterGrams !== undefined) {
+    addedWater = addedWaterGrams;
+    waterTotal = addedWater + starterWater + prefermentWater;
+    effectiveHydrationPct = totalFlour > 0 ? (waterTotal / totalFlour) * 100 : hydrationPct;
+  } else {
+    waterTotal = (hydrationPct / 100.0) * totalFlour;
+    addedWater = Math.max(0, waterTotal - starterWater - prefermentWater);
+    effectiveHydrationPct = hydrationPct;
+  }
   const salt = (saltPct / 100.0) * totalFlour;
 
   // ═══ Oil ═══
@@ -219,7 +234,7 @@ export function calculateIngredients(
     salt: round1(salt),
     oil: round1(oil),
     totalDoughWeight: round1(totalDough),
-    hydrationPct,
+    hydrationPct: effectiveHydrationPct,
     starterPct: round1(starterPctDisplay),
     prefermentFlour: round1(prefermentFlour),
     prefermentWater: round1(prefermentWater),
@@ -631,6 +646,7 @@ export function runAllCalculations(
     inputs.starterHydration,
     inputs.oilPct,
     inputs.preferment,
+    inputs.addedWaterGrams,
   );
 
   const fdt = calculateFDT(

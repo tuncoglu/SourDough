@@ -14,7 +14,7 @@ import type { LocationData } from '../lib/location';
 interface CalculateParams {
   blend: FlourBlendEntry[];
   totalFlourWeight: number;
-  hydration: string;
+  waterGrams: string;
   starterWeight: string;
   saltPct: string;
   starterHydrationStr: string;
@@ -44,7 +44,7 @@ export function useRecipeCalculation() {
 
   const doCalculate = useCallback((params: CalculateParams, isDesktop: boolean) => {
     const {
-      blend, totalFlourWeight, hydration, starterWeight, saltPct,
+      blend, totalFlourWeight, waterGrams, starterWeight, saltPct,
       starterHydrationStr, oilPct, ambientTemp, flourTemp, waterTemp,
       starterTemp, starterFlourLabel, prefermentEnabled, prefermentFlourPct,
       prefermentType,
@@ -54,21 +54,25 @@ export function useRecipeCalculation() {
     } = params;
 
     const fw = totalFlourWeight;
-    const hyd = parseFloat(hydration);
+    const wg = parseFloat(waterGrams);
     const sw = parseFloat(starterWeight);
     const slt = parseFloat(saltPct);
+    const shyd = parseFloat(starterHydrationStr);
+    // Derive approximate hydration % for FDT/fermentation (engine computes exact value)
+    const starterFlourApprox = sw * (100 / (100 + shyd));
+    const totalFlourApprox = fw + starterFlourApprox;
+    const hyd = totalFlourApprox > 0 ? ((wg + sw - starterFlourApprox) / totalFlourApprox) * 100 : 70;
     const amb = parseFloat(ambientTemp);
     const flr = parseFloat(flourTemp);
     const wat = parseFloat(waterTemp);
     const sta = parseFloat(starterTemp);
-    const shyd = parseFloat(starterHydrationStr);
     const oil = parseFloat(oilPct) || 0;
 
     if (fw <= 0) {
       Alert.alert('Invalid input', 'Total flour weight must be greater than 0.');
       return;
     }
-    if ([hyd, sw, slt, amb, flr, wat, sta, shyd].some(isNaN)) {
+    if ([wg, sw, slt, amb, flr, wat, sta, shyd].some(isNaN)) {
       Alert.alert('Invalid input', 'All fields must be numbers.');
       return;
     }
@@ -126,7 +130,8 @@ export function useRecipeCalculation() {
         flourProtein,
         flourProductNo: productNo,
         flourBlend: blend,
-        hydration: hyd,
+        hydration: hyd, // kept for backward compat; derived in engine when addedWaterGrams is set
+        addedWaterGrams: wg > 0 ? wg : undefined,
         starterWeight: sw,
         starterHydration: shyd,
         starterFlourType: starterFlourLabel,
