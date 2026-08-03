@@ -238,7 +238,8 @@ export function estimateFermentation(
 ): { hours: number; note: string } {
   // Inoculation factor: more starter = faster (time ∝ 1/√(inoc%)).
   // NOTE: sqrt model is a heuristic that under-predicts at low inoculation (<10%).
-  const inocRate = Math.sqrt(inoculationPct / 20.0);
+  // Guard against 0% inoculation (division by zero → Infinity).
+  const inocRate = Math.sqrt(Math.max(inoculationPct, 1) / 20.0);
   // Hydration factor: wetter dough = faster (rate ∝ (hyd% / 70)^0.6)
   // Reference: Hammelman "Bread", Gisslen 9th ed.
   const hydRate = Math.pow(hydrationPct / 70.0, 0.6);
@@ -543,6 +544,11 @@ export function waterHardnessAdvice(hardness: WaterHardness): string[] {
  *
  * At 4°C, rate ≈ 0.13× baseline (pure Q10 model).
  *
+ * The model runs for the full user-requested coldHours. Progress is reported
+ * as percentage of coldHours elapsed (the actual biological progress during
+ * cold proofing is a small fraction of a bulk equivalent — at 4°C, ~1–2%
+ * of baseline rate).
+ *
  * NOTE: This model uses a uniform Q10 coefficient (≈2.5) across all
  * temperatures. In reality, yeast (S. cerevisiae) and lactic acid bacteria
  * respond differently to cold: below 10°C, yeast metabolism slows more
@@ -556,13 +562,10 @@ export function estimateColdProof(
   fdt: number,
   coldHours: number,
   coldTemp: number = 4,
+  adjustedBaseRate: number = 1.0,
 ): DynamicFermentation {
   let doughTemp = fdt;
-  let progress = TARGET_HOURS; // starts where bulk left off (100% completion)
-  // Cold target: proof is done when it reaches ~1.3× baseline (gentle rise in fridge)
-  // Heuristic — actual cold-proof duration is primarily determined by the
-  // user-specified coldHours, not this target.
-  const COLD_TARGET = TARGET_HOURS * 1.3;
+  let progress = 0; // cold-phase progress in rate×DT units
   let steps = 0;
   const profile = [...baseProfile.profile];
   let peakRate = baseProfile.peakRate;
@@ -572,12 +575,12 @@ export function estimateColdProof(
   const totalSteps = Math.ceil(coldHours / DT);
   let lastLoggedHour = -1;
 
-  for (let i = 0; i < totalSteps && progress < COLD_TARGET; i++) {
+  for (let i = 0; i < totalSteps; i++) {
     // Thermal drift toward fridge temp
     doughTemp += (coldTemp - doughTemp) * (1 - Math.exp(-DT / TAU));
 
-    // Fermentation rate at fridge temp (Q10 model)
-    const rate = Math.pow(Q10, (doughTemp - T_BASE) / 10.0);
+    // Fermentation rate at fridge temp (Q10 model, scaled by base rate factors)
+    const rate = adjustedBaseRate * Math.pow(Q10, (doughTemp - T_BASE) / 10.0);
     peakRate = Math.max(peakRate, rate);
 
     progress += rate * DT;
@@ -586,22 +589,22 @@ export function estimateColdProof(
     steps++;
 
     const hour = Math.floor(steps * DT);
-    if (hour !== lastLoggedHour || progress >= COLD_TARGET) {
-      const pct = Math.min(((progress - TARGET_HOURS) / (COLD_TARGET - TARGET_HOURS)) * 100, 100);
+    if (hour !== lastLoggedHour || i === totalSteps - 1) {
+      const pct = Math.min((steps / totalSteps) * 100, 100);
       profile.push({
         hour: `❄️ +${hour}h`,
         ambient: coldTemp,
         dough: round1(doughTemp),
-         rate: round2(rate),
-         progress: Math.round(pct),
-       });
-       lastLoggedHour = hour;
-     }
-   }
+        rate: round2(rate),
+        progress: Math.round(pct),
+      });
+      lastLoggedHour = hour;
+    }
+  }
 
-   const coldHoursActual = steps * DT;
-   const totalHours = baseProfile.bulkHours + coldHoursActual;
-   const avgAmbient = round1(ambientSum / Math.max(ambientCount, 1));
+  const coldHoursActual = steps * DT;
+  const totalHours = baseProfile.bulkHours + coldHoursActual;
+  const avgAmbient = round1(ambientSum / Math.max(ambientCount, 1));
 
    return {
      totalHours: Math.round(totalHours * 2) / 2,
@@ -687,11 +690,20 @@ export function runAllCalculations(
 
     // Extend with cold proof if requested
     if (dynamicFerment && (inputs.coldProofHours ?? 0) > 0) {
+      // Compute base rate factors for cold-proof scaling (same as dynamic model)
+      const cpInocRate = Math.sqrt(Math.max(ingredients.starterPct, 1) / 20.0);
+      const cpHydRate = Math.pow(inputs.hydration / 70.0, 0.6);
+      const cpFlourFactor = resolveFermentFactor(totalBlend);
+      const cpVitality = computeVitalityFactor(inputs.starterHoursSinceFed);
+      const cpOilRate = computeOilRate(inputs.oilPct);
+      const cpAdjustedBaseRate = cpInocRate * cpHydRate * cpFlourFactor * cpVitality * cpOilRate;
+
       dynamicFerment = estimateColdProof(
         dynamicFerment,
         fdt,
         inputs.coldProofHours!,
         inputs.coldProofTemp ?? 4,
+        cpAdjustedBaseRate,
       );
     } else if (dynamicFerment) {
       // No cold proof — add warm proof time (~60% of bulk)

@@ -87,7 +87,6 @@ export function IngredientResults({ ingredients, blend, totalFlourWeight, starte
             formatWeight(ingredients.prefermentTotal, unitSystem),
             `${(ingredients.prefermentFlour / ingredients.totalFlour * 100).toFixed(0)}% of total flour`,
             false,
-            colors,
           )}
           <View style={[styles.subRow, { borderLeftColor: colors.border, borderTopColor: colors.border }]}>
             <Text style={[styles.subLabel, { color: colors.muted }]}>flour in pre-ferment</Text>
@@ -110,8 +109,7 @@ export function IngredientResults({ ingredients, blend, totalFlourWeight, starte
 
       {renderRow('Total weight', formatWeight(ingredients.totalDoughWeight, unitSystem),
         `${ingredients.hydrationPct.toFixed(0)}% hydration`,
-        true,
-        colors)}
+        true)}
 
       <View style={[styles.noteRow, { borderTopColor: colors.border }]}>
         <Text style={[styles.note, { color: colors.muted }]}>

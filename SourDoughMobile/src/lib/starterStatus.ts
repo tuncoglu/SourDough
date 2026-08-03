@@ -67,7 +67,7 @@ export function computeStarterStatus(lastFeeding: StarterFeeding | null): Starte
 
   // Determine zone based on effective hours
   const zone = getZone(effectiveHours, isInFridge, hoursSinceFridgeOut);
-  const { emoji, label, color } = ZONE_INFO[zone];
+  const { emoji, label } = ZONE_INFO[zone];
 
   return {
     hoursSinceFed: Math.round(hoursSinceFed * 10) / 10,
@@ -77,7 +77,6 @@ export function computeStarterStatus(lastFeeding: StarterFeeding | null): Starte
     zone,
     emoji,
     label,
-    color,
   };
 }
 
@@ -98,11 +97,21 @@ function getZone(effectiveHours: number, isInFridge: boolean, hoursSinceFridgeOu
   return 'hungry';
 }
 
-const ZONE_INFO: Record<Zone, { emoji: string; label: string; color?: string }> = {
+const ZONE_INFO: Record<Zone, { emoji: string; label: string }> = {
   'just-fed': { emoji: '🌱', label: 'Just fed — building strength' },
   'building': { emoji: '🌤️', label: 'Warming up from fridge — nearly ready' },
-  'peak': { emoji: '🟢', label: 'At peak activity — great time to bake!', color: '#4A672F' },
+  'peak': { emoji: '🟢', label: 'At peak activity — great time to bake!' },
   'past-peak': { emoji: '🟡', label: 'Still active but past peak' },
-  'hungry': { emoji: '🔴', label: 'Hungry — time to feed!', color: '#9E3528' },
-  'dormant': { emoji: '❄️', label: 'Dormant in fridge — preserved', color: '#356EAD' },
+  'hungry': { emoji: '🔴', label: 'Hungry — time to feed!' },
+  'dormant': { emoji: '❄️', label: 'Dormant in fridge — preserved' },
 };
+
+/** Resolve a starter zone to the current theme's semantic color. */
+export function starterZoneColor(zone: Zone, colors: { ideal: string; hot: string; cold: string }): string | undefined {
+  switch (zone) {
+    case 'peak': return colors.ideal;
+    case 'hungry': return colors.hot;
+    case 'dormant': return colors.cold;
+    default: return undefined;
+  }
+}

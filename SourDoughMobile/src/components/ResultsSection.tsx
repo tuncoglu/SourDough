@@ -7,6 +7,7 @@ import {
   FlourBlendEntry,
   RecipePreset,
   getTempZoneInfo,
+  tempZoneColor,
 } from '../models/types';
 import { FermentationTimeline } from './FermentationTimeline';
 import { IngredientResults } from './IngredientResults';
@@ -53,10 +54,10 @@ export function ResultsSection({
   const fdtCard = (
     <View style={[styles.fdtCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <Text style={[styles.fdtLabel, { color: colors.muted }]}>Final Dough Temperature</Text>
-      <Text style={[styles.fdtValue, { color: zoneInfo.color }]}>
+      <Text style={[styles.fdtValue, { color: tempZoneColor(results.tempZone, colors) }]}>
         {zoneInfo.icon}  {formatTemp(results.fdt, unitSystem)}
       </Text>
-      <Text style={[styles.fdtZone, { color: zoneInfo.color }]}>{zoneInfo.label}</Text>
+      <Text style={[styles.fdtZone, { color: tempZoneColor(results.tempZone, colors) }]}>{zoneInfo.label}</Text>
       {(() => {
         const zone = results.tempZone;
         if (zone === 'ideal') {

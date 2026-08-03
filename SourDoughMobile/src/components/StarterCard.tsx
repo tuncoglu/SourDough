@@ -11,6 +11,7 @@ import { formatWeight, formatWeightValue, weightUnit } from '../lib/unitConversi
 import { FlourPicker } from './FlourPicker';
 import { NumberInput } from './NumberInput';
 import { StarterStatus } from '../models/types';
+import { starterZoneColor } from '../lib/starterStatus';
 import type { StarterTrackerState, StarterTrackerActions } from '../hooks/useStarterTracker';
 
 interface Props extends StarterTrackerState, StarterTrackerActions {}
@@ -48,7 +49,7 @@ export function StarterCard(props: Props) {
             </Text>
             {status && (
               <View style={styles.statusRow}>
-                <Text style={[styles.statusHint, { color: status.color ?? colors.muted }]}>
+                <Text style={[styles.statusHint, { color: starterZoneColor(status.zone, colors) ?? colors.muted }]}>
                   {status.emoji} {status.label}
                 </Text>
                 {status.effectiveHours !== status.hoursSinceFed && status.hoursSinceFed > 0 && (

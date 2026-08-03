@@ -172,7 +172,7 @@ export default function SettingsScreen() {
               <Text
                 style={[
                   styles.themeChipText,
-                  { color: themeMode === opt.key ? '#FFFFFF' : colors.espresso },
+                  { color: themeMode === opt.key ? colors.white : colors.espresso },
                 ]}
               >
                 {opt.label}
@@ -199,7 +199,7 @@ export default function SettingsScreen() {
               <Text
                 style={[
                   styles.themeChipText,
-                  { color: unitSystem === opt ? '#FFFFFF' : colors.espresso },
+                  { color: unitSystem === opt ? colors.white : colors.espresso },
                 ]}
               >
                 {opt === 'metric' ? '📏  Metric (g, °C)' : '📐  Imperial (oz, °F)'}

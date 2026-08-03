@@ -11,12 +11,12 @@ Just Dough It takes the guesswork out of sourdough baking. Whether you're mainta
 Most recipes assume a fixed temperature and water profile. Just Dough It uses your real location to detect ambient temperature and water hardness, then adjusts fermentation timelines and hydration targets accordingly. Cool kitchen? It lengthens the bulk. Soft water? It nudges you toward a stiffer dough.
 
 ### What it does
-- **Starter tracker** — Log feedings (flour, water, ratio). See your starter's history and get reminders when it's time to feed again.
+- **Starter tracker** — Log feedings (flour, water, ratio). See your starter's history. Feeding reminders coming soon.
 - **Recipe engine** — Build recipes by flour mix, hydration, and inoculation percentage. Every ingredient scales live as you tweak numbers.
 - **Auto-location** — One-tap detection pulls your local temperature (via Open-Meteo) and water hardness (by region), then factors both into your fermentation schedule.
 - **Manual mode** — Prefer privacy? Enter your own temperature and postcode — no location permission needed.
 - **Fermentation timeline** — See a step-by-step schedule: autolyse, stretch-and-folds, bulk fermentation, shaping, proofing, and bake — all adjusted to your conditions.
-- **Flour database** — Built-in profiles for bread flour, whole wheat, rye, spelt, einkorn, and more. Customize protein content per flour.
+- **Flour database** — Built-in profiles for 70+ Shipton Mill flours plus generics: bread flour, whole wheat, rye, spelt, einkorn, and more — with protein percentages and category data.
 - **Yogurt calculator** — 10 starter cultures (thermophilic & mesophilic), milk picker, incubation timeline with min/max range, yield & nutrition, and previous-batch starter.
 - **Lacto-fermentation calculator** — 7+ ferment styles, 25+ vegetables, salt calculator with volume conversion, day-by-day LAB succession timeline, and temperature-adjusted Q10 model.
 

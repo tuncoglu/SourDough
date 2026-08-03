@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
 import { SavedRecipe } from '../models/types';
-import { getTempZoneInfo } from '../models/types';
+import { getTempZoneInfo, tempZoneColor } from '../models/types';
 import { getBlendDisplayLabel } from '../lib/blendUtils';
 import { formatTemp } from '../lib/unitConversion';
 import { PROOF_FRACTION } from '../lib/calculations';
@@ -39,7 +39,7 @@ export function RecipeCard({ recipe, onPress }: Props) {
         <Text style={[styles.date, { color: colors.muted }]}>
           {dateLabel}
         </Text>
-        <Text style={[styles.fdt, { color: zoneInfo.color }]}>
+        <Text style={[styles.fdt, { color: tempZoneColor(recipe.results.tempZone, colors) }]}>
           {zoneInfo.icon} {formatTemp(recipe.results.fdt, unitSystem)}
         </Text>
       </View>

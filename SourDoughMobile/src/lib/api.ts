@@ -62,8 +62,10 @@ async function fetchWithRetry(
     } catch (err) {
       clearTimeout(timer);
       lastError = err;
-      // Network errors are retryable; abort errors from timeout are not
-      if (err instanceof DOMException && err.name === 'AbortError') {
+      // Network errors are retryable; abort errors from timeout are not.
+      // Use a name check (not instanceof) because DOMException may not exist
+      // on all React Native / Hermes runtimes.
+      if (err && typeof err === 'object' && (err as { name?: string }).name === 'AbortError') {
         return null;
       }
     }
@@ -99,7 +101,7 @@ export async function getAmbientTemp(
   return data?.current?.temperature_2m ?? null;
 }
 
-/** Fetch 10-day hourly temperature forecast (Open-Meteo free tier supports up to 16 days). */
+/** Fetch 16-day hourly temperature forecast (10 days shown in UI). */
 export async function fetchHourlyForecast(
   lat: number,
   lon: number,

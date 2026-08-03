@@ -9,7 +9,7 @@ export const SHIPTON_MILL_FLOURS: FlourEntry[] = [
   // ── White Bread Flours ──────────────────────────────────────────────
   {
     label: 'No. 4 Organic White (105)',
-    protein: 13.0,
+    protein: 12.0,
     productNumber: '105',
     category: 'White Bread',
     notes: "Shipton's flagship organic bread flour. Blend of English & continental wheats. W=275, P/L=1.0. Perfect for sourdough, yeasted & enriched breads.",

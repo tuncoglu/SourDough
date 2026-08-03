@@ -192,7 +192,7 @@ export default function YogurtScreen() {
                   >
                     {m.name}
                   </Text>
-                  <Text style={[styles.milkMacros, { color: calc.milkId === m.id ? 'rgba(255,255,255,0.8)' : colors.lightText }]}>
+                  <Text style={[styles.milkMacros, { color: calc.milkId === m.id ? colors.white : colors.lightText }]}>
                     {m.fatPct}% fat · {m.proteinPct}% protein
                   </Text>
                 </View>

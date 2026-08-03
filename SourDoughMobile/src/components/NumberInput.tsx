@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
   TextInputProps,
 } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
-import { weightUnit } from '../lib/unitConversion';
+import { weightUnit, gramsToOz, ozToGrams } from '../lib/unitConversion';
 
 interface Props extends Omit<TextInputProps, 'onChangeText'> {
   label: string;
@@ -26,18 +26,59 @@ export function NumberInput({
   ...rest
 }: Props) {
   const { unitSystem, colors } = useAppTheme();
-  // If unit is "g", use the dynamic weight unit; otherwise keep as-is
-  const displayUnit = unit === 'g' ? weightUnit(unitSystem) : unit;
+  const isWeight = unit === 'g';
+  const displayUnit = isWeight ? weightUnit(unitSystem) : unit;
+  const isImperialWeight = isWeight && unitSystem === 'imperial';
+
+  // Local display string — kept in sync with parent value + unitSystem.
+  // When unitSystem changes, recompute from the parent's metric value.
+  const [display, setDisplay] = useState(() =>
+    isImperialWeight
+      ? gramsToOz(parseFloat(value) || 0).toFixed(1)
+      : value
+  );
+  const prevUnitSystem = useRef(unitSystem);
+
+  // Sync display when unitSystem or parent value changes externally
+  useEffect(() => {
+    if (prevUnitSystem.current !== unitSystem) {
+      prevUnitSystem.current = unitSystem;
+      // Unit system changed — recompute display from parent's metric value
+      if (unitSystem === 'imperial' && isWeight) {
+        setDisplay(gramsToOz(parseFloat(value) || 0).toFixed(1));
+      } else if (unitSystem === 'metric' && isWeight) {
+        setDisplay(value);
+      }
+    }
+  }, [unitSystem, value, isWeight]);
+
+  const handleChange = (text: string) => {
+    // Allow empty string, single dot, or numbers with at most one dot
+    if (text !== '' && !/^\d*\.?\d*$/.test(text)) return;
+    setDisplay(text);
+
+    if (isImperialWeight) {
+      const oz = parseFloat(text);
+      if (!isNaN(oz)) {
+        onChangeText(String(Math.round(ozToGrams(oz))));
+      } else if (text === '' || text === '.') {
+        onChangeText('0');
+      }
+    } else {
+      onChangeText(text);
+    }
+  };
 
   return (
     <View style={styles.row}>
       <Text style={[styles.label, { color: colors.espresso }]}>{label}</Text>
       <TextInput
         style={[styles.input, { backgroundColor: colors.white, borderColor: colors.border, color: colors.espresso }]}
-        value={value}
-        onChangeText={onChangeText}
+        value={display}
+        onChangeText={handleChange}
         keyboardType="decimal-pad"
         placeholderTextColor={colors.muted}
+        accessibilityLabel={`${label}${displayUnit ? ` (${displayUnit})` : ''}`}
         {...rest}
       />
       {displayUnit && <Text style={[styles.unit, { color: colors.muted }]}>{displayUnit}</Text>}

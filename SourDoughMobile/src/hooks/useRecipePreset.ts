@@ -14,6 +14,7 @@ export interface RecipePresetState {
 
 export interface RecipePresetActions {
   setBreadType: (t: BreadType) => void;
+  setPreset: (preset: RecipePreset | null) => void;
   handlePresetSelect: (
     preset: RecipePreset,
     mixRows: MixRow[],
@@ -121,6 +122,17 @@ export function useRecipePreset(): RecipePresetState & RecipePresetActions {
     }
   }, [selectedPreset]);
 
+  /** Set the active preset directly (used when restoring from a saved recipe). */
+  const setPreset = useCallback((preset: RecipePreset | null) => {
+    if (preset) {
+      setBreadType(preset.id);
+      setSelectedPreset(preset);
+    } else {
+      setBreadType('custom');
+      setSelectedPreset(null);
+    }
+  }, []);
+
   return {
     breadType,
     selectedPreset,
@@ -129,6 +141,7 @@ export function useRecipePreset(): RecipePresetState & RecipePresetActions {
     prefermentFlourPct,
     showOil,
     setBreadType,
+    setPreset,
     handlePresetSelect,
     setOilPct,
     setPrefermentEnabled,

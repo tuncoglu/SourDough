@@ -35,6 +35,9 @@ interface SaveParams {
   breadType: string;
   results: CalculationResults;
   locationSummary: string;
+  coldProofEnabled: boolean;
+  coldProofHours: string;
+  coldProofTemp: string;
 }
 
 interface ShareParams {
@@ -54,6 +57,8 @@ interface ShareParams {
   locationSummary: string;
   bakeInfo?: string;
   unitSystem: import('../models/types').UnitSystem;
+  coldProofEnabled: boolean;
+  coldProofHours: string;
 }
 
 export function useRecipeActions() {
@@ -67,6 +72,7 @@ export function useRecipeActions() {
       starterTemp, starterFlourLabel, prefermentEnabled, prefermentFlourPct,
       prefermentType,
       breadType, results, locationSummary,
+      coldProofEnabled, coldProofHours, coldProofTemp,
     } = params;
 
     if (!results) return;
@@ -104,6 +110,8 @@ export function useRecipeActions() {
         starterTemp: parseFloat(starterTemp),
         breadType: breadType !== 'custom' ? breadType : undefined,
         preferment: prefConfig,
+        coldProofHours: coldProofEnabled ? (parseFloat(coldProofHours) || undefined) : undefined,
+        coldProofTemp: coldProofEnabled ? (parseFloat(coldProofTemp) || 4) : undefined,
       },
       results,
       locationSummary: locationSummary ?? '📍 Unknown location',

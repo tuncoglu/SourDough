@@ -182,7 +182,6 @@ export interface StarterStatus {
   zone: 'just-fed' | 'building' | 'peak' | 'past-peak' | 'hungry' | 'dormant';
   emoji: string;
   label: string;
-  color?: string;
 }
 
 // ── Settings ───────────────────────────────────────────────────────────
@@ -195,11 +194,7 @@ export interface UserSettings {
   defaultHydration: number;
   defaultStarterHydration: number; // starter hydration % (default 100)
   defaultSaltPct: number;
-  starterFeedingIntervalHours: number;
-  notificationsEnabled: boolean;
   waterHardnessOverride: number; // mg/L CaCO₃, 0 = auto-detect
-  themeMode: ThemeMode;
-  unitSystem: UnitSystem;
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -208,11 +203,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   defaultHydration: 75,
   defaultStarterHydration: 100,
   defaultSaltPct: 2.0,
-  starterFeedingIntervalHours: 24,
-  notificationsEnabled: false,
   waterHardnessOverride: 0,
-  themeMode: 'system',
-  unitSystem: 'metric',
 };
 
 // ── FDT Temperature Zone ──────────────────────────────────────────────
@@ -224,14 +215,19 @@ export function getTempZone(fdt: number): TempZone {
   return 'hot';
 }
 
-export function getTempZoneInfo(zone: TempZone): { icon: string; label: string; color: string } {
+export function getTempZoneInfo(zone: TempZone): { icon: string; label: string } {
   switch (zone) {
-    case 'cold': return { icon: '❄️', label: 'cold — slow ferment', color: '#356EAD' };
-    case 'cool': return { icon: '🌤️', label: 'cool — good flavour', color: '#4E829E' };
-    case 'ideal': return { icon: '✅', label: 'ideal — goldilocks zone', color: '#4A672F' };
-    case 'warm': return { icon: '🌡️', label: 'warm — watch closely', color: '#A8681A' };
-    case 'hot': return { icon: '🔥', label: 'hot — check early!', color: '#9E3528' };
+    case 'cold': return { icon: '❄️', label: 'cold — slow ferment' };
+    case 'cool': return { icon: '🌤️', label: 'cool — good flavour' };
+    case 'ideal': return { icon: '✅', label: 'ideal — goldilocks zone' };
+    case 'warm': return { icon: '🌡️', label: 'warm — watch closely' };
+    case 'hot': return { icon: '🔥', label: 'hot — check early!' };
   }
+}
+
+/** Resolve a TempZone to the current theme's semantic color. */
+export function tempZoneColor(zone: TempZone, colors: { cold: string; cool: string; ideal: string; warm: string; hot: string }): string {
+  return colors[zone];
 }
 
 // ── Recipe Presets ─────────────────────────────────────────────────────
@@ -347,7 +343,7 @@ export const SALT_DENSITY_G_PER_TSP: Record<SaltCrystal, number> = {
   'diamond-kosher': 2.8,
   'morton-kosher': 4.8,
   'pickling': 6.0,
-  'maldon-flake': 1.8,
+  'maldon-flake': 2.3,
   'rock-salt': 4.5,
   'himalayan-pink': 5.5,
   'cornish-sea': 5.7,

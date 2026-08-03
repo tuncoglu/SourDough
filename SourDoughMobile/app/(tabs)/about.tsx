@@ -37,7 +37,7 @@ export default function AboutScreen() {
           <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[sectionTitleStyle, { color: colors.muted }]}>WHAT IT DOES</Text>
 
-            <View style={aboutStyles.featureItem}>
+            <View style={[aboutStyles.featureItem, { borderTopColor: colors.border }]}>
               <Text style={[aboutStyles.featureEmoji, { color: colors.espresso }]}>🥖</Text>
               <View style={aboutStyles.featureBody}>
                 <Text style={[aboutStyles.featureTitle, { color: colors.espresso }]}>Sourdough Bread Calculator</Text>
@@ -47,7 +47,7 @@ export default function AboutScreen() {
               </View>
             </View>
 
-            <View style={aboutStyles.featureItem}>
+            <View style={[aboutStyles.featureItem, { borderTopColor: colors.border }]}>
               <Text style={[aboutStyles.featureEmoji, { color: colors.espresso }]}>🥛</Text>
               <View style={aboutStyles.featureBody}>
                 <Text style={[aboutStyles.featureTitle, { color: colors.espresso }]}>Yogurt Calculator</Text>
@@ -57,7 +57,7 @@ export default function AboutScreen() {
               </View>
             </View>
 
-            <View style={aboutStyles.featureItem}>
+            <View style={[aboutStyles.featureItem, { borderTopColor: colors.border }]}>
               <Text style={[aboutStyles.featureEmoji, { color: colors.espresso }]}>🫙</Text>
               <View style={aboutStyles.featureBody}>
                 <Text style={[aboutStyles.featureTitle, { color: colors.espresso }]}>Lacto-Fermentation Calculator</Text>
@@ -168,7 +168,6 @@ const aboutStyles = StyleSheet.create({
     gap: Spacing.md,
     paddingVertical: Spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#CFC0B4',
   },
   featureEmoji: {
     fontSize: 22,

@@ -165,6 +165,8 @@ export function useLactoCalculator(): LactoCalculatorState {
       const currentSingle = vegId;
       // First veg being added — start mix with existing single veg + new veg
       if (prev.length === 0) {
+        // Guard: tapping the already-selected veg in single mode is a no-op
+        if (id === currentSingle) return prev;
         const singleGrams = vegWeight;
         return [
           { vegId: currentSingle, grams: singleGrams },

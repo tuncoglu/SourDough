@@ -50,7 +50,9 @@ export default function CalculatorScreen() {
   const actions = useRecipeActions();
 
   // ── H1: Location fallback → Settings (water hardness override) ───────
-  const prefermentType = preset.selectedPreset?.dough.preferment?.type;
+  const rawPrefermentType = preset.selectedPreset?.dough.preferment?.type;
+  const prefermentType: 'poolish' | 'biga' | undefined =
+    rawPrefermentType === 'none' ? undefined : rawPrefermentType;
 
   const { recommendation, dismiss: dismissRec } = useDailyRecommendation(
     inputs.ambientTemp, preset.breadType,
@@ -88,7 +90,13 @@ export default function CalculatorScreen() {
       }
       if (ri.breadType) {
         const p = getPreset(ri.breadType);
-        if (p) preset.setBreadType(ri.breadType as any);
+        if (p) preset.setPreset(p);
+      }
+      // Restore cold-proof state
+      if (ri.coldProofHours && ri.coldProofHours > 0) {
+        setColdProofEnabled(true);
+        setColdProofHours(String(ri.coldProofHours));
+        if (ri.coldProofTemp) setColdProofTemp(String(ri.coldProofTemp));
       }
     });
   }, [editRecipeId]);
@@ -172,8 +180,11 @@ export default function CalculatorScreen() {
       breadType: preset.breadType,
       results: calc.results,
       locationSummary: inputs.locationData?.summary ?? '📍 Unknown location',
+      coldProofEnabled,
+      coldProofHours,
+      coldProofTemp,
     });
-  }, [inputs, preset, starter.starterFlourLabel, calc.results, actions]);
+  }, [inputs, preset, starter.starterFlourLabel, calc.results, actions, coldProofEnabled, coldProofHours, coldProofTemp]);
 
   // ── Share ─────────────────────────────────────────────────────────────
   const handleShare = useCallback(() => {
@@ -198,8 +209,10 @@ export default function CalculatorScreen() {
       locationSummary: inputs.locationData?.summary ?? '📍 Unknown location',
       bakeInfo,
       unitSystem,
+      coldProofEnabled,
+      coldProofHours,
     });
-  }, [inputs, preset, calc.results, actions]);
+  }, [inputs, preset, calc.results, actions, unitSystem, coldProofEnabled, coldProofHours]);
 
   // ── Ready-by result ───────────────────────────────────────────────────
   const readyByResult = React.useMemo(() => {

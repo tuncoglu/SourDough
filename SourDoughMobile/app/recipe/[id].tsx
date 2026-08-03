@@ -17,7 +17,7 @@ import { formatTemp, formatWeight, formatWeightValue, weightUnit } from '../../s
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { SavedRecipe, FlourBlendEntry } from '../../src/models/types';
 import { getRecipe } from '../../src/store/recipeStore';
-import { getTempZoneInfo } from '../../src/models/types';
+import { getTempZoneInfo, tempZoneColor } from '../../src/models/types';
 import { getBlend } from '../../src/lib/blendUtils';
 import { formatRecipeText } from '../../src/lib/recipeFormatter';
 import { IngredientResults } from '../../src/components/IngredientResults';
@@ -183,10 +183,10 @@ export default function RecipeDetailScreen() {
       {/* FDT */}
       <View style={[styles.fdtCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Text style={[styles.fdtLabel, { color: colors.muted }]}>Final Dough Temperature</Text>
-        <Text style={[styles.fdtValue, { color: zoneInfo.color }]}>
+        <Text style={[styles.fdtValue, { color: tempZoneColor(recipe.results.tempZone, colors) }]}>
           {zoneInfo.icon}  {formatTemp(recipe.results.fdt, unitSystem)}
         </Text>
-        <Text style={[styles.fdtZone, { color: zoneInfo.color }]}>
+        <Text style={[styles.fdtZone, { color: tempZoneColor(recipe.results.tempZone, colors) }]}>
           {zoneInfo.label}
         </Text>
       </View>

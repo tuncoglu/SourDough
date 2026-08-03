@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Spacing, FontSize, BorderRadius, useAppTheme, cardStyleLg } from '../theme';
+import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyleLg } from '../theme';
 import { YogurtStepPoint, YogurtResults } from '../models/types';
 
 interface Props {
