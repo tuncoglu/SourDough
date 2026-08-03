@@ -51,6 +51,13 @@ export interface LactoCalculatorState {
   tips: string[];
   presetHealthNote?: string;
 
+  // Multi-veg mix
+  vegMix: { vegId: string; grams: string }[];
+  vegMixEntries: { vegId: string; grams: string; veg: VegEntry }[];
+  isMultiVeg: boolean;
+  totalMixGrams: number;
+  VEG_COMBOS: typeof VEG_COMBOS;
+
   // Location & water
   locationData: ReturnType<typeof useLocation>['data'];
   locLoading: boolean;
@@ -69,6 +76,9 @@ export interface LactoCalculatorState {
   // Actions
   selectPreset: (type: FermentType) => void;
   selectVeg: (id: string) => void;
+  toggleVegInMix: (id: string) => void;
+  updateMixGrams: (id: string, grams: string) => void;
+  applyCombo: (combo: typeof VEG_COMBOS[number]) => void;
   setVegWeight: (v: string) => void;
   setWaterAmount: (v: string) => void;
   setSaltPct: (v: string) => void;

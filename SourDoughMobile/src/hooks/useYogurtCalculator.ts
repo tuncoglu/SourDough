@@ -1,5 +1,4 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { useFocusEffect } from 'expo-router';
 import {
   YogurtType,
   YogurtCultureType,
@@ -20,11 +19,8 @@ import {
   calculateSachets,
   calculateYogurtNutrition,
 } from '../lib/yogurtCalculations';
-import { computeFermentTemp, DailyTempSummary, FermentTempResult, waterHardnessFermentAdvice } from '../lib/lactoCalculations';
+import { computeFermentTemp, DailyTempSummary, FermentTempResult } from '../lib/lactoCalculations';
 import { useLocation } from './useLocation';
-import { getSettings } from '../store/settingsCache';
-import { classifyHardness } from '../data/ukWaterHardness';
-import type { WaterHardness, UserSettings } from '../models/types';
 
 export interface YogurtCalculatorState {
   // Inputs
@@ -63,7 +59,6 @@ export interface YogurtCalculatorState {
   results: YogurtResults | null;
   timeline: YogurtStepPoint[];
   advice: string[];
-  waterAdvice: string[];
   nutrition: { fatPct: number; proteinPct: number } | null;
   showResults: boolean;
 
@@ -93,12 +88,10 @@ export function useYogurtCalculator(): YogurtCalculatorState {
   const [previousBatchGrams, setPreviousBatchGrams] = useState('60'); // 30g/L × 2L default
   const [preHeatEnabled, setPreHeatEnabled] = useState(true);
   const [showResults, setShowResults] = useState(false);
-  const [waterHardnessOverride, setWaterHardnessOverride] = useState(0);
 
   const [results, setResults] = useState<YogurtResults | null>(null);
   const [timeline, setTimeline] = useState<YogurtStepPoint[]>([]);
   const [advice, setAdvice] = useState<string[]>([]);
-  const [waterAdvice, setWaterAdvice] = useState<string[]>([]);
   const [nutrition, setNutrition] = useState<{ fatPct: number; proteinPct: number } | null>(null);
 
   // Derived
@@ -151,20 +144,6 @@ export function useYogurtCalculator(): YogurtCalculatorState {
       setPreviousBatchGrams(String(litres * 30)); // 30g per litre (≈2 tbsp/L)
     }
   }, [milkLitres, preset]);
-
-  useFocusEffect(useCallback(() => {
-    getSettings().then((s) => {
-      setWaterHardnessOverride(s.waterHardnessOverride ?? 0);
-    });
-  }, []));
-
-  const resolveHardness = useCallback((): WaterHardness => {
-    if (waterHardnessOverride > 0) {
-      return { mgL: waterHardnessOverride, classification: classifyHardness(waterHardnessOverride), note: 'Manual override', key: 'manual' };
-    }
-    if (locationData?.hardness) return locationData.hardness;
-    return { mgL: 120, classification: 'moderately soft', note: 'Unknown — assuming moderate', key: 'fallback' };
-  }, [waterHardnessOverride, locationData]);
 
   const calculate = useCallback(() => {
     const litres = parseFloat(milkLitres) || 0;
@@ -231,19 +210,17 @@ export function useYogurtCalculator(): YogurtCalculatorState {
       setResults(finalResults);
       setTimeline(buildYogurtTimeline(finalResults.incubationHours, cultureType, preset.thickness, preHeatEnabled, starterSource, finalResults.previousBatchGrams));
       setAdvice(yogurtAdvice(cultureType, finalTemp, milk.fatLevel, preHeatEnabled, preset.thickness, finalResults.incubationHours));
-      setWaterAdvice(waterHardnessFermentAdvice(resolveHardness()));
       setNutrition(calculateYogurtNutrition(milk, preset.thickness));
     } else {
       // Thermophilic — use preset temp directly
       setResults(baseResults);
       setTimeline(buildYogurtTimeline(baseResults.incubationHours, cultureType, preset.thickness, preHeatEnabled, starterSource, baseResults.previousBatchGrams));
       setAdvice(yogurtAdvice(cultureType, temp, milk.fatLevel, preHeatEnabled, preset.thickness, baseResults.incubationHours));
-      setWaterAdvice(waterHardnessFermentAdvice(resolveHardness()));
       setNutrition(calculateYogurtNutrition(milk, preset.thickness));
     }
 
     setShowResults(true);
-  }, [yogurtType, cultureType, milkId, milkLitres, sachetCount, starterSource, previousBatchGrams, preHeatEnabled, milk, preset, effectiveTemp, locationData, resolveHardness]);
+  }, [yogurtType, cultureType, milkId, milkLitres, sachetCount, starterSource, previousBatchGrams, preHeatEnabled, milk, preset, effectiveTemp, locationData]);
 
   return {
     yogurtType,
@@ -273,7 +250,6 @@ export function useYogurtCalculator(): YogurtCalculatorState {
     results,
     timeline,
     advice,
-    waterAdvice,
     nutrition,
     showResults,
     thermophilicCultures,
