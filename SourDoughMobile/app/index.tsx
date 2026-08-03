@@ -1,8 +1,7 @@
-import { useRouter } from 'expo-router';
+import { Link } from 'expo-router';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   ScrollView,
 } from 'react-native';
@@ -42,7 +41,6 @@ const CARDS: LandingCard[] = [
 
 export default function LandingScreen() {
   const { colors } = useAppTheme();
-  const router = useRouter();
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.cream }]} edges={['top', 'bottom']}>
@@ -62,12 +60,10 @@ export default function LandingScreen() {
         {/* Cards */}
         <View style={styles.cards}>
           {CARDS.map((card) => (
-            <TouchableOpacity
+            <Link
               key={card.route}
+              href={card.route}
               style={[cardStyleLg, styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
-              onPress={() => router.push(card.route)}
-              activeOpacity={0.7}
-              accessibilityRole="button"
               accessibilityLabel={`${card.title}: ${card.description}`}
             >
               <Text style={styles.cardEmoji}>{card.emoji}</Text>
@@ -80,42 +76,21 @@ export default function LandingScreen() {
                 </Text>
               </View>
               <Text style={[styles.cardArrow, { color: colors.muted }]}>→</Text>
-            </TouchableOpacity>
+            </Link>
           ))}
         </View>
 
         {/* Footer */}
         <View style={[styles.footer, { borderTopColor: colors.border }]}>
-          <TouchableOpacity
-            onPress={() => router.push('/history')}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel="View saved recipe history"
-          >
-            <Text style={[styles.footerLink, { color: colors.muted }]}>
-              📋  Saved recipes
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => router.push('/about')}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel="About this app"
-          >
-            <Text style={[styles.footerLink, { color: colors.muted }]}>
-              ℹ️  About
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => router.push('/settings')}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel="Open settings"
-          >
-            <Text style={[styles.footerLink, { color: colors.muted }]}>
-              ⚙️  Settings
-            </Text>
-          </TouchableOpacity>
+          <Link href="/history" style={[styles.footerLink, { color: colors.muted }]} accessibilityLabel="View saved recipe history">
+            📋  Saved recipes
+          </Link>
+          <Link href="/about" style={[styles.footerLink, { color: colors.muted }]} accessibilityLabel="About this app">
+            ℹ️  About
+          </Link>
+          <Link href="/settings" style={[styles.footerLink, { color: colors.muted }]} accessibilityLabel="Open settings">
+            ⚙️  Settings
+          </Link>
         </View>
       </ScrollView>
     </SafeAreaView>
