@@ -5,6 +5,8 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 import { AppThemeProvider, useAppTheme, DarkColors, LightColors } from '../src/theme';
 import { ErrorFallback } from '../src/components/ErrorFallback';
+import { FeedbackProvider } from '../src/lib/feedback';
+import { LocationProvider } from '../src/hooks/useLocation';
 
 // Custom error boundary wrapping the entire app
 export function ErrorBoundary({ error, retry }: { error: Error; retry: () => void }) {
@@ -38,7 +40,11 @@ export default function RootLayout() {
 
   return (
     <AppThemeProvider>
-      <RootLayoutNav />
+      <FeedbackProvider>
+        <LocationProvider>
+          <RootLayoutNav />
+        </LocationProvider>
+      </FeedbackProvider>
     </AppThemeProvider>
   );
 }

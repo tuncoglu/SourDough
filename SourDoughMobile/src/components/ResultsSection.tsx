@@ -12,6 +12,7 @@ import {
 import { FermentationTimeline } from './FermentationTimeline';
 import { IngredientResults } from './IngredientResults';
 import { AdviceCards } from './FermentAdvice';
+import { NoticeCard } from './NoticeCard';
 import { MethodTimeline } from './MethodTimeline';
 import { PROOF_FRACTION } from '../lib/calculations';
 
@@ -137,6 +138,9 @@ export function ResultsSection({
       />
 
       <AdviceCards warnings={results.warnings} />
+
+      {/* Water hardness advice — computed by the engine, surfaced here */}
+      <NoticeCard title="💧  WATER" lines={results.waterHardnessAdvice} />
 
       {selectedPreset && (
         <MethodTimeline

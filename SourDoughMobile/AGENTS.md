@@ -20,6 +20,7 @@
 
 ## State Management
 - **Hooks** (src/hooks/) — UI state and orchestration (useCalculatorInputs, useStarterTracker, useYogurtCalculator, etc.)
+- **useLocation** — shared context provider mounted in `app/_layout.tsx`; runs location detection once for all three calculator tabs (GPS, weather, water hardness, postcode refinement)
 - **Stores** (src/store/) — AsyncStorage persistence (recipeStore, settingsStore, starterStore)
 - **settingsCache.ts** — In-memory cache for settings with 60s TTL to avoid re-reading AsyncStorage
 

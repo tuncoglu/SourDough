@@ -1,18 +1,45 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+/**
+ * App-wide shared location state.
+ *
+ * All three calculator tabs (bread, yogurt, lacto-fermentation) need the
+ * same location slice, and expo-router keeps every tab mounted — so a
+ * per-hook `useLocation` ran the full detection pipeline (GPS fix, reverse
+ * geocode, weather fetch, water-hardness lookup) three times in parallel at
+ * app launch. The provider sits above the tab navigator in `_layout.tsx`
+ * and runs detection once; every consumer subscribes to the same state.
+ *
+ * Postcode refinement is shared too: submitting a postcode on any tab
+ * updates the location for the whole app.
+ */
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import * as ExpoLocation from 'expo-location';
 import { LocationData, detectAll } from '../lib/location';
 import { geocodePostcode } from '../lib/api';
 import { getErrorMessage } from '../lib/errors';
+import { useAppTheme } from '../theme';
 
-export function useLocation() {
+export interface LocationState {
+  locationData: LocationData | null;
+  locLoading: boolean;
+  locError: string | null;
+  onRefreshLocation: () => void;
+  onPostcodeSubmit: (postcode: string) => void;
+}
+
+const LocationContext = createContext<LocationState | null>(null);
+
+export function LocationProvider({ children }: { children: React.ReactNode }) {
+  const { unitSystem } = useAppTheme();
   const [data, setData] = useState<LocationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [postcode, setPostcode] = useState<string>('');
 
-  // Ref to avoid rebuilding detect() every time postcode changes
+  // Refs to avoid rebuilding detect() when postcode or unitSystem change
   const postcodeRef = useRef(postcode);
   postcodeRef.current = postcode;
+  const unitSystemRef = useRef(unitSystem);
+  unitSystemRef.current = unitSystem;
 
   const detect = useCallback(async () => {
     setLoading(true);
@@ -34,6 +61,7 @@ export function useLocation() {
         pos.coords.longitude,
         postcodeRef.current || undefined,
         null,
+        unitSystemRef.current,
       );
 
       if (result) {
@@ -60,7 +88,7 @@ export function useLocation() {
         return;
       }
 
-      const result = await detectAll(loc.lat, loc.lon, pc, null);
+      const result = await detectAll(loc.lat, loc.lon, pc, null, unitSystemRef.current);
       if (result) {
         setData(result);
       } else {
@@ -73,9 +101,27 @@ export function useLocation() {
     }
   }, []);
 
+  // Detect once on mount — shared by every consumer below the provider.
   useEffect(() => {
     detect();
   }, [detect]);
 
-  return { data, loading, error, detect, refineWithPostcode, postcode };
+  const value = useMemo<LocationState>(
+    () => ({
+      locationData: data,
+      locLoading: loading,
+      locError: error,
+      onRefreshLocation: detect,
+      onPostcodeSubmit: refineWithPostcode,
+    }),
+    [data, loading, error, detect, refineWithPostcode],
+  );
+
+  return <LocationContext.Provider value={value}>{children}</LocationContext.Provider>;
+}
+
+export function useLocation(): LocationState {
+  const ctx = useContext(LocationContext);
+  if (!ctx) throw new Error('useLocation must be used within LocationProvider');
+  return ctx;
 }

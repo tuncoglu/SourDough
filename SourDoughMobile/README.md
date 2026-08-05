@@ -142,7 +142,6 @@ SourDoughMobile/
 | `expo` ~56 | Expo SDK |
 | `expo-router` ~56 | File-based routing |
 | `expo-location` ~56 | GPS location access |
-| `expo-notifications` ~56 | Feeding reminders |
 | `@react-native-async-storage/async-storage` | Local data persistence |
 | `react-native-reanimated` | Smooth animations |
 | `react` 19 / `react-native` 0.85 | UI framework |

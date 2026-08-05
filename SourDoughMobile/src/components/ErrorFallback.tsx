@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
 
 interface Props {
@@ -31,10 +31,8 @@ export function ErrorFallback({ error, resetError }: Props) {
       <TouchableOpacity
         style={styles.reportBtn}
         onPress={() => {
-          // Open GitHub issues in browser
-          if (typeof window !== 'undefined') {
-            window.open('https://github.com/tuncoglu/SourDough/issues/new', '_blank');
-          }
+          // Open GitHub issues — Linking works on iOS/Android and web
+          Linking.openURL('https://github.com/tuncoglu/SourDough/issues/new').catch(() => {});
         }}
         activeOpacity={0.7}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}

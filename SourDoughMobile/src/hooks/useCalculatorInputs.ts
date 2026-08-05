@@ -5,7 +5,7 @@ import { getSettings } from '../store/settingsCache';
 import { findFlour } from '../lib/flourSearch';
 import { buildBlendFromRows } from '../lib/blendUtils';
 import { useLocation } from './useLocation';
-import { getAutoTemps } from '../lib/location';
+import { getAutoTemps, LocationData } from '../lib/location';
 
 export interface MixRow {
   key: string;
@@ -36,7 +36,7 @@ export interface CalculatorInputs {
   settings: UserSettings;
 
   // Location
-  locationData: ReturnType<typeof useLocation>['data'];
+  locationData: LocationData | null;
   locLoading: boolean;
   locError: string | null;
   onRefreshLocation: () => void;
@@ -60,7 +60,7 @@ export interface CalculatorInputs {
 }
 
 export function useCalculatorInputs(): CalculatorInputs {
-  const { data: locationData, loading: locLoading, error: locError, detect, refineWithPostcode } = useLocation();
+  const { locationData, locLoading, locError, onRefreshLocation, onPostcodeSubmit } = useLocation();
 
   // Instance-scoped counter survives Fast Refresh (no module-level mutable state)
   const mixKeyCounter = useRef(0);
@@ -218,8 +218,8 @@ export function useCalculatorInputs(): CalculatorInputs {
     locationData,
     locLoading,
     locError,
-    onRefreshLocation: detect,
-    onPostcodeSubmit: refineWithPostcode,
+    onRefreshLocation,
+    onPostcodeSubmit,
     handleAddFlour,
     handleRemoveFlour,
     handleUpdateFlour,

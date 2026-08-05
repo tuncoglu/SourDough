@@ -35,6 +35,25 @@ export interface VegEntry {
 
 // ── Ordered for display ─────────────────────────────────────────────────
 
+/**
+ * Fraction of the vegetable's water released into the brine under dry
+ * salting (self-brining). Leafy vegetables collapse and release most of
+ * their water; dense roots and firm fruit-veg release little, so their
+ * self-brined salinity is much higher than the salt % alone suggests.
+ * Used only for the *displayed* effective salinity — the salt dosage the
+ * user measures is always the plain salt % (see lactoCalculations).
+ * Sources: Katz "The Art of Fermentation", Shockey "Fermented Vegetables".
+ */
+export const VEG_RELEASE_FACTOR: Record<VegCategory, number> = {
+  leafy: 0.9, // cabbage & napa release 85–95% under salt
+  root: 0.4, // carrot, beet, daikon — dense, low surface area
+  'fruit-veg': 0.4, // cucumber, zucchini — firm cell walls
+  allium: 0.5, // onion releases readily once sliced
+  pepper: 0.4, // fleshy walls
+  fruit: 0.6, // berries & stone fruit break down quickly
+  other: 0.5, // beans, corn, herbs — moderate
+};
+
 export const VEG_CATEGORIES: { key: VegCategory; label: string }[] = [
   { key: 'leafy', label: '🥬 Leafy & Brassicas' },
   { key: 'root', label: '🥕 Roots & Tubers' },

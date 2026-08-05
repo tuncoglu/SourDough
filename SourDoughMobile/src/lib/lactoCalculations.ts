@@ -38,6 +38,15 @@ export const TARGET_PH = 4.0;
 /** Safety pH threshold — botulism cannot grow below 4.6. */
 export const SAFETY_PH = 4.6;
 
+/** Typical final pH of a fully sour ferment (cabbage ~3.4–3.6). */
+export const FINAL_PH = 3.5;
+
+/** Starting pH of fresh vegetables. */
+export const PH_START = 6.5;
+
+/** Shape exponent of the pH decline curve (see estimatePHAt). */
+const PH_SHAPE = 1.7;
+
 // ── Salt Calculation ───────────────────────────────────────────────────
 
 /**
@@ -48,6 +57,13 @@ export const SAFETY_PH = 4.6;
  *          Vegetable water content partially dissolves the salt.
  *   - brine: salt dissolved in water. Salt % is of water weight.
  *   - mash: like dry but blended (pepper mash, etc.)
+ *
+ * `releaseFactor` is the fraction of the vegetable's water that actually
+ * enters the brine under dry salting (0–1; see VEG_RELEASE_FACTOR in
+ * vegetables.ts). It affects only the *displayed* effective salinity —
+ * the salt the user measures stays saltPct of vegetable weight. A flat
+ * 0.7 default was shown to overstate leafy-veg salinity (cabbage truly
+ * releases 85–95%) and understate roots (carrot releases 20–40%).
  */
 export function calculateFermentSalt(
   vegWeight: number,
@@ -56,6 +72,7 @@ export function calculateFermentSalt(
   method: FermentMethod,
   saltType: SaltCrystal,
   waterContentPct: number,
+  releaseFactor: number = 0.7,
 ): Pick<
   FermentResults,
   'saltGrams' | 'saltTeaspoons' | 'saltTablespoons' | 'totalBrineGrams' | 'effectiveSalinity' | 'saltLabel'
@@ -82,15 +99,11 @@ export function calculateFermentSalt(
       // Salt % is of vegetable weight
       saltGrams = vegWeight * (saltPct / 100);
       // Effective brine salinity after veg water is released.
-      // The 0.7 water-release factor is a weighted default, not a precise
-      // measurement. NOTE: it overstates effective salinity for leafy
-      // vegetables — cabbage releases 85–95% of its water under salt, so
-      // assuming only 70% release yields a stronger brine than reality.
-      // Actual release varies widely by vegetable (Katz, Shockey):
+      // Release varies widely by vegetable (Katz, Shockey):
       //   - Cabbage: 85–95% (thin leaves, high surface area)
       //   - Carrots: 20–40% (dense, low surface area)
       //   - Kale:   30–50% (fibrous, moderate release)
-      const releasedWater = vegWeight * (waterContentPct / 100) * 0.7;
+      const releasedWater = vegWeight * (waterContentPct / 100) * releaseFactor;
       totalBrineGrams = releasedWater + saltGrams;
       effectiveSalinity = totalBrineGrams > 0
         ? (saltGrams / totalBrineGrams) * 100
@@ -185,10 +198,27 @@ function clampDays(d: number): number {
 // ── Day-by-Day Timeline ────────────────────────────────────────────────
 
 /**
+ * Estimated pH at a given fermentation progress fraction (0 = start,
+ * 1 = complete). Models the real trajectory: pH drops fast in the first
+ * days, then slows as LAB activity plateaus.
+ *
+ * Calibrated to measured sauerkraut at ~2% salt, 22°C (day 2 ≈ 5.0–5.5,
+ * day 3–4 ≈ 4.0–4.5, final 3.4–3.6): with a 7-day ferment this gives
+ * pH(0.3) ≈ 5.2, pH(0.5) ≈ 4.4, pH(0.75) ≈ 3.8, pH(1) = 3.5.
+ * Previously a linear 6.5→4.0 model ran 0.5–1.0 pH units too high at
+ * every milestone and ended 0.5 units above the true final acidity.
+ */
+export function estimatePHAt(progress: number): number {
+  const x = Math.min(1, Math.max(0, progress));
+  return FINAL_PH + (PH_START - FINAL_PH) * Math.pow(1 - x, PH_SHAPE);
+}
+
+/**
  * Build a day-by-day fermentation guide.
  *
- * Models pH drop along a roughly sigmoid curve from ~6.5 to TARGET_PH (4.0),
- * overlaying practical milestones for each phase.
+ * Models pH drop along a decelerating curve from ~6.5 to FINAL_PH (~3.5),
+ * overlaying practical milestones for each phase. TARGET_PH (4.0) remains
+ * the shelf-stable threshold referenced in safety copy.
  */
 export function buildLactoTimeline(estimatedDays: number, method: FermentMethod): LactoDayPoint[] {
   const points: LactoDayPoint[] = [];
@@ -223,14 +253,12 @@ export function buildLactoTimeline(estimatedDays: number, method: FermentMethod)
   }
 
   // ~50% — half fermented: transition to L. plantarum
-  // NOTE: pH trajectory is approximated here; real sauerkraut pH drops
-  // faster in the first days and then slows.
   const midDay = Math.round(totalDays * 0.5);
   if (midDay > earlyDay && midDay < totalDays) {
     points.push({
       day: midDay,
       label: `Day ${midDay} — L. plantarum Takes Over`,
-      description: `pH dropping (approaching ~${(6.5 - (6.5 - TARGET_PH) * 0.5).toFixed(1)}). Leuconostoc fades as acid-tolerant Lactiplantibacillus plantarum becomes dominant. Taste it — should be tangy but not fully sour yet.`,
+      description: `pH dropping (approaching ~${estimatePHAt(0.5).toFixed(1)}). Leuconostoc fades as acid-tolerant Lactiplantibacillus plantarum becomes dominant. Taste it — should be tangy but not fully sour yet.`,
     });
   }
 
@@ -240,7 +268,7 @@ export function buildLactoTimeline(estimatedDays: number, method: FermentMethod)
     points.push({
       day: lateDay,
       label: `Day ${lateDay} — Nearly Ready`,
-      description: `pH approaching ${TARGET_PH}. L. plantarum and Pediococcus dominate. Taste: should be pleasantly sour. If you like it now, move to the fridge. For more complexity, give it a few more days — cold maturation develops deeper flavour.`,
+      description: `pH approaching ~${estimatePHAt(0.75).toFixed(1)}. L. plantarum and Pediococcus dominate. Taste: should be pleasantly sour. If you like it now, move to the fridge. For more complexity, give it a few more days — cold maturation develops deeper flavour.`,
     });
   }
 
@@ -248,7 +276,7 @@ export function buildLactoTimeline(estimatedDays: number, method: FermentMethod)
   points.push({
     day: totalDays,
     label: `Day ${totalDays} — Complete`,
-    description: `Target pH ${TARGET_PH} reached. LAB community stable. Move to cold storage (fridge or cellar). Postbiotic compounds (GABA, phenyl-lactic acid, indole-3-lactic acid) continue to develop for weeks.`,
+    description: `Final pH ~${FINAL_PH.toFixed(1)} reached — well below the ${SAFETY_PH} safety threshold and stable under ${TARGET_PH.toFixed(1)}. LAB community stable. Move to cold storage (fridge or cellar). Postbiotic compounds (GABA, phenyl-lactic acid, indole-3-lactic acid) continue to develop for weeks.`,
   });
 
   return points;
@@ -260,6 +288,7 @@ export function runLactoCalculations(
   inputs: FermentInputs,
   waterContentPct: number = 90,
   speedFactor: number = 1.0,
+  releaseFactor: number = 0.7,
 ): FermentResults {
   const salt = calculateFermentSalt(
     inputs.vegWeight,
@@ -268,6 +297,7 @@ export function runLactoCalculations(
     inputs.method,
     inputs.saltType,
     waterContentPct,
+    releaseFactor,
   );
 
   const duration = estimateFermentDuration(inputs.ambientTemp, speedFactor);
@@ -334,8 +364,12 @@ export function lactoAdvice(
   // Kahm yeast — updated with 2024–2026 research
   tips.push('🦠 A thin white film (kahm yeast) is harmless — often Kazachstania or Pichia species. 2026 research: Kazachstania can actually inhibit pathogens but may soften texture. Skim it off. Fuzzy mould = discard immediately.');
 
-  // General safety
-  tips.push(`🛡️ Botulism cannot grow below pH ${SAFETY_PH}. Your ferment will be safe once it\'s tangy — typically by day ${Math.round(estimatedDays * 0.5)}–${Math.round(estimatedDays * 0.8)}.`);
+  // General safety — the "safe by" day comes from the pH curve: a 4.6
+  // crossing at ~45% of the estimated timeline (calibrated to measured
+  // sauerkraut, which crosses pH 4.6 around day 2–3 at 22°C).
+  const safeDay = Math.round(estimatedDays * 0.45);
+  const tangyDay = Math.round(estimatedDays * 0.7);
+  tips.push(`🛡️ Botulism cannot grow below pH ${SAFETY_PH}. Your ferment will be safe once it\'s tangy — typically by day ${Math.max(1, safeDay)}–${tangyDay}. If unsure, pH strips are cheap insurance.`);
 
   return tips;
 }

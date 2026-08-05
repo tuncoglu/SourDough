@@ -27,7 +27,7 @@ const CARDS: LandingCard[] = [
     emoji: '🥛',
     title: 'Yogurt',
     description:
-      'Starter culture calculator with 10 heirloom cultures, milk types, incubation timeline, and yield estimates.',
+      'Starter culture calculator with 10 cultures, milk types, incubation timeline, and yield estimates.',
     route: '/yogurt',
   },
   {

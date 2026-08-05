@@ -25,8 +25,10 @@ import { RecipeTypePicker } from '../../src/components/RecipeTypePicker';
 import { StarterCard } from '../../src/components/StarterCard';
 import { FlourBlendCard } from '../../src/components/FlourBlendCard';
 import { TemperatureCard } from '../../src/components/TemperatureCard';
+import { TempRow } from '../../src/components/TempRow';
 import { ResultsSection } from '../../src/components/ResultsSection';
-import { KeyboardScreen } from '../../src/components/KeyboardScreen';
+import { CalculatorShell } from '../../src/components/CalculatorShell';
+import { StaleResultsBanner } from '../../src/components/StaleResultsBanner';
 
 import { useCalculatorInputs } from '../../src/hooks/useCalculatorInputs';
 import { useRecipePreset } from '../../src/hooks/useRecipePreset';
@@ -518,18 +520,11 @@ export default function CalculatorScreen() {
             />
             <Text style={[coldStyles.unit, { color: colors.muted }]}>hours</Text>
           </View>
-          <View style={coldStyles.row}>
-            <Text style={[coldStyles.label, { color: colors.espresso }]}>Fridge temp</Text>
-            <TextInput
-              style={[coldStyles.input, { backgroundColor: colors.white, borderColor: colors.border, color: colors.espresso }]}
-              value={coldProofTemp}
-              onChangeText={setColdProofTemp}
-              keyboardType="decimal-pad"
-              placeholder="4"
-              placeholderTextColor={colors.lightText}
-            />
-            <Text style={[coldStyles.unit, { color: colors.muted }]}>°C</Text>
-          </View>
+          <TempRow
+            label="Fridge temp"
+            value={coldProofTemp}
+            onChangeText={setColdProofTemp}
+          />
         </View>
       )}
 
@@ -582,16 +577,7 @@ export default function CalculatorScreen() {
   const resultsPanel = React.useMemo(() => calc.results && (
     <>
       {inputsDirty && (
-        <TouchableOpacity
-          style={[bannerStyles.banner, { backgroundColor: colors.warningBg, borderColor: colors.hot }]}
-          onPress={doCalculate}
-          activeOpacity={0.8}
-          accessibilityRole="button"
-        >
-          <Text style={[bannerStyles.bannerText, { color: colors.espresso }]}>
-            ⚠️  Inputs changed since you calculated — tap to recalculate
-          </Text>
-        </TouchableOpacity>
+        <StaleResultsBanner onRecalculate={doCalculate} style={{ marginBottom: Spacing.md }} />
       )}
       <ResultsSection
         results={calc.results}
@@ -621,82 +607,40 @@ export default function CalculatorScreen() {
   // ═══════════════════════════════════════════════════════════════════════
   //  LAYOUT
   // ═══════════════════════════════════════════════════════════════════════
+  const header = (
+    <>
+      <TouchableOpacity onPress={() => router.push('/')} activeOpacity={0.7}>
+        <Text style={[layoutStyles.header, { color: colors.espresso }]}>🥖  Just Dough It</Text>
+      </TouchableOpacity>
+      <Text style={[layoutStyles.tagline, { color: colors.muted }]}>
+        Perfect bread, less guesswork
+      </Text>
+    </>
+  );
+
+  const locationBar = (
+    <LocationBar
+      summary={displaySummary}
+      loading={inputs.locLoading}
+      error={inputs.locError}
+      onRefresh={inputs.onRefreshLocation}
+      showFallbackWarning={!inputs.locLoading && !inputs.locationData}
+      onTapFallback={() => router.push('/settings')}
+      onPostcodeSubmit={inputs.onPostcodeSubmit}
+    />
+  );
+
   return (
     <SafeAreaView style={[layoutStyles.container, { backgroundColor: colors.cream }]} edges={['top']}>
-      {isDesktop && (
-        <>
-          <TouchableOpacity onPress={() => router.push('/')} activeOpacity={0.7}>
-            <Text style={[layoutStyles.header, { color: colors.espresso }]}>🥖  Just Dough It</Text>
-          </TouchableOpacity>
-          <Text style={[layoutStyles.tagline, { color: colors.muted }]}>
-            Perfect bread, less guesswork
-          </Text>
-        </>
-      )}
-
-      {isDesktop && (
-        <LocationBar
-          summary={displaySummary}
-          loading={inputs.locLoading}
-          error={inputs.locError}
-          onRefresh={inputs.onRefreshLocation}
-          showFallbackWarning={!inputs.locLoading && !inputs.locationData}
-          onTapFallback={() => router.push('/settings')}
-          onPostcodeSubmit={inputs.onPostcodeSubmit}
-        />
-      )}
-
-      <KeyboardScreen>
-        <View style={isDesktop ? desktopStyles.twoCol : layoutStyles.mobileCol}>
-          <ScrollView
-            ref={calc.scrollRef}
-            style={isDesktop ? desktopStyles.leftCol : layoutStyles.scroll}
-            contentContainerStyle={isDesktop ? desktopStyles.leftContent : layoutStyles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            {!isDesktop && (
-              <>
-                <TouchableOpacity onPress={() => router.push('/')} activeOpacity={0.7}>
-                  <Text style={[layoutStyles.header, { color: colors.espresso }]}>🥖  Just Dough It</Text>
-                </TouchableOpacity>
-                <Text style={[layoutStyles.tagline, { color: colors.muted }]}>
-                  Perfect bread, less guesswork
-                </Text>
-              </>
-            )}
-
-            {!isDesktop && (
-              <LocationBar
-                summary={displaySummary}
-                loading={inputs.locLoading}
-                error={inputs.locError}
-                onRefresh={inputs.onRefreshLocation}
-                showFallbackWarning={!inputs.locLoading && !inputs.locationData}
-                onTapFallback={() => router.push('/settings')}
-                onPostcodeSubmit={inputs.onPostcodeSubmit}
-              />
-            )}
-
-            {inputPanels}
-
-            {!isDesktop && resultsPanel}
-
-            {!isDesktop && <View style={layoutStyles.bottomPad} />}
-          </ScrollView>
-
-          {isDesktop && (
-            <ScrollView
-              ref={calc.rightScrollRef}
-              style={desktopStyles.rightCol}
-              contentContainerStyle={desktopStyles.rightContent}
-              showsVerticalScrollIndicator={false}
-            >
-              {resultsPanel}
-            </ScrollView>
-          )}
-        </View>
-      </KeyboardScreen>
+      <CalculatorShell
+        leftRef={calc.scrollRef}
+        rightRef={calc.rightScrollRef}
+        header={<>{header}{locationBar}</>}
+        bottomPad={40}
+        right={resultsPanel}
+      >
+        {inputPanels}
+      </CalculatorShell>
     </SafeAreaView>
   );
 }
@@ -707,12 +651,8 @@ export default function CalculatorScreen() {
 
 const layoutStyles = StyleSheet.create({
   container: { flex: 1 },
-  mobileCol: { flex: 1 },
-  scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md },
   header: { fontSize: FontSize.xl, fontWeight: '800', textAlign: 'center', marginBottom: Spacing.xs, marginTop: Spacing.md },
   tagline: { fontSize: FontSize.sm, textAlign: 'center', marginBottom: Spacing.md, paddingHorizontal: Spacing.lg, lineHeight: 20 },
-  bottomPad: { height: 40 },
 });
 
 const styles = StyleSheet.create({
@@ -780,21 +720,3 @@ const coldStyles = StyleSheet.create({
   unit: { fontSize: FontSize.xs },
 });
 
-const bannerStyles = StyleSheet.create({
-  banner: {
-    borderWidth: 1,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm + 2,
-    marginBottom: Spacing.md,
-  },
-  bannerText: { fontSize: FontSize.sm, fontWeight: '600', lineHeight: 19 },
-});
-
-const desktopStyles = StyleSheet.create({
-  twoCol: { flex: 1, flexDirection: 'row', gap: Spacing.lg, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-  leftCol: { flex: 1, maxWidth: 420 },
-  leftContent: { paddingBottom: 40 },
-  rightCol: { flex: 1.3 },
-  rightContent: { paddingBottom: 40 },
-});

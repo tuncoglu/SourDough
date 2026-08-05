@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { Alert, ScrollView } from 'react-native';
+import { ScrollView } from 'react-native';
 import {
   CalculationResults,
   FlourBlendEntry,
@@ -9,6 +9,7 @@ import {
 import { runAllCalculations } from '../lib/calculations';
 import { getBlendProtein, buildFlourTypeLabel, buildPrefermentConfig } from '../lib/blendUtils';
 import { resolveHardness } from '../lib/hardnessUtils';
+import { useFeedback } from '../lib/feedback';
 import type { LocationData } from '../lib/location';
 
 interface CalculateParams {
@@ -41,6 +42,7 @@ export function useRecipeCalculation() {
   const [calculating, setCalculating] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const rightScrollRef = useRef<ScrollView>(null);
+  const { alert } = useFeedback();
 
   const doCalculate = useCallback((params: CalculateParams, isDesktop: boolean) => {
     const {
@@ -69,16 +71,16 @@ export function useRecipeCalculation() {
     const oil = parseFloat(oilPct) || 0;
 
     if (fw <= 0) {
-      Alert.alert('Invalid input', 'Total flour weight must be greater than 0.');
+      alert('Invalid input', 'Total flour weight must be greater than 0.', 'error');
       return;
     }
     if ([wg, sw, slt, amb, flr, wat, sta, shyd].some(isNaN)) {
-      Alert.alert('Invalid input', 'All fields must be numbers.');
+      alert('Invalid input', 'All fields must be numbers.', 'error');
       return;
     }
 
     if (blend.every((e) => e.percentage === 0)) {
-      Alert.alert('Invalid flour mix', 'Enter grams for at least one flour.');
+      alert('Invalid flour mix', 'Enter grams for at least one flour.', 'error');
       return;
     }
 
@@ -86,11 +88,11 @@ export function useRecipeCalculation() {
     if (prefermentEnabled) {
       const pct = parseFloat(prefermentFlourPct) || 0;
       if (pct <= 0) {
-        Alert.alert('Invalid pre-ferment', 'Pre-ferment flour percentage must be greater than 0.');
+        alert('Invalid pre-ferment', 'Pre-ferment flour percentage must be greater than 0.', 'error');
         return;
       }
       if (pct > 100) {
-        Alert.alert('Invalid pre-ferment', 'Pre-ferment flour cannot exceed 100% of total flour.');
+        alert('Invalid pre-ferment', 'Pre-ferment flour cannot exceed 100% of total flour.', 'error');
         return;
       }
     }

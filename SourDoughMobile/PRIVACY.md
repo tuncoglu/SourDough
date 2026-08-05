@@ -1,10 +1,10 @@
 # Privacy Policy for Just Dough It
 
-**Last updated:** June 18, 2026
+**Last updated:** August 5, 2026
 
-Just Dough It ("the App") is a baking tool that helps you manage
-sourdough starters and recipes. This policy explains what data the App
-handles and how it is used.
+Just Dough It ("the App") is a baking tool with calculators for sourdough
+bread, yogurt, and lacto-fermentation. This policy explains what data the
+App handles and how it is used.
 
 ## Data we collect
 

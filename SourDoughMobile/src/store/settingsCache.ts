@@ -21,8 +21,3 @@ export async function updateSettings(settings: UserSettings): Promise<void> {
   await saveSettings(settings);
   cache = { settings, loadedAt: Date.now() };
 }
-
-/** Invalidate cache (e.g., after external modification). */
-export function invalidateCache(): void {
-  cache = null;
-}

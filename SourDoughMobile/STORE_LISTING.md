@@ -8,7 +8,7 @@
 Just Dough It takes the guesswork out of sourdough baking. Whether you're maintaining a starter, building a levain, or scaling a recipe, the app does the math — and adapts it to your actual environment.
 
 ### Why your kitchen, not a textbook
-Most recipes assume a fixed temperature and water profile. Just Dough It uses your real location to detect ambient temperature and water hardness, then adjusts fermentation timelines and hydration targets accordingly. Cool kitchen? It lengthens the bulk. Soft water? It nudges you toward a stiffer dough.
+Most recipes assume a fixed temperature and water profile. Just Dough It uses your real location to detect ambient temperature and water hardness, then adjusts fermentation timelines and hydration targets accordingly. Cool kitchen? It lengthens the bulk. Soft water? Expect a slack, extensible dough — great for high-hydration bakes.
 
 ### What it does
 - **Starter tracker** — Log feedings (flour, water, ratio). See your starter's history. Feeding reminders coming soon.
@@ -16,7 +16,7 @@ Most recipes assume a fixed temperature and water profile. Just Dough It uses yo
 - **Auto-location** — One-tap detection pulls your local temperature (via Open-Meteo) and water hardness (by region), then factors both into your fermentation schedule.
 - **Manual mode** — Prefer privacy? Enter your own temperature and postcode — no location permission needed.
 - **Fermentation timeline** — See a step-by-step schedule: autolyse, stretch-and-folds, bulk fermentation, shaping, proofing, and bake — all adjusted to your conditions.
-- **Flour database** — Built-in profiles for 70+ Shipton Mill flours plus generics: bread flour, whole wheat, rye, spelt, einkorn, and more — with protein percentages and category data.
+- **Flour database** — Built-in profiles for 60+ Shipton Mill flours plus generics: bread flour, whole wheat, rye, spelt, einkorn, and more — with protein percentages and category data.
 - **Yogurt calculator** — 10 starter cultures (thermophilic & mesophilic), milk picker, incubation timeline with min/max range, yield & nutrition, and previous-batch starter.
 - **Lacto-fermentation calculator** — 7+ ferment styles, 25+ vegetables, salt calculator with volume conversion, day-by-day LAB succession timeline, and temperature-adjusted Q10 model.
 

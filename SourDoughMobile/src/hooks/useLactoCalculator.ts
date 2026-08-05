@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { FermentType, FermentMethod, SaltCrystal, FermentInputs, FermentResults, LactoDayPoint, WaterHardness } from '../models/types';
 import { FERMENT_PRESETS, VEG_COMBOS } from '../data/fermentPresets';
-import { VEGETABLES, findVeg, VegEntry } from '../data/vegetables';
+import { VEGETABLES, findVeg, VEG_RELEASE_FACTOR, VegEntry } from '../data/vegetables';
 import {
   runLactoCalculations,
   buildLactoTimeline,
@@ -14,8 +14,11 @@ import {
   FermentTempResult,
 } from '../lib/lactoCalculations';
 import { useLocation } from './useLocation';
+import { useStaleResults, dirtySetter } from './useStaleResults';
+import { isValidDecimalInput } from '../lib/inputValidation';
 import { getSettings } from '../store/settingsCache';
 import { classifyHardness } from '../data/ukWaterHardness';
+import type { LocationData } from '../lib/location';
 
 /** Which vegetable each preset defaults to. */
 const PRESET_DEFAULT_VEG: Record<string, string> = {
@@ -59,7 +62,7 @@ export interface LactoCalculatorState {
   VEG_COMBOS: typeof VEG_COMBOS;
 
   // Location & water
-  locationData: ReturnType<typeof useLocation>['data'];
+  locationData: LocationData | null;
   locLoading: boolean;
   locError: string | null;
   onRefreshLocation: () => void;
@@ -72,6 +75,10 @@ export interface LactoCalculatorState {
   advice: string[];
   waterAdvice: string[];
   showResults: boolean;
+  /** Inline validation message (e.g. missing veg weight) — shown above Calculate. */
+  validationError: string | null;
+  /** True when inputs changed after the last calculation (stale-results banner). */
+  inputsDirty: boolean;
 
   // Actions
   selectPreset: (type: FermentType) => void;
@@ -87,7 +94,7 @@ export interface LactoCalculatorState {
 }
 
 export function useLactoCalculator(): LactoCalculatorState {
-  const { data: locationData, loading: locLoading, error: locError, detect, refineWithPostcode } = useLocation();
+  const { locationData, locLoading, locError, onRefreshLocation, onPostcodeSubmit } = useLocation();
 
   const [fermentType, setFermentType] = useState<FermentType>('sauerkraut');
   const [vegId, setVegId] = useState('green-cabbage');
@@ -103,6 +110,7 @@ export function useLactoCalculator(): LactoCalculatorState {
   const [timeline, setTimeline] = useState<LactoDayPoint[]>([]);
   const [advice, setAdvice] = useState<string[]>([]);
   const [waterAdvice, setWaterAdvice] = useState<string[]>([]);
+  const { validationError, setValidationError, inputsDirty, markInputsChanged, markCalculated } = useStaleResults();
 
   // Derived
   const veg = useMemo(() => findVeg(vegId), [vegId]);
@@ -122,7 +130,9 @@ export function useLactoCalculator(): LactoCalculatorState {
 
   // Weighted properties from the mix (or fall back to single veg)
   const effectiveVeg = useMemo(() => {
-    if (!isMultiVeg) return veg;
+    if (!isMultiVeg) {
+      return { ...veg, releaseFactor: VEG_RELEASE_FACTOR[veg.category] };
+    }
     const total = totalMixGrams || 1;
     const waterContentPct = vegMixEntries.reduce((s, m) =>
       s + m.veg.waterContentPct * (parseFloat(m.grams) || 0), 0) / total;
@@ -132,6 +142,8 @@ export function useLactoCalculator(): LactoCalculatorState {
       s + m.veg.typicalBrineSaltPct * (parseFloat(m.grams) || 0), 0) / total;
     const typicalDrySaltPct = vegMixEntries.reduce((s, m) =>
       s + m.veg.typicalDrySaltPct * (parseFloat(m.grams) || 0), 0) / total;
+    const releaseFactor = vegMixEntries.reduce((s, m) =>
+      s + VEG_RELEASE_FACTOR[m.veg.category] * (parseFloat(m.grams) || 0), 0) / total;
     const firmnessCounts = { soft: 0, medium: 0, firm: 0 };
     vegMixEntries.forEach(m => { firmnessCounts[m.veg.firmness]++; });
     const firmness = firmnessCounts.firm >= firmnessCounts.soft && firmnessCounts.firm >= firmnessCounts.medium
@@ -142,6 +154,7 @@ export function useLactoCalculator(): LactoCalculatorState {
       speedFactor: Math.round(speedFactor * 100) / 100,
       typicalBrineSaltPct: Math.round(typicalBrineSaltPct * 10) / 10,
       typicalDrySaltPct: Math.round(typicalDrySaltPct * 10) / 10,
+      releaseFactor: Math.round(releaseFactor * 100) / 100,
       firmness: firmness as VegEntry['firmness'],
       name: vegMixEntries.map(m => m.veg.name).join(' + '),
       emoji: vegMixEntries.map(m => m.veg.emoji).join(''),
@@ -179,9 +192,11 @@ export function useLactoCalculator(): LactoCalculatorState {
   }, [vegId, vegWeight]);
 
   const updateMixGrams = useCallback((id: string, grams: string) => {
+    // Sanitize: digits + at most one decimal point (same rule as NumberInput)
+    if (!isValidDecimalInput(grams)) return;
     setVegMix(prev => prev.map(m => m.vegId === id ? { ...m, grams } : m));
-    setShowResults(false);
-  }, []);
+    markInputsChanged();
+  }, [markInputsChanged]);
 
   const applyCombo = useCallback((combo: typeof VEG_COMBOS[number]) => {
     setFermentType('custom');
@@ -266,8 +281,18 @@ export function useLactoCalculator(): LactoCalculatorState {
     const waterW = parseFloat(waterAmount) || 0;
     const salt = parseFloat(saltPct) || 2.0;
 
-    if (vegW <= 0) return;
-    if (method === 'brine' && waterW <= 0) return;
+    if (vegW <= 0) {
+      setValidationError(
+        isMultiVeg
+          ? 'Enter grams for at least one vegetable before calculating.'
+          : 'Enter a weight for the vegetables before calculating.',
+      );
+      return;
+    }
+    if (method === 'brine' && waterW <= 0) {
+      setValidationError('Enter the amount of water for your brine.');
+      return;
+    }
 
     const baseInputs: FermentInputs = {
       fermentType,
@@ -279,7 +304,12 @@ export function useLactoCalculator(): LactoCalculatorState {
       ambientTemp: effectiveTemp,
     };
 
-    const baseResults = runLactoCalculations(baseInputs, effectiveVeg.waterContentPct, effectiveVeg.speedFactor);
+    const baseResults = runLactoCalculations(
+      baseInputs,
+      effectiveVeg.waterContentPct,
+      effectiveVeg.speedFactor,
+      effectiveVeg.releaseFactor,
+    );
 
     // Now compute accurate temp based on the actual estimated duration
     const accurateTemp = computeFermentTemp(
@@ -305,7 +335,8 @@ export function useLactoCalculator(): LactoCalculatorState {
     setAdvice(lactoAdvice(method, salt, temp, finalResults.estimatedDays));
     setWaterAdvice(waterHardnessFermentAdvice(h));
     setShowResults(true);
-  }, [vegWeight, waterAmount, saltPct, saltType, fermentType, method, effectiveVeg, effectiveTemp, locationData, getHardness, isMultiVeg, totalMixGrams]);
+    markCalculated();
+  }, [vegWeight, waterAmount, saltPct, saltType, fermentType, method, effectiveVeg, effectiveTemp, locationData, getHardness, isMultiVeg, totalMixGrams, markCalculated]);
 
   return {
     fermentType,
@@ -330,24 +361,28 @@ export function useLactoCalculator(): LactoCalculatorState {
     locationData,
     locLoading,
     locError,
-    onRefreshLocation: detect,
-    onPostcodeSubmit: refineWithPostcode,
+    onRefreshLocation,
+    onPostcodeSubmit,
     hardness: getHardness(),
     results,
     timeline,
     advice,
     waterAdvice,
     showResults,
+    validationError,
+    inputsDirty,
     selectPreset,
     toggleVegInMix,
     updateMixGrams,
     applyCombo,
     VEG_COMBOS,
     selectVeg,
-    setVegWeight,
-    setWaterAmount,
-    setSaltPct,
-    setSaltType,
+    // Manual input setters: invalidate previous results so the stale banner
+    // appears (preset/veg selection already resets showResults directly).
+    setVegWeight: dirtySetter(markInputsChanged, setVegWeight),
+    setWaterAmount: dirtySetter(markInputsChanged, setWaterAmount),
+    setSaltPct: dirtySetter(markInputsChanged, setSaltPct),
+    setSaltType: dirtySetter(markInputsChanged, setSaltType),
     calculate,
   };
 }

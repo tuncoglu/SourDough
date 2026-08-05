@@ -52,7 +52,7 @@ export default function AboutScreen() {
               <View style={aboutStyles.featureBody}>
                 <Text style={[aboutStyles.featureTitle, { color: colors.espresso }]}>Yogurt Calculator</Text>
                 <Text style={[aboutStyles.featureDesc, { color: colors.muted }]}>
-                  10 heirloom starter cultures (thermophilic & mesophilic), milk type picker, incubation timeline, yield & nutrition estimates. Use your last batch as starter.
+                  10 starter cultures (thermophilic & mesophilic), milk type picker, incubation timeline, yield & nutrition estimates. Use your last batch as starter.
                 </Text>
               </View>
             </View>

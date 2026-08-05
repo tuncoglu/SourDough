@@ -8,8 +8,11 @@ import {
   runLactoCalculations,
   computeFermentTemp,
   estimateWaterForJar,
+  estimatePHAt,
   TARGET_PH,
   SAFETY_PH,
+  FINAL_PH,
+  PH_START,
 } from '../src/lib/lactoCalculations';
 import { FermentInputs, HourlyPoint } from '../src/models/types';
 
@@ -33,11 +36,29 @@ describe('calculateFermentSalt', () => {
   });
 
   it('dry method: effective salinity accounts for released veg water', () => {
+    // Cabbage releases ~90% of its water under salt (releaseFactor 0.9)
+    const r = calculateFermentSalt(1000, 0, 2.0, 'dry', 'fine-sea', 92, 0.9);
+    // Released water = 1000 * 0.92 * 0.9 = 828g
+    // Total brine = 828 + 20 = 848g
+    // Effective salinity = 20 / 848 * 100 = ~2.36%
+    expect(r.totalBrineGrams).toBeCloseTo(848, 0);
+    expect(r.effectiveSalinity).toBeCloseTo(2.36, 1);
+  });
+
+  it('dry method: dense roots form a much stronger self-brine', () => {
+    // Carrot releases only ~40% of its water → real brine is ~2× the
+    // salt %; the old flat 0.7 factor understated this (and overstated
+    // leafy-veg salinity — the error flipped direction).
+    const r = calculateFermentSalt(1000, 0, 2.5, 'dry', 'fine-sea', 88, 0.4);
+    // Released water = 1000 * 0.88 * 0.4 = 352g
+    // Total brine = 352 + 25 = 377g
+    // Effective salinity = 25 / 377 * 100 = ~6.6%
+    expect(r.totalBrineGrams).toBeCloseTo(377, 0);
+    expect(r.effectiveSalinity).toBeCloseTo(6.6, 1);
+  });
+
+  it('dry method: defaults to a 0.7 release factor when unspecified', () => {
     const r = calculateFermentSalt(1000, 0, 2.0, 'dry', 'fine-sea', 92);
-    // Released water = 1000 * 0.92 * 0.7 = 644g
-    // Total brine = 644 + 20 = 664g
-    // Effective salinity = 20 / 664 * 100 = ~3.01%
-    expect(r.totalBrineGrams).toBeCloseTo(664, 0);
     expect(r.effectiveSalinity).toBeCloseTo(3.0, 1);
   });
 
@@ -106,6 +127,44 @@ describe('estimateFermentDuration', () => {
     const d = estimateFermentDuration(22, 1.0);
     expect(d.daysMin).toBeLessThan(d.days);
     expect(d.daysMax).toBeGreaterThan(d.days);
+  });
+});
+
+// ── estimatePHAt ──────────────────────────────────────────────────────────
+
+describe('estimatePHAt', () => {
+  it('starts at PH_START and ends at FINAL_PH', () => {
+    expect(estimatePHAt(0)).toBeCloseTo(PH_START, 5);
+    expect(estimatePHAt(1)).toBeCloseTo(FINAL_PH, 5);
+  });
+
+  it('drops fast early, then slows (decelerating curve)', () => {
+    // Literature anchors for 2% sauerkraut at 22°C (7-day ferment):
+    // day 2 (30%) ≈ 5.1, day 3.5 (50%) ≈ 4.4, day 5.25 (75%) ≈ 3.8
+    expect(estimatePHAt(0.3)).toBeCloseTo(5.1, 1);
+    expect(estimatePHAt(0.5)).toBeCloseTo(4.4, 1);
+    expect(estimatePHAt(0.75)).toBeCloseTo(3.8, 1);
+    // Late drop is slower than early drop
+    const earlyDrop = estimatePHAt(0) - estimatePHAt(0.25);
+    const lateDrop = estimatePHAt(0.75) - estimatePHAt(1);
+    expect(earlyDrop).toBeGreaterThan(lateDrop);
+  });
+
+  it('clamps progress outside [0, 1]', () => {
+    expect(estimatePHAt(-1)).toBeCloseTo(PH_START, 5);
+    expect(estimatePHAt(2)).toBeCloseTo(FINAL_PH, 5);
+  });
+
+  it('crosses the pH 4.6 safety threshold at ~45% of the timeline', () => {
+    expect(estimatePHAt(0.4)).toBeGreaterThan(SAFETY_PH);
+    expect(estimatePHAt(0.5)).toBeLessThan(SAFETY_PH);
+  });
+
+  it('midpoint label in the timeline matches the curve', () => {
+    const timeline = buildLactoTimeline(7, 'dry');
+    const mid = timeline.find((p) => p.label.includes('L. plantarum'));
+    expect(mid).toBeDefined();
+    expect(mid!.description).toContain(estimatePHAt(0.5).toFixed(1));
   });
 });
 

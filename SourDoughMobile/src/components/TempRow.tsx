@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
 import { tempUnit, celsiusToFahrenheit, fahrenheitToCelsius } from '../lib/unitConversion';
+import { useExternalValueSync } from '../hooks/useExternalValueSync';
+import { isValidDecimalInput } from '../lib/inputValidation';
 
 interface Props {
   label: string;
@@ -44,8 +46,14 @@ export function TempRow({
     }
   }, [unitSystem, value]);
 
+  // Resync when the parent's value is changed programmatically (recipe
+  // preset, GPS auto-fill, reset-to-defaults, edit-recipe prefill).
+  const toMetric = useCallback((n: number) => fahrenheitToCelsius(n), []);
+  const toDisplay = useCallback((n: number) => celsiusToFahrenheit(n).toFixed(1), []);
+  useExternalValueSync(value, display, setDisplay, isImperial, toMetric, toDisplay);
+
   const handleChange = (text: string) => {
-    if (text !== '' && !/^-?\d*\.?\d*$/.test(text)) return;
+    if (!isValidDecimalInput(text, true)) return;
     setDisplay(text);
 
     if (isImperial) {

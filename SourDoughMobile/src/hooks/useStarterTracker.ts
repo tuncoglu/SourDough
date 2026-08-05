@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { AppState, Alert } from 'react-native';
+import { AppState } from 'react-native';
+import { useIsFocused } from 'expo-router';
 import {
   getStarterFlour,
   setStarterFlour as persistStarterFlour,
@@ -11,6 +12,7 @@ import {
 } from '../store/starterStore';
 import { StarterFeeding, StarterStatus } from '../models/types';
 import { computeStarterStatus } from '../lib/starterStatus';
+import { useFeedback } from '../lib/feedback';
 
 export interface StarterTrackerState {
   starterFlourLabel: string;
@@ -39,6 +41,7 @@ export interface StarterTrackerActions {
 }
 
 export function useStarterTracker(): StarterTrackerState & StarterTrackerActions {
+  const { alert } = useFeedback();
   const [starterFlourLabel, setStarterFlourLabelState] = useState('Generic: Bread Flour');
   const [feedFlourGrams, setFeedFlourGrams] = useState('50');
   const [feedWaterGrams, setFeedWaterGrams] = useState('50');
@@ -73,7 +76,7 @@ export function useStarterTracker(): StarterTrackerState & StarterTrackerActions
     const flourG = parseFloat(feedFlourGrams) || 0;
     const waterG = parseFloat(feedWaterGrams) || 0;
     if (flourG <= 0 || waterG <= 0) {
-      Alert.alert('Invalid input', 'Enter grams of flour and water used to feed.');
+      alert('Invalid input', 'Enter grams of flour and water used to feed.', 'error');
       return;
     }
 
@@ -96,7 +99,7 @@ export function useStarterTracker(): StarterTrackerState & StarterTrackerActions
       setHoursSince('0.0');
       setRecentFeedings((prev) => [feeding, ...prev].slice(0, 3));
     } catch {
-      Alert.alert('Error', 'Could not save feeding. Please try again.');
+      alert('Error', 'Could not save feeding. Please try again.', 'error');
     } finally {
       clearTimeout(timer);
       if (didShowSpinner) setFeedLogging(false);
@@ -105,11 +108,11 @@ export function useStarterTracker(): StarterTrackerState & StarterTrackerActions
 
   const handleFridgeIn = useCallback(async () => {
     if (!lastFed) {
-      Alert.alert('No feeding', 'Log a feeding before putting starter in the fridge.');
+      alert('No feeding', 'Log a feeding before putting starter in the fridge.');
       return;
     }
     if (lastFed.fridgeAt) {
-      Alert.alert('Already fridged', 'Starter is already in the fridge.');
+      alert('Already fridged', 'Starter is already in the fridge.');
       return;
     }
     const fridgeAt = new Date().toISOString();
@@ -121,11 +124,11 @@ export function useStarterTracker(): StarterTrackerState & StarterTrackerActions
   const handleFridgeOut = useCallback(async () => {
     if (!lastFed) return;
     if (!lastFed.fridgeAt) {
-      Alert.alert('Not in fridge', 'Starter is not in the fridge.');
+      alert('Not in fridge', 'Starter is not in the fridge.');
       return;
     }
     if (lastFed.outOfFridgeAt) {
-      Alert.alert('Already out', 'Starter is already out of the fridge.');
+      alert('Already out', 'Starter is already out of the fridge.');
       return;
     }
     const outOfFridgeAt = new Date().toISOString();
@@ -152,16 +155,19 @@ export function useStarterTracker(): StarterTrackerState & StarterTrackerActions
     return () => sub.remove();
   }, []);
 
-  // Update "hours since" and status tick every minute
+  // Update "hours since" and status tick every minute — only while this
+  // tab is focused (expo-router keeps all tabs mounted, so an unfocused
+  // calculator would otherwise re-render the app every minute).
+  const isFocused = useIsFocused();
   useEffect(() => {
-    if (appState !== 'active' || !lastFed) return;
+    if (appState !== 'active' || !lastFed || !isFocused) return;
     const t = setInterval(() => {
       const diff = Date.now() - new Date(lastFed.timestamp).getTime();
       setHoursSince((diff / 3600000).toFixed(1));
       setStatusTick((n) => n + 1);
     }, 60000);
     return () => clearInterval(t);
-  }, [appState, lastFed]);
+  }, [appState, lastFed, isFocused]);
 
   return {
     starterFlourLabel,

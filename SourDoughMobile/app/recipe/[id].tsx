@@ -8,12 +8,12 @@ import {
   Share,
   TouchableOpacity,
   Platform,
-  Alert,
 } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyle, sectionTitleStyle } from '../../src/theme';
 import { formatTemp, formatWeight, formatWeightValue, weightUnit } from '../../src/lib/unitConversion';
+import { useFeedback } from '../../src/lib/feedback';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { SavedRecipe, FlourBlendEntry } from '../../src/models/types';
 import { getRecipe } from '../../src/store/recipeStore';
@@ -32,6 +32,7 @@ export default function RecipeDetailScreen() {
   const [recipe, setRecipe] = useState<SavedRecipe | null>(null);
   const [loading, setLoading] = useState(true);
   const { isDesktop } = useBreakpoint();
+  const { showToast } = useFeedback();
   const { unitSystem, colors } = useAppTheme();
 
   useEffect(() => {
@@ -73,7 +74,7 @@ export default function RecipeDetailScreen() {
         if (!shared) {
           const copied = await copyToClipboard(text);
           if (copied) {
-            Alert.alert('Copied!', 'Recipe copied to clipboard.');
+            showToast('Recipe copied to clipboard.', 'success');
           }
         }
       } else {

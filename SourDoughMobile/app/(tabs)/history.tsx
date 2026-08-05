@@ -3,7 +3,6 @@ import {
   View,
   FlatList,
   StyleSheet,
-  Alert,
   RefreshControl,
   Text,
   TextInput,
@@ -12,6 +11,7 @@ import {
 import { useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Spacing, FontSize, BorderRadius, useAppTheme } from '../../src/theme';
+import { useFeedback } from '../../src/lib/feedback';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { SavedRecipe, BreadType } from '../../src/models/types';
 import { loadRecipes, deleteRecipe, saveRecipe, generateRecipeId } from '../../src/store/recipeStore';
@@ -35,6 +35,7 @@ export default function HistoryScreen() {
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const router = useRouter();
+  const { confirm, showToast } = useFeedback();
   const { isDesktop } = useBreakpoint();
   const { colors } = useAppTheme();
 
@@ -55,18 +56,17 @@ export default function HistoryScreen() {
     setRefreshing(false);
   };
 
-  const handleDelete = (recipe: SavedRecipe) => {
-    Alert.alert('Delete Recipe', 'Remove this recipe from your history?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          await deleteRecipe(recipe.id);
-          setRecipes((prev) => prev.filter((r) => r.id !== recipe.id));
-        },
-      },
-    ]);
+  const handleDelete = async (recipe: SavedRecipe) => {
+    const ok = await confirm({
+      title: 'Delete Recipe',
+      message: 'Remove this recipe from your history?',
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!ok) return;
+    await deleteRecipe(recipe.id);
+    setRecipes((prev) => prev.filter((r) => r.id !== recipe.id));
+    showToast('Recipe deleted.', 'success');
   };
 
   const handleDuplicate = async (recipe: SavedRecipe) => {
@@ -77,7 +77,7 @@ export default function HistoryScreen() {
     };
     await saveRecipe(clone);
     await fetchRecipes();
-    Alert.alert('Duplicated', 'Recipe copied to your history.');
+    showToast('Recipe copied to your history.', 'success');
   };
 
   const handleEdit = (recipe: SavedRecipe) => {

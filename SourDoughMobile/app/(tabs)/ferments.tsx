@@ -11,7 +11,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLactoCalculator } from '@/src/hooks/useLactoCalculator';
 import { useBreakpoint } from '@/src/hooks/useBreakpoint';
-import { KeyboardScreen } from '@/src/components/KeyboardScreen';
+import { CalculatorShell } from '@/src/components/CalculatorShell';
+import { TempForecastCard } from '@/src/components/TempForecastCard';
+import { StaleResultsBanner } from '@/src/components/StaleResultsBanner';
+import { ValidationMessage } from '@/src/components/ValidationMessage';
 import { Chip } from '@/src/components/Chip';
 import { LactoResultCard } from '@/src/components/LactoResultCard';
 import { LactoTimeline } from '@/src/components/LactoTimeline';
@@ -19,7 +22,7 @@ import { LactoAdvice } from '@/src/components/LactoAdvice';
 import { LactoScience } from '@/src/components/LactoScience';
 import { LocationBar } from '@/src/components/LocationBar';
 import { NumberInput } from '@/src/components/NumberInput';
-import { Spacing, FontSize, BorderRadius, useAppTheme, MaxWidth, cardStyleLg } from '@/src/theme';
+import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyleLg } from '@/src/theme';
 import { FERMENT_TYPE_ORDER } from '@/src/data/fermentPresets';
 import { VEGETABLES, VEG_CATEGORIES } from '@/src/data/vegetables';
 import { FermentType, SALT_LABELS, SALT_TYPE_ORDER } from '@/src/models/types';
@@ -55,51 +58,19 @@ export default function FermentsScreen() {
           error={calc.locError}
           onRefresh={calc.onRefreshLocation}
           showFallbackWarning={!calc.locLoading && !calc.locationData}
+          onTapFallback={() => router.push('/settings')}
           onPostcodeSubmit={calc.onPostcodeSubmit}
         />
 
         {/* ── Temperature Forecast ── */}
         {calc.dailyTemps.length > 0 && (
-          <View style={[styles.tempCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.tempTitle, { color: colors.espresso }]}>
-              🌡 Fermentation temperature
-            </Text>
-            <View style={styles.tempDays}>
-              {calc.dailyTemps.slice(0, 10).map((d, i, arr) => {
-                // Show only actual forecast days — stop before repeated data
-                if (i > 0 && d.high === arr[i - 1].high && d.low === arr[i - 1].low) return null;
-                const dayColor = d.avg > 24 ? colors.hot : d.avg > 20 ? colors.olive : d.avg > 16 ? colors.cool : colors.cold;
-                const allHigh = Math.max(...arr.slice(0, 10).map(x => x.high));
-                const allLow = Math.min(...arr.slice(0, 10).map(x => x.low));
-                const range = allHigh - allLow || 1;
-                const topPct = ((allHigh - d.high) / range) * 100;
-                const heightPct = ((d.high - d.low) / range) * 100;
-                return (
-                <View key={i} style={styles.tempDay}>
-                  <Text style={[styles.tempDayLabel, { color: colors.muted }]}>{d.day}</Text>
-                  <Text style={[styles.tempDayHigh, { color: colors.espresso }]}>{d.high}°</Text>
-                  <View style={[styles.tempBar, { backgroundColor: colors.border }]}>
-                    <View
-                      style={[
-                        styles.tempBarFill,
-                        {
-                          backgroundColor: dayColor,
-                          top: `${topPct}%`,
-                          height: `${Math.max(8, heightPct)}%`,
-                        },
-                      ]}
-                    />
-                  </View>
-                  <Text style={[styles.tempDayLow, { color: colors.lightText }]}>{d.low}°</Text>
-                </View>
-                );
-              })}
-            </View>
-            <Text style={[styles.tempSummary, { color: colors.lightText, borderTopColor: colors.border }]}>
-              {calc.tempResult?.summary ?? 'Using weather forecast for accurate timing'}
-              {calc.tempResult?.source === 'fallback' && ' — enable location for local temps'}
-            </Text>
-          </View>
+          <TempForecastCard
+            dailyTemps={calc.dailyTemps}
+            title="🌡 Fermentation temperature"
+            summary={calc.tempResult?.summary ?? 'Using weather forecast for accurate timing'}
+            source={calc.tempResult?.source}
+            dayColor={(avg) => avg > 24 ? colors.hot : avg > 20 ? colors.olive : avg > 16 ? colors.cool : colors.cold}
+          />
         )}
 
         {/* ── Ferment Type Picker ── */}
@@ -227,6 +198,7 @@ export default function FermentsScreen() {
                   onChangeText={(t) => calc.updateMixGrams(m.vegId, t)}
                   keyboardType="decimal-pad"
                   selectTextOnFocus
+                  accessibilityLabel={`${m.veg.name} weight in grams`}
                 />
                 <Text style={[styles.mixWeightUnit, { color: colors.muted }]}>g</Text>
               </View>
@@ -299,6 +271,9 @@ export default function FermentsScreen() {
           </ScrollView>
         </View>
 
+        {/* ── Validation message ── */}
+        {calc.validationError && <ValidationMessage message={calc.validationError} />}
+
         {/* ── Calculate ── */}
         <TouchableOpacity
           style={[styles.calcBtn, { backgroundColor: colors.terracotta }]}
@@ -313,6 +288,7 @@ export default function FermentsScreen() {
 
   const resultsPanel = calc.showResults && calc.results && (
     <View style={styles.results}>
+      {calc.inputsDirty && <StaleResultsBanner onRecalculate={handleCalculate} />}
       <LactoResultCard results={calc.results} method={calc.method} />
       <LactoTimeline timeline={calc.timeline} results={calc.results} />
       <LactoAdvice
@@ -342,24 +318,9 @@ export default function FermentsScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.cream }]} edges={['top']}>
-      <KeyboardScreen>
-        {isDesktop ? (
-          <View style={desktopStyles.twoCol}>
-            <ScrollView style={desktopStyles.leftCol} contentContainerStyle={desktopStyles.leftContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-              {inputPanels}
-            </ScrollView>
-            <ScrollView style={desktopStyles.rightCol} contentContainerStyle={desktopStyles.rightContent} showsVerticalScrollIndicator={false}>
-              {resultsPanel}
-            </ScrollView>
-          </View>
-        ) : (
-          <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-            {inputPanels}
-            {resultsPanel}
-            <View style={styles.bottomPad} />
-          </ScrollView>
-        )}
-      </KeyboardScreen>
+      <CalculatorShell right={resultsPanel}>
+        {inputPanels}
+      </CalculatorShell>
     </SafeAreaView>
   );
 }
@@ -367,16 +328,6 @@ export default function FermentsScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-  },
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    maxWidth: MaxWidth.form,
-    width: '100%',
-    alignSelf: 'center' as any,
   },
   header: {
     marginBottom: Spacing.md,
@@ -394,60 +345,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: Spacing.sm,
     marginTop: Spacing.sm,
-  },
-
-  // Temperature forecast card
-  tempCard: {
-    borderWidth: 1,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-    marginBottom: Spacing.lg,
-  },
-  tempTitle: {
-    fontSize: FontSize.sm,
-    fontWeight: '700',
-    marginBottom: Spacing.sm,
-  },
-  tempDays: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    marginBottom: Spacing.sm,
-  },
-  tempDay: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 2,
-  },
-  tempDayLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  tempDayHigh: {
-    fontSize: FontSize.xs,
-    fontWeight: '700',
-  },
-  tempBar: {
-    width: '100%',
-    height: 28,
-    borderRadius: 4,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  tempBarFill: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    borderRadius: 4,
-    minHeight: 4,
-  },
-  tempDayLow: {
-    fontSize: 11,
-  },
-  tempSummary: {
-    fontSize: FontSize.xs,
-    textAlign: 'center',
-    paddingTop: Spacing.xs,
-    borderTopWidth: 1,
   },
 
   // Style chips
@@ -617,15 +514,4 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     lineHeight: 20,
   },
-  bottomPad: {
-    height: 60,
-  },
-});
-
-const desktopStyles = StyleSheet.create({
-  twoCol: { flex: 1, flexDirection: 'row', gap: Spacing.lg, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-  leftCol: { flex: 1, maxWidth: 420 },
-  leftContent: { paddingBottom: 40, paddingTop: Spacing.md },
-  rightCol: { flex: 1.3 },
-  rightContent: { paddingBottom: 40, paddingTop: Spacing.md },
 });

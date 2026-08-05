@@ -1,4 +1,4 @@
-import { WaterHardness, HourlyPoint } from '../models/types';
+import { WaterHardness, HourlyPoint, UnitSystem } from '../models/types';
 import { lookupWaterHardness } from '../data/waterHardness';
 import {
   getAmbientTemp,
@@ -7,6 +7,7 @@ import {
   reverseGeocode,
   NominatimResult,
 } from './api';
+import { formatTemp } from './unitConversion';
 
 export interface LocationData {
   location: NominatimResult;
@@ -31,6 +32,7 @@ export async function detectAll(
   lon: number,
   postcode?: string,
   manualHardness?: number | null,
+  unitSystem: UnitSystem = 'metric',
 ): Promise<LocationData | null> {
   const loc = await reverseGeocode(lat, lon);
   if (!loc) return null;
@@ -44,7 +46,7 @@ export async function detectAll(
   const hardness = lookupWaterHardness(
     loc.countryCode, loc.region, postcode, manualHardness);
 
-  const summary = buildSummary(loc, ambient, waterTemp, hardness);
+  const summary = buildSummary(loc, ambient, waterTemp, hardness, unitSystem);
 
   return {
     location: loc,
@@ -61,10 +63,11 @@ export function buildSummary(
   ambient: number | null,
   waterTemp: number | null,
   hardness: WaterHardness,
+  unitSystem: UnitSystem = 'metric',
 ): string {
   const parts: string[] = [`📍 ${loc.city}, ${loc.country}`];
-  if (ambient !== null) parts.push(`🌡 Ambient ${ambient}°C`);
-  if (waterTemp !== null) parts.push(`💧 Tap ~${waterTemp}°C`);
+  if (ambient !== null) parts.push(`🌡 Ambient ${formatTemp(ambient, unitSystem, 0)}`);
+  if (waterTemp !== null) parts.push(`💧 Tap ~${formatTemp(waterTemp, unitSystem, 0)}`);
   parts.push(`🧪 Water ${hardness.classification} (${hardness.mgL} mg/L)`);
   return parts.join('  │  ');
 }

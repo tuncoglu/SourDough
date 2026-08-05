@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Alert, Share, Platform } from 'react-native';
+import { Share, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as StoreReview from 'expo-store-review';
 import {
@@ -12,6 +12,7 @@ import { getBlendProtein, buildFlourTypeLabel, buildPrefermentConfig, POOLISH_HY
 import { formatRecipeTextFromState } from '../lib/recipeFormatter';
 import { copyToClipboard } from '../lib/clipboard';
 import { useAppTheme } from '../theme';
+import { useFeedback } from '../lib/feedback';
 
 const SAVE_COUNT_KEY = 'sourdough_save_count';
 const REVIEW_REQUESTED_KEY = 'sourdough_review_requested';
@@ -63,6 +64,7 @@ interface ShareParams {
 
 export function useRecipeActions() {
   const { unitSystem } = useAppTheme();
+  const { showToast, alert } = useFeedback();
   const [saving, setSaving] = useState(false);
 
   const handleSave = useCallback(async (params: SaveParams) => {
@@ -140,9 +142,9 @@ export function useRecipeActions() {
         // Silently ignore review tracking failures
       }
 
-      Alert.alert('Saved', 'Recipe saved to your history.');
+      showToast('Recipe saved to your history.', 'success');
     } catch {
-      Alert.alert('Error', 'Could not save recipe.');
+      alert('Error', 'Could not save recipe.', 'error');
     } finally {
       setSaving(false);
     }
@@ -183,7 +185,7 @@ export function useRecipeActions() {
         if (!shared) {
           const copied = await copyToClipboard(text);
           if (copied) {
-            Alert.alert('Copied!', 'Recipe copied to clipboard.');
+            showToast('Recipe copied to clipboard.', 'success');
           }
         }
       } else {

@@ -2,7 +2,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StarterFeeding } from '../models/types';
 
 const FEEDINGS_KEY = 'sourdough_feedings';
-const SCHEDULE_KEY = 'sourdough_feeding_schedule';
 const FLOUR_KEY = 'sourdough_starter_flour';
 
 /** Load all feedings, newest first */
@@ -46,32 +45,9 @@ export async function updateFeeding(id: string, patch: Partial<StarterFeeding>):
   await AsyncStorage.setItem(FEEDINGS_KEY, JSON.stringify(feedings));
 }
 
-/** Delete a feeding by id */
-export async function deleteFeeding(id: string): Promise<void> {
-  const feedings = await loadFeedings();
-  await AsyncStorage.setItem(
-    FEEDINGS_KEY,
-    JSON.stringify(feedings.filter((f) => f.id !== id)),
-  );
-}
-
 /** Generate a unique feeding ID */
 export function generateFeedingId(): string {
   return `feed_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-}
-
-/** Feeding schedule interval in hours */
-export async function getFeedingInterval(): Promise<number> {
-  try {
-    const raw = await AsyncStorage.getItem(SCHEDULE_KEY);
-    return raw ? parseInt(raw, 10) : 24;
-  } catch {
-    return 24;
-  }
-}
-
-export async function setFeedingInterval(hours: number): Promise<void> {
-  await AsyncStorage.setItem(SCHEDULE_KEY, String(hours));
 }
 
 /** Get the persisted starter flour preference (defaults to Generic: Bread Flour) */

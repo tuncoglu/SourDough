@@ -48,7 +48,7 @@ pick bread, yogurt, or lacto-fermentation — then dive into the full calculator
 - **History** — browse past bakes, search and filter saved recipes
 
 ### 📦 Data & Privacy
-- **Fully offline-capable** — all data stored locally via AsyncStorage; no accounts
+- **Private by design** — no accounts, all data stored locally via AsyncStorage (weather and water-hardness detection need network; manual mode works offline)
 - **No tracking** — no analytics, no telemetry, no cloud storage
 - **Location is transient** — coordinates are sent only to fetch weather and geocode your city; never stored or shared
 

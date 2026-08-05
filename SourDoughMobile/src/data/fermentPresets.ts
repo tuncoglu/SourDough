@@ -41,7 +41,7 @@ export const FERMENT_PRESETS: Record<string, FermentPreset> = {
     saltPctMax: 4.0,
     typicalVegWeight: 800,
     speedFactor: 1.6,
-    waterContentPct: 90,
+    waterContentPct: 95, // matches napa cabbage in vegetables.ts
     tips: [
       'Salt cabbage leaves first, let wilt 1–2h, then rinse and mix with paste.',
       'Kimchi is usually ready in 2–5 days at room temp, then moved to fridge.',

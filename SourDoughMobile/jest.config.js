@@ -10,4 +10,7 @@ module.exports = {
   transform: {
     '^.+\\.tsx?$': ['ts-jest', { tsconfig: 'tsconfig.jest.json' }],
   },
+  // Load the expo-modules-core mock (harmless today, needed the moment a
+  // test touches a module that imports expo packages)
+  setupFiles: ['<rootDir>/jest.setup.js'],
 };

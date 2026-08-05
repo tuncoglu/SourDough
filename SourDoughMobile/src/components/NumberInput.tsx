@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
 } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
 import { weightUnit, gramsToOz, ozToGrams } from '../lib/unitConversion';
+import { useExternalValueSync } from '../hooks/useExternalValueSync';
+import { isValidDecimalInput } from '../lib/inputValidation';
 
 interface Props extends Omit<TextInputProps, 'onChangeText'> {
   label: string;
@@ -39,7 +41,7 @@ export function NumberInput({
   );
   const prevUnitSystem = useRef(unitSystem);
 
-  // Sync display when unitSystem or parent value changes externally
+  // Sync display when unitSystem changes
   useEffect(() => {
     if (prevUnitSystem.current !== unitSystem) {
       prevUnitSystem.current = unitSystem;
@@ -52,9 +54,14 @@ export function NumberInput({
     }
   }, [unitSystem, value, isWeight]);
 
+  // Resync when the parent's value is changed programmatically (recipe
+  // preset, GPS auto-fill, reset-to-defaults, edit-recipe prefill).
+  const toMetric = useCallback((n: number) => ozToGrams(n), []);
+  const toDisplay = useCallback((n: number) => gramsToOz(n).toFixed(1), []);
+  useExternalValueSync(value, display, setDisplay, isImperialWeight, toMetric, toDisplay);
+
   const handleChange = (text: string) => {
-    // Allow empty string, single dot, or numbers with at most one dot
-    if (text !== '' && !/^\d*\.?\d*$/.test(text)) return;
+    if (!isValidDecimalInput(text)) return;
     setDisplay(text);
 
     if (isImperialWeight) {

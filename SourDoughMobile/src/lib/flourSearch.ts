@@ -44,11 +44,6 @@ export function findFlour(query: string): FlourEntry {
   return getDefault();
 }
 
-/** Return best guess for matched label */
-export function findFlourLabel(query: string): string {
-  return findFlour(query).label;
-}
-
 function getDefault(): FlourEntry {
   return (
     SHIPTON_MILL_FLOURS.find((f) => f.label === 'Generic: Bread Flour') ?? {

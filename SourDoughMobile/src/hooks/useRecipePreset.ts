@@ -13,7 +13,6 @@ export interface RecipePresetState {
 }
 
 export interface RecipePresetActions {
-  setBreadType: (t: BreadType) => void;
   setPreset: (preset: RecipePreset | null) => void;
   handlePresetSelect: (
     preset: RecipePreset,
@@ -30,8 +29,6 @@ export interface RecipePresetActions {
   setOilPct: (v: string) => void;
   setPrefermentEnabled: (v: boolean) => void;
   setPrefermentFlourPct: (v: string) => void;
-  /** Update preset values when total flour weight changes (recompute starter). */
-  syncStarterFromPreset: (totalFlourWeight: number, setStarterWeight: (v: string) => void) => void;
 }
 
 export function useRecipePreset(): RecipePresetState & RecipePresetActions {
@@ -116,13 +113,6 @@ export function useRecipePreset(): RecipePresetState & RecipePresetActions {
     }
   }, [selectedPreset]);
 
-  const syncStarterFromPreset = useCallback((totalFlourWeight: number, setStarterWeight: (v: string) => void) => {
-    if (selectedPreset) {
-      const starterG = Math.round(totalFlourWeight * selectedPreset.dough.typicalInoculation / 100);
-      setStarterWeight(String(starterG));
-    }
-  }, [selectedPreset]);
-
   /** Set the active preset directly (used when restoring from a saved recipe). */
   const setPreset = useCallback((preset: RecipePreset | null) => {
     if (preset) {
@@ -141,12 +131,10 @@ export function useRecipePreset(): RecipePresetState & RecipePresetActions {
     prefermentEnabled,
     prefermentFlourPct,
     showOil,
-    setBreadType,
     setPreset,
     handlePresetSelect,
     setOilPct,
     setPrefermentEnabled,
     setPrefermentFlourPct,
-    syncStarterFromPreset,
   };
 }

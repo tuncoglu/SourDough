@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyleLg } from '../theme';
 import { LactoDayPoint, FermentResults } from '../models/types';
+import { FINAL_PH, TARGET_PH, SAFETY_PH } from '../lib/lactoCalculations';
 
 interface Props {
   timeline: LactoDayPoint[];
@@ -53,8 +54,8 @@ export function LactoTimeline({ timeline, results }: Props) {
       {/* pH note */}
       <View style={[styles.phNote, { backgroundColor: colors.successBg, borderColor: colors.olive }]}>
         <Text style={[styles.phText, { color: colors.olive }]}>
-          🛡️ Target pH: ≤{results.targetPH} &nbsp;|&nbsp; Safe below pH 4.6 &nbsp;|&nbsp;
-          Fridge when you like the taste
+          🛡️ Final pH ≈{FINAL_PH.toFixed(1)} &nbsp;|&nbsp; Stable below {TARGET_PH.toFixed(1)} &nbsp;|&nbsp;
+          Safe below pH {SAFETY_PH.toFixed(1)} &nbsp;|&nbsp; Fridge when you like the taste
         </Text>
       </View>
     </View>

@@ -5,11 +5,11 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Spacing, FontSize, BorderRadius, MaxWidth, useAppTheme, cardStyle, sectionTitleStyle } from '../../src/theme';
+import { useFeedback } from '../../src/lib/feedback';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { UserSettings, DEFAULT_SETTINGS, ThemeMode, UnitSystem } from '../../src/models/types';
 import { getSettings, updateSettings } from '../../src/store/settingsCache';
@@ -27,6 +27,7 @@ export default function SettingsScreen() {
   const [flourLabel, setFlourLabel] = useState(DEFAULT_SETTINGS.defaultFlourType);
   const [loading, setLoading] = useState(true);
   const { isDesktop } = useBreakpoint();
+  const { confirm, showToast } = useFeedback();
   const { colors, themeMode, setThemeMode, unitSystem, setUnitSystem } = useAppTheme();
 
   useEffect(() => {
@@ -44,22 +45,21 @@ export default function SettingsScreen() {
     };
     await updateSettings(updated);
     setSettings(updated);
-    Alert.alert('Saved', 'Settings saved. New defaults will apply to new calculations.');
+    showToast('Settings saved. New defaults will apply to new calculations.', 'success');
   };
 
-  const handleReset = () => {
-    Alert.alert('Reset Defaults', 'Restore all default values?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Reset',
-        style: 'destructive',
-        onPress: async () => {
-          await updateSettings(DEFAULT_SETTINGS);
-          setSettings(DEFAULT_SETTINGS);
-          setFlourLabel(DEFAULT_SETTINGS.defaultFlourType);
-        },
-      },
-    ]);
+  const handleReset = async () => {
+    const ok = await confirm({
+      title: 'Reset Defaults',
+      message: 'Restore all default values?',
+      confirmLabel: 'Reset',
+      destructive: true,
+    });
+    if (!ok) return;
+    await updateSettings(DEFAULT_SETTINGS);
+    setSettings(DEFAULT_SETTINGS);
+    setFlourLabel(DEFAULT_SETTINGS.defaultFlourType);
+    showToast('Settings reset to defaults.', 'success');
   };
 
   if (loading) {

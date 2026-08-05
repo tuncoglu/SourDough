@@ -16,11 +16,14 @@ import {
   buildYogurtTimeline,
   yogurtAdvice,
   estimateIncubation,
+  estimateYield,
   calculateSachets,
   calculateYogurtNutrition,
 } from '../lib/yogurtCalculations';
 import { computeFermentTemp, DailyTempSummary, FermentTempResult } from '../lib/lactoCalculations';
 import { useLocation } from './useLocation';
+import { useStaleResults, dirtySetter } from './useStaleResults';
+import type { LocationData } from '../lib/location';
 
 export interface YogurtCalculatorState {
   // Inputs
@@ -49,7 +52,7 @@ export interface YogurtCalculatorState {
   cultureDescription: string;
 
   // Location
-  locationData: ReturnType<typeof useLocation>['data'];
+  locationData: LocationData | null;
   locLoading: boolean;
   locError: string | null;
   onRefreshLocation: () => void;
@@ -61,6 +64,10 @@ export interface YogurtCalculatorState {
   advice: string[];
   nutrition: { fatPct: number; proteinPct: number } | null;
   showResults: boolean;
+  /** Inline validation message (e.g. missing milk volume) — shown above Calculate. */
+  validationError: string | null;
+  /** True when inputs changed after the last calculation (stale-results banner). */
+  inputsDirty: boolean;
 
   // Culture order for UI
   thermophilicCultures: Array<{ id: string; preset: YogurtCulturePreset }>;
@@ -78,7 +85,7 @@ export interface YogurtCalculatorState {
 }
 
 export function useYogurtCalculator(): YogurtCalculatorState {
-  const { data: locationData, loading: locLoading, error: locError, detect, refineWithPostcode } = useLocation();
+  const { locationData, locLoading, locError, onRefreshLocation, onPostcodeSubmit } = useLocation();
 
   const [yogurtType, setYogurtType] = useState<YogurtType>('bulgarian');
   const [milkId, setMilkId] = useState(DEFAULT_MILK_ID);
@@ -93,6 +100,7 @@ export function useYogurtCalculator(): YogurtCalculatorState {
   const [timeline, setTimeline] = useState<YogurtStepPoint[]>([]);
   const [advice, setAdvice] = useState<string[]>([]);
   const [nutrition, setNutrition] = useState<{ fatPct: number; proteinPct: number } | null>(null);
+  const { validationError, setValidationError, inputsDirty, markInputsChanged, markCalculated } = useStaleResults();
 
   // Derived
   const milk = useMemo(() => findMilk(milkId), [milkId]);
@@ -152,7 +160,10 @@ export function useYogurtCalculator(): YogurtCalculatorState {
       ? preset.typicalTempC
       : effectiveTemp; // mesophilic uses ambient temp
 
-    if (litres <= 0) return;
+    if (litres <= 0) {
+      setValidationError('Enter the amount of milk before calculating.');
+      return;
+    }
 
     const inputs: YogurtInputs = {
       yogurtType,
@@ -181,18 +192,7 @@ export function useYogurtCalculator(): YogurtCalculatorState {
 
       // Recalculate with accurate temp
       const incubation = estimateIncubation(finalTemp, cultureType, preset.typicalHours);
-      const yield_ = (() => {
-        const milkGrams = litres * 1000 * 1.03;
-        const afterIncubation = milkGrams * 0.97;
-        const factors: Record<string, number> = { thin: 1, medium: 1, thick: 0.75, 'very-thick': 0.60 };
-        const sf = factors[preset.thickness] ?? 1;
-        const fg = Math.round(afterIncubation * sf);
-        return {
-          estimatedYieldGrams: fg,
-          estimatedYieldLitres: Math.round(fg / 1000 * 10) / 10,
-          estimatedServings: Math.round(fg / 150),
-        };
-      })();
+      const yield_ = estimateYield(litres, preset.thickness);
 
       const finalResults: YogurtResults = {
         ...baseResults,
@@ -220,7 +220,8 @@ export function useYogurtCalculator(): YogurtCalculatorState {
     }
 
     setShowResults(true);
-  }, [yogurtType, cultureType, milkId, milkLitres, sachetCount, starterSource, previousBatchGrams, preHeatEnabled, milk, preset, effectiveTemp, locationData]);
+    markCalculated();
+  }, [yogurtType, cultureType, milkId, milkLitres, sachetCount, starterSource, previousBatchGrams, preHeatEnabled, milk, preset, effectiveTemp, locationData, markCalculated]);
 
   return {
     yogurtType,
@@ -245,22 +246,26 @@ export function useYogurtCalculator(): YogurtCalculatorState {
     locationData,
     locLoading,
     locError,
-    onRefreshLocation: detect,
-    onPostcodeSubmit: refineWithPostcode,
+    onRefreshLocation,
+    onPostcodeSubmit,
     results,
     timeline,
     advice,
     nutrition,
     showResults,
+    validationError,
+    inputsDirty,
     thermophilicCultures,
     mesophilicCultures,
     selectPreset,
     selectMilk,
-    setMilkLitres,
-    setSachetCount,
-    setStarterSource,
-    setPreviousBatchGrams,
-    setPreHeatEnabled,
+    // Manual input setters: invalidate previous results so the stale banner
+    // appears (preset/milk selection already resets showResults directly).
+    setMilkLitres: dirtySetter(markInputsChanged, setMilkLitres),
+    setSachetCount: dirtySetter(markInputsChanged, setSachetCount),
+    setStarterSource: dirtySetter(markInputsChanged, setStarterSource),
+    setPreviousBatchGrams: dirtySetter(markInputsChanged, setPreviousBatchGrams),
+    setPreHeatEnabled: dirtySetter(markInputsChanged, setPreHeatEnabled),
     calculate,
   };
 }

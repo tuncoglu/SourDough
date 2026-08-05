@@ -41,22 +41,7 @@ export interface WaterHardness {
   key: string;
 }
 
-// ── Location & Weather ─────────────────────────────────────────────────
-export interface LocationInfo {
-  lat: number;
-  lon: number;
-  city: string;
-  region: string;
-  country: string;
-  countryCode: string;
-}
-
-export interface WeatherData {
-  ambientTemp: number | null;
-  waterTemp: number | null;
-  hourlyForecast: HourlyPoint[] | null;
-}
-
+// ── Weather ────────────────────────────────────────────────────────────
 export interface HourlyPoint {
   datetime: string; // ISO string
   tempC: number;

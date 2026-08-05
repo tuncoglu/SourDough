@@ -89,9 +89,6 @@ export const DarkColors = {
   success: '#8CB369',
 } as const;
 
-// Legacy Colors alias — defaults to light for backward compat with static styles
-export const Colors = LightColors;
-
 export interface AppColors {
   cream: string;
   white: string;
@@ -223,12 +220,6 @@ export const Breakpoints = {
   desktop: 1024,
 } as const;
 
-/** Minimum touch target size per WCAG 2.5.5 / Apple HIG / Material Design. */
-export const TouchTarget = {
-  minHeight: 44,
-  justifyContent: 'center' as const,
-} as const;
-
 // ── Shared Style Tokens ─────────────────────────────────────────────────
 
 /** Standard card — used across the bread calculator and settings. */
@@ -254,12 +245,4 @@ export const sectionTitleStyle = {
   textTransform: 'uppercase' as const,
   letterSpacing: 0.5,
   marginBottom: Spacing.sm,
-} as const;
-
-/** Generous hit slop for small icon-only buttons. */
-export const HitSlop = {
-  top: 8,
-  bottom: 8,
-  left: 8,
-  right: 8,
 } as const;

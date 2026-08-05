@@ -11,7 +11,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useYogurtCalculator } from '@/src/hooks/useYogurtCalculator';
 import { useBreakpoint } from '@/src/hooks/useBreakpoint';
-import { KeyboardScreen } from '@/src/components/KeyboardScreen';
+import { CalculatorShell } from '@/src/components/CalculatorShell';
+import { TempForecastCard } from '@/src/components/TempForecastCard';
+import { StaleResultsBanner } from '@/src/components/StaleResultsBanner';
+import { ValidationMessage } from '@/src/components/ValidationMessage';
 import { Chip } from '@/src/components/Chip';
 import { YogurtResultCard } from '@/src/components/YogurtResultCard';
 import { YogurtTimeline } from '@/src/components/YogurtTimeline';
@@ -19,14 +22,16 @@ import { YogurtAdvice } from '@/src/components/YogurtAdvice';
 import { YogurtScience } from '@/src/components/YogurtScience';
 import { LocationBar } from '@/src/components/LocationBar';
 import { NumberInput } from '@/src/components/NumberInput';
-import { Spacing, FontSize, BorderRadius, useAppTheme, MaxWidth, cardStyleLg } from '@/src/theme';
+import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyleLg } from '@/src/theme';
+import { formatTemp } from '@/src/lib/unitConversion';
+import { PREHEAT_TEMP_C } from '@/src/lib/yogurtCalculations';
 import { YogurtType, StarterSource } from '@/src/models/types';
 import { MILK_TYPES } from '@/src/data/yogurtCultures';
 
 export default function YogurtScreen() {
   const router = useRouter();
   const calc = useYogurtCalculator();
-  const { colors } = useAppTheme();
+  const { colors, unitSystem } = useAppTheme();
   const { isDesktop } = useBreakpoint();
 
   const handleCalculate = useCallback(() => {
@@ -54,52 +59,23 @@ export default function YogurtScreen() {
         error={calc.locError}
         onRefresh={calc.onRefreshLocation}
         showFallbackWarning={!calc.locLoading && !calc.locationData}
+        onTapFallback={() => router.push('/settings')}
         onPostcodeSubmit={calc.onPostcodeSubmit}
       />
 
       {/* ── Temperature Forecast ── */}
       {calc.dailyTemps.length > 0 && (
-        <View style={[styles.tempCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.tempTitle, { color: colors.espresso }]}>
-            🌡 Ambient temperature
-          </Text>
-          <View style={styles.tempDays}>
-            {calc.dailyTemps.slice(0, 10).map((d, i, arr) => {
-              if (i > 0 && d.high === arr[i - 1].high && d.low === arr[i - 1].low) return null;
-              const dayColor = d.avg > 28 ? colors.hot : d.avg > 24 ? colors.warm : d.avg > 20 ? colors.olive : d.avg > 16 ? colors.cool : colors.cold;
-              const allHigh = Math.max(...arr.slice(0, 10).map(x => x.high));
-              const allLow = Math.min(...arr.slice(0, 10).map(x => x.low));
-              const range = allHigh - allLow || 1;
-              const topPct = ((allHigh - d.high) / range) * 100;
-              const heightPct = ((d.high - d.low) / range) * 100;
-              return (
-              <View key={i} style={styles.tempDay}>
-                <Text style={[styles.tempDayLabel, { color: colors.muted }]}>{d.day}</Text>
-                <Text style={[styles.tempDayHigh, { color: colors.espresso }]}>{d.high}°</Text>
-                <View style={[styles.tempBar, { backgroundColor: colors.border }]}>
-                  <View
-                    style={[
-                      styles.tempBarFill,
-                      {
-                        backgroundColor: dayColor,
-                        top: `${topPct}%`,
-                        height: `${Math.max(8, heightPct)}%`,
-                      },
-                    ]}
-                  />
-                </View>
-                <Text style={[styles.tempDayLow, { color: colors.lightText }]}>{d.low}°</Text>
-              </View>
-              );
-            })}
-          </View>
-          <Text style={[styles.tempSummary, { color: colors.lightText, borderTopColor: colors.border }]}>
-            {calc.tempResult?.summary ?? 'Using weather forecast for ambient temp'}
-            {calc.tempResult?.source === 'fallback' && ' — enable location for local temps'}
-            {calc.cultureType === 'thermophilic' && ' (thermophilic — use a heat source at 40–45°C)'}
-            {calc.cultureType === 'mesophilic' && ' (mesophilic — room temp is your incubation temp)'}
-          </Text>
-        </View>
+        <TempForecastCard
+          dailyTemps={calc.dailyTemps}
+          title="🌡 Ambient temperature"
+          summary={calc.tempResult?.summary ?? 'Using weather forecast for ambient temp'}
+          source={calc.tempResult?.source}
+          suffixes={[
+            calc.cultureType === 'thermophilic' ? ' (thermophilic — use a heat source at 40–45°C)' : '',
+            calc.cultureType === 'mesophilic' ? ' (mesophilic — room temp is your incubation temp)' : '',
+          ]}
+          dayColor={(avg) => avg > 28 ? colors.hot : avg > 24 ? colors.warm : avg > 20 ? colors.olive : avg > 16 ? colors.cool : colors.cold}
+        />
       )}
 
       {/* ── Culture Type Picker ── */}
@@ -273,7 +249,7 @@ export default function YogurtScreen() {
                 Pre-heat milk
               </Text>
               <Text style={[styles.toggleHint, { color: colors.lightText }]}>
-                Heat to 85°C for 30 min — denatures proteins for thicker set
+                Heat to {formatTemp(PREHEAT_TEMP_C, unitSystem, 0)} for 30 min — denatures proteins for thicker set
               </Text>
             </View>
             <Switch
@@ -285,6 +261,9 @@ export default function YogurtScreen() {
             />
           </View>
         </View>
+
+        {/* ── Validation message ── */}
+        {calc.validationError && <ValidationMessage message={calc.validationError} />}
 
         {/* ── Calculate ── */}
         <TouchableOpacity
@@ -300,6 +279,7 @@ export default function YogurtScreen() {
 
   const resultsPanel = calc.showResults && calc.results && (
     <View style={styles.results}>
+      {calc.inputsDirty && <StaleResultsBanner onRecalculate={handleCalculate} />}
       <YogurtResultCard
         results={calc.results}
         cultureType={calc.cultureType}
@@ -323,24 +303,9 @@ export default function YogurtScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.cream }]} edges={['top']}>
-      <KeyboardScreen>
-        {isDesktop ? (
-          <View style={desktopStyles.twoCol}>
-            <ScrollView style={desktopStyles.leftCol} contentContainerStyle={desktopStyles.leftContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-              {inputPanels}
-            </ScrollView>
-            <ScrollView style={desktopStyles.rightCol} contentContainerStyle={desktopStyles.rightContent} showsVerticalScrollIndicator={false}>
-              {resultsPanel}
-            </ScrollView>
-          </View>
-        ) : (
-          <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-            {inputPanels}
-            {resultsPanel}
-            <View style={styles.bottomPad} />
-          </ScrollView>
-        )}
-      </KeyboardScreen>
+      <CalculatorShell right={resultsPanel}>
+        {inputPanels}
+      </CalculatorShell>
     </SafeAreaView>
   );
 }
@@ -348,16 +313,6 @@ export default function YogurtScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-  },
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    maxWidth: MaxWidth.form,
-    width: '100%',
-    alignSelf: 'center' as any,
   },
   header: {
     marginBottom: Spacing.md,
@@ -382,60 +337,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
     marginTop: Spacing.xs,
     paddingLeft: 2,
-  },
-
-  // Temperature forecast card
-  tempCard: {
-    borderWidth: 1,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-    marginBottom: Spacing.lg,
-  },
-  tempTitle: {
-    fontSize: FontSize.sm,
-    fontWeight: '700',
-    marginBottom: Spacing.sm,
-  },
-  tempDays: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    marginBottom: Spacing.sm,
-  },
-  tempDay: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 2,
-  },
-  tempDayLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  tempDayHigh: {
-    fontSize: FontSize.xs,
-    fontWeight: '700',
-  },
-  tempBar: {
-    width: '100%',
-    height: 28,
-    borderRadius: 4,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  tempBarFill: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    borderRadius: 4,
-    minHeight: 4,
-  },
-  tempDayLow: {
-    fontSize: 11,
-  },
-  tempSummary: {
-    fontSize: FontSize.xs,
-    textAlign: 'center',
-    paddingTop: Spacing.xs,
-    borderTopWidth: 1,
   },
 
   // Culture chips
@@ -562,15 +463,4 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     lineHeight: 20,
   },
-  bottomPad: {
-    height: 60,
-  },
-});
-
-const desktopStyles = StyleSheet.create({
-  twoCol: { flex: 1, flexDirection: 'row', gap: Spacing.lg, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-  leftCol: { flex: 1, maxWidth: 420 },
-  leftContent: { paddingBottom: 40, paddingTop: Spacing.md },
-  rightCol: { flex: 1.3 },
-  rightContent: { paddingBottom: 40, paddingTop: Spacing.md },
 });

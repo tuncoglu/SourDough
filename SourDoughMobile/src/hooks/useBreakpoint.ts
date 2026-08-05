@@ -20,7 +20,6 @@ export interface BreakpointInfo {
   width: number;
   height: number;
   isMobile: boolean;
-  isTablet: boolean;
   isDesktop: boolean;
 }
 
@@ -36,7 +35,6 @@ export function useBreakpoint(): BreakpointInfo {
     width: w,
     height: h,
     isMobile: w < TABLET_MIN,
-    isTablet: w >= TABLET_MIN && w < DESKTOP_MIN,
     isDesktop: w >= DESKTOP_MIN,
   };
 }
