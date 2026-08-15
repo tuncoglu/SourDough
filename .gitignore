@@ -1,2 +1,5 @@
 # Claude Code worktree scaffolding (transient agent worktrees)
 .claude/worktrees/
+
+# Local npm cache used when the sandbox's default cache is read-only
+.npm-cache/
