@@ -108,7 +108,7 @@ export const FERMENT_PRESETS: Record<string, FermentPreset> = {
     speedFactor: 1.3,
     waterContentPct: 88,
     tips: [
-      'Use a mix of hot peppers (habanero, Thai, jalapeño) for complexity.',
+      'Use a mix of hot chillies (habanero, bird\'s eye, Scotch bonnet, jalapeño) for complexity.',
       'Blend peppers + garlic + salt into a rough mash. No added water.',
       'Ferment 7–14 days. After fermenting, blend smooth and optionally strain.',
       'A splash of brine keeps it pourable. Vinegar can be added post-ferment for extra tang.',
