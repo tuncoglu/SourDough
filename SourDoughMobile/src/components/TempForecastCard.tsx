@@ -10,6 +10,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
 import { DailyTempSummary, FermentTempResult } from '../lib/lactoCalculations';
+import { formatTempValue } from '../lib/unitConversion';
 
 interface Props {
   dailyTemps: DailyTempSummary[];
@@ -32,7 +33,7 @@ export function TempForecastCard({
   suffixes,
   dayColor,
 }: Props) {
-  const { colors } = useAppTheme();
+  const { colors, unitSystem } = useAppTheme();
   const days = dailyTemps.slice(0, 10);
   const summaryText = [
     summary,
@@ -57,7 +58,7 @@ export function TempForecastCard({
           return (
             <View key={i} style={styles.tempDay}>
               <Text style={[styles.tempDayLabel, { color: colors.muted }]}>{d.day}</Text>
-              <Text style={[styles.tempDayHigh, { color: colors.espresso }]}>{d.high}°</Text>
+              <Text style={[styles.tempDayHigh, { color: colors.espresso }]}>{formatTempValue(d.high, unitSystem, 0)}°</Text>
               <View style={[styles.tempBar, { backgroundColor: colors.border }]}>
                 <View
                   style={[
@@ -70,7 +71,7 @@ export function TempForecastCard({
                   ]}
                 />
               </View>
-              <Text style={[styles.tempDayLow, { color: colors.lightText }]}>{d.low}°</Text>
+              <Text style={[styles.tempDayLow, { color: colors.lightText }]}>{formatTempValue(d.low, unitSystem, 0)}°</Text>
             </View>
           );
         })}
@@ -105,7 +106,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   tempDayLabel: {
-    fontSize: 11,
+    fontSize: FontSize.xs,
     fontWeight: '600',
   },
   tempDayHigh: {

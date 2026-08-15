@@ -5,7 +5,9 @@ interface Props {
   children: React.ReactNode;
 }
 
-/** Shared KeyboardAvoidingView wrapper for form screens. */
+/** Shared KeyboardAvoidingView wrapper for form screens.
+ *  iOS gets padding behaviour; Android relies on Expo's default
+ *  windowSoftInputMode=adjustResize handling. */
 export function KeyboardScreen({ children }: Props) {
   return (
     <KeyboardAvoidingView

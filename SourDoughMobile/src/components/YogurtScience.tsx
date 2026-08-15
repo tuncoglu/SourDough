@@ -54,12 +54,13 @@ export function YogurtScience({ strainInfo, presetHealthNote }: Props) {
 
           {/* Health evidence */}
           <Text style={[styles.subheading, { color: colors.terracotta }]}>
-            Health Evidence (2024–2026)
+            Health Evidence
           </Text>
           <Text style={[styles.text, { color: colors.muted }]}>
             • Yogurt consumption is associated with reduced risk of type 2
-            diabetes (meta-analysis of 14 cohorts, 2024) — each 50g/day serving
-            associated with ~7% risk reduction.{'\n'}
+            diabetes — a meta-analysis of prospective cohorts found ~14%
+            lower risk per 80g/day serving (Gijsbers et al., Am. J. Clin.
+            Nutr. 2016).{'\n'}
             • Live yogurt improves lactose digestion in lactose-intolerant
             individuals — EFSA-approved health claim. S. thermophilus produces
             β-galactosidase that survives stomach acid.{'\n'}
@@ -73,9 +74,9 @@ export function YogurtScience({ strainInfo, presetHealthNote }: Props) {
             in the Nurses' Health Study and Health Professionals Follow-up
             Study (2025 pooled analysis). Bifidobacterium-containing yogurts
             showed the strongest protective association.{'\n'}
-            • S. thermophilus EPS (exopolysaccharides): 2025 review confirms
+            • S. thermophilus EPS (exopolysaccharides): recent reviews report
             immunomodulatory properties — EPS fractions reduce inflammatory
-            cytokine production in Caco-2 cell models.
+            cytokine production in cell models.
           </Text>
 
           {/* This culture's strains */}
@@ -107,12 +108,11 @@ export function YogurtScience({ strainInfo, presetHealthNote }: Props) {
             Key Sources
           </Text>
           <Text style={[styles.text, { color: colors.lightText }]}>
-            Savaiano & Levitt, J. Am. Coll. Nutr. (2024) · Kok &amp; Hutkins,
-            Curr. Opin. Food Sci. (2025) · Marco et al., Nat. Rev. Gastro.
-            Hepatol. (2025) · EFSA Panel on Nutrition (2024) · Harvard T.H.
-            Chan School of Public Health pooled analysis (2025) · Salminen
-            et al., FEMS Microbiol. Rev. (2025) · German Yogurt Intervention
-            Trial (GYIT, 2026)
+            Savaiano &amp; Levitt, J. Dairy Sci. (1987) · Gijsbers et al.,
+            Am. J. Clin. Nutr. (2016) · Marco et al., Nat. Rev. Gastroenterol.
+            Hepatol. (2021) · EFSA Panel on Dietetic Products (2010) ·
+            Harvard T.H. Chan School of Public Health pooled analysis (2025)
+            · Tamime &amp; Robinson, "Tamime and Robinson's Yoghurt" (2007)
           </Text>
         </View>
       )}

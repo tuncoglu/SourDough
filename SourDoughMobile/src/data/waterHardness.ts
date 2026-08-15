@@ -24,6 +24,8 @@ const WATER_HARDNESS_TABLE: Record<string, [number, string, string]> = {
   'ca-west':          [80,  'moderately soft', 'Mountain sources'],
   'ca-prairies':      [180, 'moderately hard', 'Sedimentary bedrock'],
   'gb-england-se':    [280, 'very hard',       'Chalk downs — London & SE'],
+  'gb-england-sw':    [100, 'moderately soft', 'Granite & moorland — Devon/Cornwall softer'],
+  'gb-england-yorkshire': [110, 'moderately soft', 'Pennine sources softer, Wolds harder'],
   'gb-england-nw':    [120, 'moderately soft', 'Mixed geology'],
   'gb-scotland':      [30,  'very soft',       'Granite & peat — perfect for bread'],
   'gb-wales':         [60,  'soft',            'Upland catchments'],
@@ -88,10 +90,10 @@ const REGION_MAP: Record<string, Record<string, string>> = {
   },
   gb: {
     'greater london': 'gb-england-se', london: 'gb-england-se',
-    'south east': 'gb-england-se', 'south west': 'gb-england-se',
+    'south east': 'gb-england-se', 'south west': 'gb-england-sw',
     'england-south': 'gb-england-se',
     'north west': 'gb-england-nw', 'england-north': 'gb-england-nw',
-    yorkshire: 'gb-england-nw', midlands: 'gb-england-se',
+    yorkshire: 'gb-england-yorkshire', midlands: 'gb-england-se',
     // Broad fallbacks — catch "England", "Scotland", "Wales" as state names
     england: 'gb-england-se',
     scotland: 'gb-scotland',
@@ -118,8 +120,8 @@ export function lookupWaterHardness(
 
   // UK postcode-level lookup
   if (countryCode.toUpperCase() === 'GB' && postcode && postcode.trim()) {
-    const [mgL, cls, note] = lookupUkPostcodeHardness(postcode);
-    return { mgL, classification: cls, note, key: `uk-postcode:${postcode.trim().toUpperCase().substring(0, 3)}x` };
+    const [mgL, , note] = lookupUkPostcodeHardness(postcode);
+    return { mgL, classification: classifyHardness(mgL), note, key: `uk-postcode:${postcode.trim().toUpperCase().substring(0, 3)}x` };
   }
 
   const country = countryCode.toLowerCase();
@@ -129,16 +131,16 @@ export function lookupWaterHardness(
   if (country in REGION_MAP) {
     for (const [keyword, key] of Object.entries(REGION_MAP[country])) {
       if (regionLower.includes(keyword) && key in WATER_HARDNESS_TABLE) {
-        const [mgL, cls, note] = WATER_HARDNESS_TABLE[key];
-        return { mgL, classification: cls, note, key };
+        const [mgL, , note] = WATER_HARDNESS_TABLE[key];
+        return { mgL, classification: classifyHardness(mgL), note, key };
       }
     }
   }
 
   // Fall back to country-level
   if (country in WATER_HARDNESS_TABLE) {
-    const [mgL, cls, note] = WATER_HARDNESS_TABLE[country];
-    return { mgL, classification: cls, note, key: country };
+    const [mgL, , note] = WATER_HARDNESS_TABLE[country];
+    return { mgL, classification: classifyHardness(mgL), note, key: country };
   }
 
   return FALLBACK_HARDNESS;

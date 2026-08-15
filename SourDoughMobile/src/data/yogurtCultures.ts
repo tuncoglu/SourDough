@@ -5,7 +5,7 @@
  * freeze-dried, heirloom (indefinitely reculturable).
  * https://freshlyfermented.co.uk/product-category/starter-cultures/organic-yoghurt-starter-cultures/
  *
- * Milk: Duchy Organic Unhomogenised Whole Milk from Waitrose + common alternatives.
+ * Milk: typical retail milks — cow (whole/semi-skimmed/skimmed), goat, sheep.
  */
 import { YogurtCulturePreset, YogurtType, MilkEntry } from '../models/types';
 
@@ -22,7 +22,7 @@ export const MILK_TYPES: MilkEntry[] = [
     fatPct: 4.0,
     proteinPct: 3.5,
     carbsPct: 4.7,
-    notes: 'Duchy Organic unhomogenised — cream rises to the top. Classic yogurt base.',
+    notes: 'Unhomogenised whole milk — cream rises to the top. Classic yogurt base.',
   },
   {
     id: 'cow-semi',
@@ -92,6 +92,18 @@ export const MILK_TYPES: MilkEntry[] = [
     carbsPct: 5.0,
     notes: 'Still very high protein. Excellent set even with reduced fat.',
   },
+  // Plant
+  {
+    id: 'soya',
+    name: 'Soya milk',
+    emoji: '🌱',
+    source: 'plant',
+    fatLevel: 'plant',
+    fatPct: 1.8,
+    proteinPct: 3.3,
+    carbsPct: 2.6,
+    notes: 'Use unsweetened soya milk with ≥3g protein per 100ml. Oat, almond and coconut milks do not set without added protein.',
+  },
 ];
 
 // ── Starter Cultures ──────────────────────────────────────────────────────
@@ -151,8 +163,8 @@ export const YOGURT_CULTURES: Record<string, YogurtCulturePreset> = {
     starterRatio: 0.5,
     typicalMilkLitres: 2,
     thickness: 'very-thick',
-    strainInfo: 'L. bulgaricus + S. thermophilus (Greek strain selection). Forms a firmer curd; straining removes whey to concentrate protein 2–3×.',
-    healthNote: 'Highest protein yogurt style (~8–10g per 100g after straining; varies with milk and straining duration). Whey removal concentrates casein micelles — slower digestion, more satiating.',
+    strainInfo: 'L. bulgaricus + S. thermophilus (Greek strain selection). Forms a firmer curd; straining removes whey and concentrates protein (≈1.4× when home-strained; commercial Greek yogurt is strained further).',
+    healthNote: 'Highest protein yogurt style (~5–7g per 100g when home-strained from whole milk; commercial versions reach 8–10g). Whey removal concentrates casein micelles — slower digestion, more satiating.',
     tips: [
       'After incubation, strain through muslin/cheesecloth for 2–6h in the fridge.',
       'The longer you strain, the thicker it gets. 6h = labneh consistency.',
@@ -201,7 +213,7 @@ export const YOGURT_CULTURES: Record<string, YogurtCulturePreset> = {
     typicalMilkLitres: 3,
     thickness: 'very-thick',
     strainInfo: 'S. thermophilus + L. bulgaricus + L. acidophilus + Bifidobacterium. Traditional skyr also uses a small amount of rennet for a firmer set.',
-    healthNote: 'Iceland\'s national food for 1,000+ years. Norse settlers brought skyr to Iceland; it died out everywhere else. High protein (~10–12g per 100g after straining; traditional skyr uses skimmed milk and extensive straining). Low lactose.',
+    healthNote: 'Iceland\'s national food for 1,000+ years. Norse settlers brought skyr to Iceland; it died out everywhere else. High protein (~6–7g per 100g home-strained from whole milk; traditional skimmed-milk skyr reaches 10–12g). Low lactose.',
     tips: [
       'For traditional skyr: add 1 drop of liquid rennet per 3L milk at inoculation.',
       'Skyr requires more straining than Greek yogurt — 6–12h for authentic density.',
@@ -226,9 +238,9 @@ export const YOGURT_CULTURES: Record<string, YogurtCulturePreset> = {
     typicalMilkLitres: 1,
     thickness: 'medium',
     strainInfo: 'S. thermophilus + L. bulgaricus (adapted for plant milk). Vegan Society certified. Requires protein-rich soya milk — almond/oat won\'t set.',
-    healthNote: 'Soya yogurt: isoflavones from soya + probiotics = synergistic. 2025 review: fermented soya products show enhanced antioxidant capacity vs. unfermented.',
+    healthNote: 'Soya yogurt: isoflavones from soya + probiotics = synergistic. Recent reviews report fermented soya products show enhanced antioxidant capacity vs. unfermented.',
     tips: [
-      '⚠️ Must use soya milk with ≥3.5g protein per 100ml. Most commercial soya milks work.',
+      '⚠️ Must use unsweetened soya milk with ≥3g protein per 100ml. Most commercial soya milks work.',
       'Add 1 tsp sugar or maple syrup — the cultures need fermentable carbohydrate.',
       'Soya yogurt will be thinner than dairy — add 1 tbsp cornflour or tapioca starch per litre if you want thicker set.',
       'Oat, almond, coconut milks WON\'T set without added protein. Use soya.',
@@ -253,7 +265,7 @@ export const YOGURT_CULTURES: Record<string, YogurtCulturePreset> = {
     typicalMilkLitres: 1,
     thickness: 'thin',
     strainInfo: 'Lactococcus lactis subsp. lactis + L. lactis subsp. cremoris + Leuconostoc mesenteroides + L. paracasei. A diverse mesophilic consortium — similar to buttermilk but more complex.',
-    healthNote: 'Traditional South African probiotic. 2025 University of Pretoria study: amasi consumption associated with reduced diarrhoeal disease incidence in rural communities. Rich in conjugated linoleic acid (CLA).',
+    healthNote: 'Traditional South African probiotic. Studies in southern Africa have associated traditional fermented milks with reduced diarrhoeal disease incidence. Rich in conjugated linoleic acid (CLA).',
     tips: [
       'No heat needed — stir culture into room-temperature milk and leave on the counter.',
       'Thickens slightly but stays drinkable. Tartness builds over 24–36h.',
@@ -302,7 +314,7 @@ export const YOGURT_CULTURES: Record<string, YogurtCulturePreset> = {
     typicalMilkLitres: 1,
     thickness: 'thin',
     strainInfo: 'Lactococcus lactis subsp. lactis + L. lactis subsp. cremoris + Leuconostoc mesenteroides. The same core species as buttermilk — produces diacetyl (buttery aroma) and EPS (body).',
-    healthNote: 'Staple probiotic in Swedish diet for centuries. Regular filmjölk consumption linked to improved gut transit time and reduced bloating in Scandinavian cohort studies.',
+    healthNote: 'Staple probiotic in the Swedish diet for centuries.',
     tips: [
       'Filmjölk is meant to be drinkable — don\'t expect Greek-yogurt thickness.',
       'Pour over muesli or drink straight. The buttery/diacetyl note is the signature flavour.',
@@ -359,24 +371,6 @@ export const YOGURT_CULTURES: Record<string, YogurtCulturePreset> = {
       'Not for everyone! The ropy texture is polarising — some love it, others can\'t get past it.',
     ],
   },
-
-  // ── Custom ──────────────────────────────────────────────────────────────
-  custom: {
-    id: 'custom',
-    name: 'Custom',
-    emoji: '⚗️',
-    description: 'Your own culture — set the incubation temperature, time, and starter ratio manually.',
-    type: 'thermophilic',
-    typicalTempC: 42,
-    tempMinC: 18,
-    tempMaxC: 50,
-    typicalHours: 8,
-    hoursMin: 4,
-    hoursMax: 48,
-    starterRatio: 0.5,
-    typicalMilkLitres: 2,
-    thickness: 'medium',
-  },
 };
 
 // ── Display Order ─────────────────────────────────────────────────────────
@@ -406,5 +400,5 @@ export function findMilk(id: string): MilkEntry {
   return milkMap.get(id) ?? MILK_TYPES[0]!;
 }
 
-/** Default milk: whole cow (Duchy Organic spec) */
+/** Default milk: whole cow */
 export const DEFAULT_MILK_ID = 'cow-whole';

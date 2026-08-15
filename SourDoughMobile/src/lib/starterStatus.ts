@@ -30,6 +30,7 @@ export function computeStarterStatus(lastFeeding: StarterFeeding | null): Starte
 
   const now = Date.now();
   const fedAt = new Date(lastFeeding.timestamp).getTime();
+  if (isNaN(fedAt)) return null; // corrupt timestamp — refuse to guess
   const hoursSinceFed = (now - fedAt) / 3600000;
 
   // Determine fridge state

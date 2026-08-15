@@ -13,7 +13,9 @@ import {
   SALT_LABELS,
   LactoDayPoint,
   HourlyPoint,
+  UnitSystem,
 } from '../models/types';
+import { formatTemp } from './unitConversion';
 
 // ── Physical Constants ─────────────────────────────────────────────────
 
@@ -32,7 +34,7 @@ const MIN_DAYS = 1.0;
 /** Maximum reasonable fermentation estimate (days). */
 const MAX_DAYS = 60.0;
 
-/** Target pH for well-fermented vegetables. Below 4.6 is safe; 4.0 is shelf-stable. */
+/** Target pH for well-fermented vegetables. Below 4.6 is safe from botulism; 4.0 is the typical fully-sour end point (still refrigerate for long storage — yeasts and moulds grow below 4.0). */
 export const TARGET_PH = 4.0;
 
 /** Safety pH threshold — botulism cannot grow below 4.6. */
@@ -62,8 +64,9 @@ const PH_SHAPE = 1.7;
  * enters the brine under dry salting (0–1; see VEG_RELEASE_FACTOR in
  * vegetables.ts). It affects only the *displayed* effective salinity —
  * the salt the user measures stays saltPct of vegetable weight. A flat
- * 0.7 default was shown to overstate leafy-veg salinity (cabbage truly
- * releases 85–95%) and understate roots (carrot releases 20–40%).
+ * 0.7 default overstates leafy-veg salinity — salted cabbage yields only
+ * ~50–60% of its water as brine — and understates roots (carrot releases
+ * ~20–40%).
  */
 export function calculateFermentSalt(
   vegWeight: number,
@@ -99,10 +102,10 @@ export function calculateFermentSalt(
       // Salt % is of vegetable weight
       saltGrams = vegWeight * (saltPct / 100);
       // Effective brine salinity after veg water is released.
-      // Release varies widely by vegetable (Katz, Shockey):
-      //   - Cabbage: 85–95% (thin leaves, high surface area)
+      // Empirical brine-yield estimates (see VEG_RELEASE_FACTOR):
+      //   - Cabbage: ~50–60% (1 kg yields ~400–600 ml brine)
       //   - Carrots: 20–40% (dense, low surface area)
-      //   - Kale:   30–50% (fibrous, moderate release)
+      //   - Kale:    30–50% (fibrous, moderate release)
       const releasedWater = vegWeight * (waterContentPct / 100) * releaseFactor;
       totalBrineGrams = releasedWater + saltGrams;
       effectiveSalinity = totalBrineGrams > 0
@@ -115,7 +118,9 @@ export function calculateFermentSalt(
       saltGrams = vegWeight * (saltPct / 100);
       const totalWater = vegWeight * (waterContentPct / 100);
       totalBrineGrams = totalWater + saltGrams;
-      effectiveSalinity = (saltGrams / totalBrineGrams) * 100;
+      effectiveSalinity = totalBrineGrams > 0
+        ? (saltGrams / totalBrineGrams) * 100
+        : saltPct;
       break;
     }
     default:
@@ -272,10 +277,11 @@ export function buildLactoTimeline(estimatedDays: number, method: FermentMethod)
     });
   }
 
-  // Final day
+  // Final day — fully sour; move to cold storage (classic cellar ferments
+  // continue for weeks, but the 7-day baseline marks "ready to refrigerate")
   points.push({
     day: totalDays,
-    label: `Day ${totalDays} — Complete`,
+    label: `Day ${totalDays} — Ready for Cold Storage`,
     description: `Final pH ~${FINAL_PH.toFixed(1)} reached — well below the ${SAFETY_PH} safety threshold and stable under ${TARGET_PH.toFixed(1)}. LAB community stable. Move to cold storage (fridge or cellar). Postbiotic compounds (GABA, phenyl-lactic acid, indole-3-lactic acid) continue to develop for weeks.`,
   });
 
@@ -332,8 +338,10 @@ export function lactoAdvice(
   saltPct: number,
   temp: number,
   estimatedDays: number,
+  unitSystem: UnitSystem = 'metric',
 ): string[] {
   const tips: string[] = [];
+  const t = formatTemp(temp, unitSystem, 0);
 
   // Salt level guidance — updated per 2024–2026 research
   if (saltPct < 1.5) {
@@ -341,16 +349,16 @@ export function lactoAdvice(
   } else if (saltPct < 2.0) {
     tips.push(`💡 Salt is moderate-low at ${saltPct}%. 2024 research shows 1.0–1.5% retains more polyphenols and probiotics, but below 2% requires extra care — check daily and keep everything submerged.`);
   } else if (saltPct > 5.0) {
-    tips.push(`🧂 Salt is high at ${saltPct}%. Fermentation will be very slow — beneficial LAB are inhibited above 5%. 2026 research: 3–5% is the sweet spot for L. plantarum dominance.`);
+    tips.push(`🧂 Salt is high at ${saltPct}%. Fermentation will be very slow — beneficial LAB are inhibited above 5%. In the referenced studies, 3–5% was the sweet spot for L. plantarum dominance.`);
   }
 
-  // Temperature guidance — updated per 2025–2026 research
+  // Temperature guidance
   if (temp < 16) {
-    tips.push(`❄️ Cool temperature (${temp}°C) — fermentation will be very slow. Consider a warmer spot if you want results in under 2 weeks.`);
+    tips.push(`❄️ Cool temperature (${t}) — fermentation will be very slow. Consider a warmer spot if you want results in under 2 weeks.`);
   } else if (temp > 30) {
-    tips.push(`🔥 Warm temperature (${temp}°C) — fermentation will be fast but may produce off-flavours or soft texture. Check daily. Below 20°C favours heterofermentative Leuconostoc (more CO₂, ethanol, acetic acid); above 30°C favours homofermentative L. plantarum (cleaner lactic profile).`);
+    tips.push(`🔥 Warm temperature (${t}) — fermentation will be fast but may produce off-flavours or soft texture. Check daily. Below 20°C favours heterofermentative Leuconostoc (more CO₂, ethanol, acetic acid); above 30°C favours homofermentative L. plantarum (cleaner lactic profile).`);
   } else if (temp > 24) {
-    tips.push(`🌡️ Warm room temp (${temp}°C) — consider a variable-temperature strategy: ferment 3 days at room temp, then move to the fridge for cold maturation. 2025 research shows this preserves texture and develops more complex aroma.`);
+    tips.push(`🌡️ Warm room temp (${t}) — consider a variable-temperature strategy: ferment 3 days at room temp, then move to the fridge for cold maturation. Recent cucumber-fermentation research found this preserves texture and develops more complex aroma.`);
   }
 
   // Method-specific
@@ -361,15 +369,15 @@ export function lactoAdvice(
     tips.push('🪨 Use a weight to keep everything submerged. Anything above the brine line will mould.');
   }
 
-  // Kahm yeast — updated with 2024–2026 research
-  tips.push('🦠 A thin white film (kahm yeast) is harmless — often Kazachstania or Pichia species. 2026 research: Kazachstania can actually inhibit pathogens but may soften texture. Skim it off. Fuzzy mould = discard immediately.');
+  // Kahm yeast
+  tips.push('🦠 A thin white film (kahm yeast) is harmless — typically Debaryomyces, Pichia or Candida species (Kazachstania also appears). Skim it off. Fuzzy mould = discard immediately.');
 
   // General safety — the "safe by" day comes from the pH curve: a 4.6
   // crossing at ~45% of the estimated timeline (calibrated to measured
   // sauerkraut, which crosses pH 4.6 around day 2–3 at 22°C).
   const safeDay = Math.round(estimatedDays * 0.45);
   const tangyDay = Math.round(estimatedDays * 0.7);
-  tips.push(`🛡️ Botulism cannot grow below pH ${SAFETY_PH}. Your ferment will be safe once it\'s tangy — typically by day ${Math.max(1, safeDay)}–${tangyDay}. If unsure, pH strips are cheap insurance.`);
+  tips.push(`🛡️ Botulism cannot grow below pH ${SAFETY_PH}. Your ferment will be safe once it\'s tangy — typically by day ${Math.max(1, safeDay)}–${tangyDay}. The pH must drop throughout the jar (inside chunks too, not just the brine). If unsure, pH strips are cheap insurance.`);
 
   return tips;
 }
@@ -385,20 +393,20 @@ export function waterHardnessFermentAdvice(hardness: { mgL: number; classificati
   const tips: string[] = [];
   const { mgL, classification, note } = hardness;
 
-  if (mgL < 60) {
+  if (mgL <= 100) {
     tips.push(`💧 Your water is ${classification} (${mgL} mg/L CaCO₃).`);
     tips.push('   → Soft water may produce softer ferments. Add a grape leaf, oak leaf, or a pinch of calcium chloride for extra crunch.');
     tips.push('   → Low mineral content means less buffering — ferments may sour slightly faster.');
-  } else if (mgL < 120) {
+  } else if (mgL <= 200) {
     tips.push(`💧 Your water is ${classification} (${mgL} mg/L CaCO₃).`);
     tips.push('   → Good for most ferments. Balanced mineral content for texture and flavour.');
-  } else if (mgL < 200) {
+  } else if (mgL <= 300) {
     tips.push(`💧 Your water is ${classification} (${mgL} mg/L CaCO₃).`);
-    tips.push('   → Moderately hard — calcium helps keep vegetables crisp. Ideal for cucumber pickles.');
+    tips.push('   → Hard — calcium helps keep vegetables crisp. Ideal for cucumber pickles.');
   } else {
     tips.push(`💧 Your water is ${classification} (${mgL} mg/L CaCO₃).`);
     tips.push('   → Hard water is excellent for crisp ferments — calcium strengthens pectin in vegetable cell walls.');
-    tips.push('   → If your brine clouds quickly, it\'s just calcium precipitating — harmless.');
+    tips.push('   → A cloudy brine is normal bacterial activity; white sediment may be calcium — also harmless.');
   }
   tips.push(`   → Source geology: ${note}.`);
 
@@ -422,14 +430,25 @@ export interface FermentTempResult {
 }
 
 /**
- * Compute effective fermentation temperature from an hourly forecast.
- * Averages temps over the expected ferment duration. Repeats last day's
- * pattern when forecast doesn't cover the full period.
+ * Compute the effective fermentation temperature from an hourly forecast.
+ *
+ * The effective temperature is derived by integrating the Q10 rate curve
+ * over the expected ferment duration — an arithmetic mean temperature is
+ * systematically biased when nights are cold and days warm (12h at 10°C +
+ * 12h at 34°C averages 22°C but ferments at ~1.7× the 22°C rate). The
+ * returned value is the single constant temperature that produces the same
+ * integrated rate, so feeding it into estimateFermentDuration is exact.
+ *
+ * Forecast points are bucketed by LOCAL calendar day (the API returns
+ * local-naive datetimes; bucketing by UTC date would mislabel "Today" and
+ * split days for users east or west of UTC). Malformed datetimes are
+ * skipped instead of crashing.
  */
 export function computeFermentTemp(
   hourlyForecast: HourlyPoint[] | null,
   currentTemp: number | null,
   estimatedDays: number,
+  unitSystem: UnitSystem = 'metric',
 ): FermentTempResult {
   if (!hourlyForecast || hourlyForecast.length === 0) {
     const t = currentTemp ?? 22;
@@ -438,17 +457,38 @@ export function computeFermentTemp(
       dailyTemps: [{ day: 'Today', high: t, low: t, avg: t }],
       source: currentTemp != null ? 'current' : 'fallback',
       summary: currentTemp != null
-        ? `Using current temperature: ${t}°C`
-        : `No weather data — using default ${t}°C`,
+        ? `Using current temperature: ${formatTemp(t, unitSystem, 0)}`
+        : `No weather data — using default ${formatTemp(t, unitSystem, 0)}`,
     };
   }
+
+  /** Local-calendar day key (YYYY-MM-DD) — avoids UTC-day misalignment. */
+  const localDayKey = (d: Date): string => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dd}`;
+  };
 
   const dayMap = new Map<string, number[]>();
   for (const point of hourlyForecast) {
     const date = new Date(point.datetime);
-    const key = date.toISOString().split('T')[0]!;
+    if (isNaN(date.getTime())) continue; // skip malformed datetimes
+    const key = localDayKey(date);
     if (!dayMap.has(key)) dayMap.set(key, []);
     dayMap.get(key)!.push(point.tempC);
+  }
+
+  if (dayMap.size === 0) {
+    const t = currentTemp ?? 22;
+    return {
+      effectiveTemp: t,
+      dailyTemps: [{ day: 'Today', high: t, low: t, avg: t }],
+      source: currentTemp != null ? 'current' : 'fallback',
+      summary: currentTemp != null
+        ? `Using current temperature: ${formatTemp(t, unitSystem, 0)}`
+        : `No weather data — using default ${formatTemp(t, unitSystem, 0)}`,
+    };
   }
 
   const days = Array.from(dayMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
@@ -471,14 +511,19 @@ export function computeFermentTemp(
     allTemps.push(...temps);
   }
 
-  const effectiveTemp = Math.round((allTemps.reduce((s, t) => s + t, 0) / allTemps.length) * 10) / 10;
+  // Integrate the Q10 rate curve — the arithmetic mean is biased for
+  // fluctuating temperatures, so convert via the mean rate instead.
+  const rateSum = allTemps.reduce((s, t) => s + Math.pow(Q10, (t - BASE_TEMP) / 10), 0);
+  const meanRate = rateSum / allTemps.length;
+  const effectiveTemp = BASE_TEMP + (10 * Math.log(meanRate)) / Math.log(Q10);
+  const effectiveTempRounded = Math.round(effectiveTemp * 10) / 10;
   const firstDay = dailyTemps[0]!;
 
   const summary = estimatedDays <= 1
-    ? `Today: ${firstDay.high}°C / ${firstDay.low}°C`
-    : `${effectiveTemp}°C avg over ${estimatedDays.toFixed(1)} days (${firstDay.high}°C / ${firstDay.low}°C today)`;
+    ? `Today: ${formatTemp(firstDay.high, unitSystem, 0)} / ${formatTemp(firstDay.low, unitSystem, 0)}`
+    : `${formatTemp(effectiveTempRounded, unitSystem)} effective over ${estimatedDays.toFixed(1)} days (${formatTemp(firstDay.high, unitSystem, 0)} / ${formatTemp(firstDay.low, unitSystem, 0)} today)`;
 
-  return { effectiveTemp, dailyTemps, source: 'forecast', summary };
+  return { effectiveTemp: effectiveTempRounded, dailyTemps, source: 'forecast', summary };
 }
 
 // ── Brine Calculator Helper ────────────────────────────────────────────
@@ -486,12 +531,16 @@ export function computeFermentTemp(
 /**
  * Given a jar volume (ml) and vegetable weight, estimate how much water
  * is needed to fill the remaining space for a brine ferment.
+ *
+ * Chopped vegetables pack at roughly 0.9 g/ml, so the veg volume is
+ * weight / 0.9 rather than assuming 1 g = 1 ml (which overfills jars).
  */
 export function estimateWaterForJar(
   jarVolumeMl: number,
   vegWeight: number,
   headspaceMl: number = 50,
 ): number {
-  const waterNeeded = jarVolumeMl - vegWeight - headspaceMl;
-  return Math.max(0, waterNeeded);
+  const vegVolumeMl = vegWeight / 0.9;
+  const waterNeeded = jarVolumeMl - vegVolumeMl - headspaceMl;
+  return Math.round(Math.max(0, waterNeeded));
 }

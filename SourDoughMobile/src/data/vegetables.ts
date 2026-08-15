@@ -37,15 +37,17 @@ export interface VegEntry {
 
 /**
  * Fraction of the vegetable's water released into the brine under dry
- * salting (self-brining). Leafy vegetables collapse and release most of
- * their water; dense roots and firm fruit-veg release little, so their
- * self-brined salinity is much higher than the salt % alone suggests.
- * Used only for the *displayed* effective salinity — the salt dosage the
- * user measures is always the plain salt % (see lactoCalculations).
- * Sources: Katz "The Art of Fermentation", Shockey "Fermented Vegetables".
+ * salting (self-brining). Empirical home-fermentation brine-yield
+ * estimates: 1 kg of salted cabbage (92% water) typically yields
+ * ~400–600 ml of brine, i.e. ~50–60% of its water — not the 85–95%
+ * sometimes claimed. Dense roots and firm fruit-veg release little, so
+ * their self-brined salinity is much higher than the salt % alone
+ * suggests. Used only for the *displayed* effective salinity — the salt
+ * dosage the user measures is always the plain salt % (see
+ * lactoCalculations).
  */
 export const VEG_RELEASE_FACTOR: Record<VegCategory, number> = {
-  leafy: 0.9, // cabbage & napa release 85–95% under salt
+  leafy: 0.55, // cabbage & napa — brine yield ≈ 50–60% of water
   root: 0.4, // carrot, beet, daikon — dense, low surface area
   'fruit-veg': 0.4, // cucumber, zucchini — firm cell walls
   allium: 0.5, // onion releases readily once sliced
@@ -445,7 +447,7 @@ export const VEGETABLES: VegEntry[] = [
     firmness: 'firm',
     typicalWeight: 300,
     notes: 'Use firm varieties (Granny Smith, Honeycrisp). Cinnamon stick and clove pair well.',
-    researchNote: '⚠️ Fruits are high-sugar — more prone to yeast and kahm pellicle. Ferment cool (≤20°C) and check daily. Kazachstania yeast can cause film but also inhibits pathogens (2026).',
+    researchNote: '⚠️ Fruits are high-sugar — more prone to yeast and kahm pellicle (typically Debaryomyces, Pichia or Candida). Ferment cool (≤20°C) and check daily.'
   },
   {
     id: 'pear',

@@ -15,6 +15,7 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -69,15 +70,27 @@ export function FeedbackProvider({ children }: { children: React.ReactNode }) {
     resolve: (value: boolean) => void;
   } | null>(null);
   const toastId = useRef(0);
+  const toastTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  // Clear pending dismiss timers when the provider unmounts (web route
+  // changes) so no setState fires on an unmounted component.
+  useEffect(() => {
+    return () => {
+      toastTimers.current.forEach((t) => clearTimeout(t));
+      toastTimers.current = [];
+    };
+  }, []);
 
   const showToast = useCallback((message: string, kind: ToastKind = 'info') => {
     const id = ++toastId.current;
     setToasts((prev) => [...prev, { id, message, kind }]);
     // Auto-dismiss; keep a longer window for longer messages
     const delay = Math.max(2500, Math.min(6000, message.length * 60));
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
+      toastTimers.current = toastTimers.current.filter((t) => t !== timer);
     }, delay);
+    toastTimers.current.push(timer);
   }, []);
 
   const alert = useCallback(
@@ -89,7 +102,13 @@ export function FeedbackProvider({ children }: { children: React.ReactNode }) {
 
   const confirm = useCallback((opts: ConfirmOptions) => {
     return new Promise<boolean>((resolve) => {
-      setConfirmState({ opts, resolve });
+      setConfirmState((prev) => {
+        // A second dialog while one is open would orphan the first caller's
+        // promise (awaiting code would hang forever). Resolve it as
+        // cancelled and let the newest dialog take over.
+        prev?.resolve(false);
+        return { opts, resolve };
+      });
     });
   }, []);
 

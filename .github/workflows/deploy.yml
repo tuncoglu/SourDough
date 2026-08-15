@@ -20,6 +20,14 @@ jobs:
         run: npm ci
         working-directory: SourDoughMobile
 
+      - name: Typecheck
+        run: npx tsc --noEmit
+        working-directory: SourDoughMobile
+
+      - name: Run tests
+        run: npx jest --silent
+        working-directory: SourDoughMobile
+
       - name: Build web export
         run: npx expo export --platform web
         working-directory: SourDoughMobile

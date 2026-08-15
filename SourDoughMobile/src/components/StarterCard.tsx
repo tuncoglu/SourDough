@@ -93,7 +93,7 @@ export function StarterCard(props: Props) {
 
           {status?.isInFridge && (
             <Text style={[styles.fridgeHint, { color: colors.muted }]}>
-              Starter is dormant in the fridge — metabolic activity ~20× slower. Will keep for 1–2 weeks.
+              Starter is dormant in the fridge — metabolic activity ~17× slower. Will keep for 1–2 weeks.
             </Text>
           )}
 

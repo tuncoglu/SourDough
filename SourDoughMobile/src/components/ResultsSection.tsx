@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyle, sectionTitleStyle } from '../theme';
-import { formatTemp, formatTempValue } from '../lib/unitConversion';
+import { formatTemp } from '../lib/unitConversion';
 import {
   CalculationResults,
   FlourBlendEntry,
@@ -64,26 +64,63 @@ export function ResultsSection({
         if (zone === 'ideal') {
           return <Text style={[styles.fdtHint, { color: colors.muted }]}>Your dough is in the optimal fermentation range</Text>;
         }
-        const targetFDT = 26.0;
-        const neededWater = Math.round((targetFDT * 4 - parseFloat(flourTemp) - parseFloat(ambientTemp) - parseFloat(starterTemp)) * 10) / 10;
-        const currentWater = parseFloat(waterTemp);
-        const diff = Math.round((neededWater - currentWater) * 10) / 10;
+
+        // Suggest a water temperature using the SAME mass-weighted model the
+        // engine uses for FDT (specific heats: flour 1.8, water 4.18,
+        // starter 3.0 J/g·°C; pre-ferment components sit at ambient).
+        // Falls back to a generic hint when any temperature input is
+        // incomplete or there is no bowl water to adjust.
+        const f = parseFloat(flourTemp);
+        const a = parseFloat(ambientTemp);
+        const s = parseFloat(starterTemp);
+        const cw = parseFloat(waterTemp);
+        const ing = results.ingredients;
+        const flourW = ing.bowlFlour;
+        const waterW = ing.addedWater;
+        const starterW = ing.starterTotal;
+        const pfFlour = ing.prefermentFlour;
+        const pfWater = ing.prefermentWater;
+
+        let neededWater: number | null = null;
+        if (Number.isFinite(f) && Number.isFinite(a) && Number.isFinite(s) && waterW > 0) {
+          const denominator =
+            flourW * 1.8 + waterW * 4.18 + starterW * 3.0 + pfFlour * 1.8 + pfWater * 4.18;
+          const numerator =
+            targetFDT * denominator -
+            flourW * 1.8 * f -
+            starterW * 3.0 * s -
+            pfFlour * 1.8 * a -
+            pfWater * 4.18 * a;
+          neededWater = Math.round((numerator / (waterW * 4.18)) * 10) / 10;
+        }
+
+        const currentText = Number.isFinite(cw) ? formatTemp(cw, unitSystem) : null;
+        const action =
+          neededWater !== null && currentText !== null
+            ? `💧 ${zone === 'cold' || zone === 'cool' ? 'Heat' : 'Cool'} your water to ${formatTemp(neededWater, unitSystem)} (currently ${currentText})`
+            : null;
+        const targetText = formatTemp(targetFDT, unitSystem);
+
         if (zone === 'cold' || zone === 'cool') {
           return (
             <>
-              <Text style={[styles.fdtHint, { color: colors.muted }]}>{formatTemp(results.fdt, unitSystem)} is below the {formatTemp(targetFDT, unitSystem)} target — fermentation will be slower.</Text>
-              <Text style={[styles.fdtAction, { color: colors.espresso, backgroundColor: colors.tipBg }]}>
-                💧 Heat your water to <Text style={{ fontWeight: '800' }}>{formatTempValue(neededWater, unitSystem)}°</Text> (currently {formatTempValue(currentWater, unitSystem)}°, +{formatTempValue(diff, unitSystem)}°)
-              </Text>
+              <Text style={[styles.fdtHint, { color: colors.muted }]}>{formatTemp(results.fdt, unitSystem)} is below the {targetText} target — fermentation will be slower.</Text>
+              {action && (
+                <Text style={[styles.fdtAction, { color: colors.espresso, backgroundColor: colors.tipBg }]}>
+                  {action}
+                </Text>
+              )}
             </>
           );
         }
         return (
           <>
-            <Text style={[styles.fdtHint, { color: colors.muted }]}>{formatTemp(results.fdt, unitSystem)} is above the {formatTemp(targetFDT, unitSystem)} target — fermentation will be faster. Watch closely!</Text>
-            <Text style={[styles.fdtAction, { color: colors.espresso, backgroundColor: colors.tipBg }]}>
-              💧 Cool your water to <Text style={{ fontWeight: '800' }}>{formatTempValue(neededWater, unitSystem)}°</Text> (currently {formatTempValue(currentWater, unitSystem)}°, {formatTempValue(diff, unitSystem)}°)
-            </Text>
+            <Text style={[styles.fdtHint, { color: colors.muted }]}>{formatTemp(results.fdt, unitSystem)} is above the {targetText} target — fermentation will be faster. Watch closely!</Text>
+            {action && (
+              <Text style={[styles.fdtAction, { color: colors.espresso, backgroundColor: colors.tipBg }]}>
+                {action}
+              </Text>
+            )}
           </>
         );
       })()}

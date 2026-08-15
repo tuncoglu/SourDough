@@ -67,7 +67,10 @@ export function NumberInput({
     if (isImperialWeight) {
       const oz = parseFloat(text);
       if (!isNaN(oz)) {
-        onChangeText(String(Math.round(ozToGrams(oz))));
+        // Keep one decimal place of gram precision — rounding to whole
+        // grams snaps small amounts (0.15 oz = 4.25 g) back to the
+        // previous value and rewrites the user's typing.
+        onChangeText(String(Math.round(ozToGrams(oz) * 10) / 10));
       } else if (text === '' || text === '.') {
         onChangeText('0');
       }

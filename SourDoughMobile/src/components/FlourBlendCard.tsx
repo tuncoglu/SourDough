@@ -5,7 +5,7 @@ import { formatWeight } from '../lib/unitConversion';
 import { FlourPicker } from './FlourPicker';
 import { NumberInput } from './NumberInput';
 import { FlourBlendEntry } from '../models/types';
-import { CATEGORY_COLORS, shortenLabel } from '../lib/blendUtils';
+import { CATEGORY_COLORS, readableTextColor, shortenLabel } from '../lib/blendUtils';
 import type { MixRow } from '../hooks/useCalculatorInputs';
 
 interface Props {
@@ -92,7 +92,7 @@ export function FlourBlendCard({
               return (
                 <View key={r.key} style={[styles.blendSegment, { flex: pct, backgroundColor: color }]}>
                   {pct >= 18 && (
-                    <Text style={[styles.blendSegmentText, { color: colors.white }]} numberOfLines={1}>
+                    <Text style={[styles.blendSegmentText, { color: readableTextColor(color) }]} numberOfLines={1}>
                       {shortName} {Math.round(pct)}%
                     </Text>
                   )}
@@ -145,10 +145,10 @@ const styles = StyleSheet.create({
   mixRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.xs, gap: Spacing.xs },
   pickerWrap: { flex: 1 },
   removeBtn: {
-    width: 36, height: 36, borderRadius: 18,
+    width: 44, height: 44, borderRadius: 22,
     alignItems: 'center', justifyContent: 'center',
   },
-  removeBtnSpacer: { width: 36, height: 36 },
+  removeBtnSpacer: { width: 44, height: 44 },
   removeBtnText: { fontSize: FontSize.lg, fontWeight: '700', lineHeight: FontSize.lg + 2 },
   summaryRow: {
     paddingVertical: Spacing.sm, borderTopWidth: StyleSheet.hairlineWidth,
@@ -158,8 +158,7 @@ const styles = StyleSheet.create({
   blendBar: { flexDirection: 'row', height: 24, borderRadius: BorderRadius.sm, overflow: 'hidden', marginBottom: Spacing.xs },
   blendSegment: { minWidth: 4, alignItems: 'center', justifyContent: 'center' },
   blendSegmentText: {
-    fontSize: 10, fontWeight: '700',
-    textShadowColor: 'rgba(0,0,0,0.3)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 1,
+    fontSize: FontSize.xs, fontWeight: '700',
   },
   blendLegend: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },

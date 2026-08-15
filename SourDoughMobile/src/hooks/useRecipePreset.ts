@@ -52,18 +52,27 @@ export function useRecipePreset(): RecipePresetState & RecipePresetActions {
     setStarterWeight: (v: string) => void,
     setSaltPct: (v: string) => void,
   ) => {
-    // Detect if user has modified fields away from the PREVIOUS preset's defaults.
-    // Starter weight depends on total flour weight (varies per recipe), so we cannot
-    // trivially reverse it — always preserve the user's starter value on preset switch.
+    // Detect if the user has modified fields away from the PREVIOUS preset's
+    // defaults. A field counts as customized only when a previous preset was
+    // active AND the value differs from *that* preset's default. On the very
+    // first selection nothing is customized, so the new preset's defaults
+    // (water, salt, oil, starter) are all applied.
+    // Starter weight depends on total flour weight (varies per recipe), so we
+    // preserve the user's starter value on later preset switches.
     const prevPreset = selectedPreset;
     const totalFlour = mixRows.reduce((sum, r) => sum + (parseFloat(r.grams) || 0), 0);
     const presetWaterGrams = String(Math.round(totalFlour * preset.dough.typicalHydration / 100));
-    const userCustomizedHydration = !prevPreset ||
-      parseFloat(currentWaterGrams) !== parseFloat(presetWaterGrams);
-    const userCustomizedStarter = prevPreset !== null; // always preserve starter edits
-    const userCustomizedSalt = !prevPreset ||
+    const prevWaterGrams = prevPreset
+      ? String(Math.round(totalFlour * prevPreset.dough.typicalHydration / 100))
+      : null;
+    const userCustomizedHydration =
+      prevPreset !== null &&
+      prevWaterGrams !== null &&
+      parseFloat(currentWaterGrams) !== parseFloat(prevWaterGrams);
+    const userCustomizedStarter = prevPreset !== null; // always preserve starter edits after first pick
+    const userCustomizedSalt = prevPreset !== null &&
       parseFloat(currentSaltPct) !== prevPreset.dough.typicalSalt;
-    const userCustomizedOil = !prevPreset ||
+    const userCustomizedOil = prevPreset !== null &&
       parseFloat(currentOilPct) !== (prevPreset.dough.oilPct ?? 0);
 
     setBreadType(preset.id);

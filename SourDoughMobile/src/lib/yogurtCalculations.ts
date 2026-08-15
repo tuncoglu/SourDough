@@ -14,7 +14,17 @@ import {
   MilkEntry,
   MilkFatLevel,
   StarterSource,
+  UnitSystem,
 } from '../models/types';
+import { formatTemp } from './unitConversion';
+
+/** Format a temperature range in the display unit system. */
+function formatRange(lo: number, hi: number, unitSystem: UnitSystem): string {
+  if (unitSystem === 'imperial') {
+    return `${formatTemp(lo, 'imperial', 0)} – ${formatTemp(hi, 'imperial', 0)}`;
+  }
+  return `${lo}–${hi}°C`;
+}
 
 // ── Physical Constants ─────────────────────────────────────────────────
 
@@ -56,29 +66,35 @@ export const PREHEAT_TEMP_C = 85;
 export const PREHEAT_MINUTES = 30;
 
 /** Straining yield factor by thickness.
- *  NOTE: Home-straining yields vary widely (technique, cheesecloth, time).
- *  Protein retention is ~80% — whey proteins are lost in the drain. */
+ *  Home-straining yields vary widely (technique, cheesecloth, time) but are
+ *  anchored to typical results: Greek-style 2–4h draining removes ~40% of
+ *  the volume; Skyr/labneh 6–12h removes ~55%. */
 const STRAINING_FACTORS: Record<string, number> = {
   'thin': 1.0,
   'medium': 1.0,
-  'thick': 0.75,       // Greek-style — ~25% whey removed
-  'very-thick': 0.60,  // Skyr/labneh — ~40% whey removed
+  'thick': 0.6,        // Greek-style — ~40% whey removed
+  'very-thick': 0.45,  // Skyr/labneh — ~55% whey removed
 };
 
-/** Protein concentration factor when strained. */
+/** Protein concentration factor when strained.
+ *  = retention / yield. Casein is retained in the curd but whey carries
+ *  ~20% of milk protein out with the drain, so retention ≈ 0.85:
+ *  thick → 0.85/0.6 ≈ 1.4×, very-thick → 0.85/0.45 ≈ 1.9×. */
 const PROTEIN_CONCENTRATION: Record<string, number> = {
   'thin': 1.0,
   'medium': 1.0,
-  'thick': 1.33,       // protein concentrates ~1.33×
-  'very-thick': 1.67,  // protein concentrates ~1.67×
+  'thick': 1.4,
+  'very-thick': 1.9,
 };
 
-/** Fat concentration factor when strained. */
+/** Fat concentration factor when strained.
+ *  Fat is almost fully retained in the curd (≈0.95), so concentration
+ *  tracks 1/yield: thick → 0.95/0.6 ≈ 1.6×, very-thick → 0.95/0.45 ≈ 2.1×. */
 const FAT_CONCENTRATION: Record<string, number> = {
   'thin': 1.0,
   'medium': 1.0,
-  'thick': 1.3,
-  'very-thick': 1.6,
+  'thick': 1.6,
+  'very-thick': 2.1,
 };
 
 // ── Starter Calculation ────────────────────────────────────────────────
@@ -196,6 +212,7 @@ export function buildYogurtTimeline(
   preHeatEnabled: boolean,
   starterSource?: StarterSource,
   previousBatchGrams?: number,
+  unitSystem: UnitSystem = 'metric',
 ): YogurtStepPoint[] {
   const points: YogurtStepPoint[] = [];
   const totalH = Math.ceil(incubationHours);
@@ -206,12 +223,12 @@ export function buildYogurtTimeline(
     points.push({
       hour: null,
       label: 'Pre-heat — Denature Proteins',
-      description: `Heat milk to ${PREHEAT_TEMP_C}°C and hold for ${PREHEAT_MINUTES} min. This denatures whey proteins (mainly β-lactoglobulin), allowing them to bind to casein micelles — giving a firmer, creamier set. Cool to incubation temperature before adding culture.`,
+      description: `Heat milk to ${formatTemp(PREHEAT_TEMP_C, unitSystem, 0)} and hold for ${PREHEAT_MINUTES} min. This denatures whey proteins (mainly β-lactoglobulin), allowing them to bind to casein micelles — giving a firmer, creamier set. Cool to incubation temperature before adding culture.`,
     });
   }
 
   // Inoculation
-  const coolTemp = cultureType === 'thermophilic' ? '42°C' : '22°C';
+  const coolTemp = formatTemp(cultureType === 'thermophilic' ? 42 : 22, unitSystem, 0);
   const starterInstruction = isPreviousBatch
     ? `Whisk in ${previousBatchGrams ?? 30}g of yogurt from your previous batch (≈${Math.round((previousBatchGrams ?? 30) / 15)} tbsp) until smooth and fully incorporated.`
     : `Whisk in starter culture until fully dissolved.`;
@@ -225,7 +242,7 @@ export function buildYogurtTimeline(
     label: 'Hour 0 — Inoculate',
     description: preHeatEnabled
       ? `Cool milk to ${coolTemp}. ${starterInstruction} Pour into clean jars. ${incubateInstruction}`
-      : `Warm milk to ${coolTemp} if needed. ${starterInstruction} Pour into clean jars. ${cultureType === 'thermophilic' ? `${incubateInstruction} Maintain 40–45°C.` : `${incubateInstruction} (20–25°C).`}`,
+      : `Warm milk to ${coolTemp} if needed. ${starterInstruction} Pour into clean jars. ${cultureType === 'thermophilic' ? `${incubateInstruction} Maintain ${formatRange(40, 45, unitSystem)}.` : `${incubateInstruction} (${formatRange(20, 25, unitSystem)}).`}`,
   });
 
   // Early incubation (~20%)
@@ -274,9 +291,9 @@ export function buildYogurtTimeline(
     });
   }
 
-  // Complete
-  const completeH = thickness === 'very-thick' ? totalH + 6
-    : thickness === 'thick' ? totalH + 3
+  // Complete — chill after the strain window so the steps don't collide
+  const completeH = thickness === 'very-thick' ? totalH + 12
+    : thickness === 'thick' ? totalH + 7
     : totalH;
 
   points.push({
@@ -339,41 +356,43 @@ export function yogurtAdvice(
   preHeatEnabled: boolean,
   thickness: string,
   incubationHours: number,
+  unitSystem: UnitSystem = 'metric',
 ): string[] {
   const tips: string[] = [];
+  const t = formatTemp(incubationTemp, unitSystem, 0);
 
   // Temperature guidance
   if (cultureType === 'thermophilic') {
     if (incubationTemp < 36) {
-      tips.push(`🌡️ Incubation temp is low (${incubationTemp}°C). Thermophilic cultures need 38–46°C. Below 36°C, L. bulgaricus slows dramatically — expect a much longer set or a thin result.`);
+      tips.push(`🌡️ Incubation temp is low (${t}). Thermophilic cultures need ${formatRange(38, 46, unitSystem)}. Below ${formatTemp(36, unitSystem, 0)}, L. bulgaricus slows dramatically — expect a much longer set or a thin result.`);
     } else if (incubationTemp > 48) {
-      tips.push(`🔥 Too hot! Above 48°C, both cultures are stressed. L. bulgaricus is more heat-tolerant than S. thermophilus (optimum 45–47°C vs 40–42°C) — you may get a thin, poorly set yogurt. Keep at 40–45°C.`);
+      tips.push(`🔥 Too hot! Above ${formatTemp(48, unitSystem, 0)}, both cultures are stressed. L. bulgaricus is more heat-tolerant than S. thermophilus (optimum ${formatRange(45, 47, unitSystem)} vs ${formatRange(40, 42, unitSystem)}) — you may get a thin, poorly set yogurt. Keep at ${formatRange(40, 45, unitSystem)}.`);
     } else {
-      tips.push(`✅ Temperature (${incubationTemp}°C) is in the thermophilic sweet spot. Maintain this consistently — temperature swings cause graininess.`);
+      tips.push(`✅ Temperature (${t}) is in the thermophilic sweet spot. Maintain this consistently — temperature swings cause graininess.`);
     }
     tips.push('💡 Use a yogurt maker, Instant Pot on yogurt setting, dehydrator, or oven with just the light on. A thermal flask wrapped in a towel also works.');
   } else {
     if (incubationTemp < 18) {
-      tips.push(`❄️ Room is cool (${incubationTemp}°C). Mesophilic cultures work best at 20–25°C. At this temperature, incubation will be very slow — consider a warmer spot.`);
+      tips.push(`❄️ Room is cool (${t}). Mesophilic cultures work best at ${formatRange(20, 25, unitSystem)}. At this temperature, incubation will be very slow — consider a warmer spot.`);
     } else if (incubationTemp > 28) {
-      tips.push(`🌡️ Room is warm (${incubationTemp}°C). Mesophilic cultures may ferment too quickly above 28°C — off-flavours can develop. Consider a cooler spot.`);
+      tips.push(`🌡️ Room is warm (${t}). Mesophilic cultures may ferment too quickly above ${formatTemp(28, unitSystem, 0)} — off-flavours can develop. Consider a cooler spot.`);
     } else {
-      tips.push(`✅ Room temperature (${incubationTemp}°C) is ideal for mesophilic cultures. No equipment needed — just leave it on the counter.`);
+      tips.push(`✅ Room temperature (${t}) is ideal for mesophilic cultures. No equipment needed — just leave it on the counter.`);
     }
   }
 
   // Pre-heat advice
   if (preHeatEnabled) {
-    tips.push(`🥛 Pre-heating to ${PREHEAT_TEMP_C}°C for ${PREHEAT_MINUTES} min denatures whey proteins → noticeably thicker yogurt. Especially important for skimmed or semi-skimmed milk.`);
+    tips.push(`🥛 Pre-heating to ${formatTemp(PREHEAT_TEMP_C, unitSystem, 0)} for ${PREHEAT_MINUTES} min denatures whey proteins → noticeably thicker yogurt. Especially important for skimmed or semi-skimmed milk.`);
   } else if (milkFatLevel === 'skimmed' || milkFatLevel === 'semi-skimmed') {
-    tips.push('💡 Consider pre-heating your milk to 85°C for 30 min before cooling — denatures proteins for a thicker set with lower-fat milk.');
+    tips.push(`💡 Consider pre-heating your milk to ${formatTemp(PREHEAT_TEMP_C, unitSystem, 0)} for ${PREHEAT_MINUTES} min before cooling — denatures proteins for a thicker set with lower-fat milk.`);
   }
 
   // Milk fat advice
   if (milkFatLevel === 'skimmed') {
     tips.push('🥛 Skimmed milk produces thin yogurt. Add 2 tbsp skimmed milk powder per litre for body, or strain after incubation for Greek-style thickness.');
   } else if (milkFatLevel === 'whole') {
-    tips.push('🥛 Whole milk gives the creamiest result. The Duchy Organic unhomogenised milk has an especially good cream top — stir it in before heating.');
+    tips.push('🥛 Whole milk gives the creamiest result. Unhomogenised whole milk has an especially good cream top — stir it in before heating.');
   }
 
   // Thickness / straining

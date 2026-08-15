@@ -55,7 +55,7 @@ export default function TabLayout() {
             }}
           >
             <Tabs.Screen
-              name="index"
+              name="bread"
               options={{
                 title: 'Sourdough',
                 tabBarIcon: () => <TabEmoji emoji={TAB_ICONS.calculator} />,

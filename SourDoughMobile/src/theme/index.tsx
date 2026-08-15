@@ -140,28 +140,29 @@ export function AppThemeProvider({ children }: { children: React.ReactNode }) {
   const [themeMode, setThemeModeState] = useState<ThemeMode>('system');
   const [unitSystem, setUnitSystemState] = useState<UnitSystem>('metric');
 
-  // Load persisted preferences
+  // Load persisted preferences (storage failures are non-fatal — the
+  // in-memory defaults remain in effect)
   useEffect(() => {
     AsyncStorage.getItem(THEME_MODE_KEY).then((stored) => {
       if (stored === 'light' || stored === 'dark' || stored === 'system') {
         setThemeModeState(stored);
       }
-    });
+    }).catch(() => {});
     AsyncStorage.getItem(UNIT_SYSTEM_KEY).then((stored) => {
       if (stored === 'metric' || stored === 'imperial') {
         setUnitSystemState(stored);
       }
-    });
+    }).catch(() => {});
   }, []);
 
   const setThemeMode = useCallback((mode: ThemeMode) => {
     setThemeModeState(mode);
-    AsyncStorage.setItem(THEME_MODE_KEY, mode);
+    AsyncStorage.setItem(THEME_MODE_KEY, mode).catch(() => {});
   }, []);
 
   const setUnitSystem = useCallback((s: UnitSystem) => {
     setUnitSystemState(s);
-    AsyncStorage.setItem(UNIT_SYSTEM_KEY, s);
+    AsyncStorage.setItem(UNIT_SYSTEM_KEY, s).catch(() => {});
   }, []);
 
   const isDark = themeMode === 'system' ? systemScheme === 'dark' : themeMode === 'dark';

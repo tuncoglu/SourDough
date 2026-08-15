@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { RecipePreset } from '../models/types';
+import { RecipePreset, BreadType } from '../models/types';
 import { RECIPE_PRESETS } from '../data/recipePresets';
 import { useAppTheme } from '../theme';
 import { formatTemp } from '../lib/unitConversion';
@@ -31,27 +31,36 @@ export function useDailyRecommendation(ambientTempStr: string, breadType: string
     if (isNaN(amb)) return null;
     const ambDisplay = formatTemp(amb, unitSystem, 0);
 
+    // Look up presets defensively — a renamed/removed preset id must not
+    // crash the calculator screen.
+    const presetById = (id: BreadType): RecipePreset | null => {
+      const found = RECIPE_PRESETS.find((p) => p.id === id);
+      return found ?? RECIPE_PRESETS[0] ?? null;
+    };
+
     const hour = new Date().getHours();
-    let preset: RecipePreset;
+    let presetId: BreadType;
     let reason: string;
 
     if (amb < 19) {
-      preset = RECIPE_PRESETS.find((p) => p.id === 'classic-boule')!;
+      presetId = 'classic-boule';
       reason = `Cool ${ambDisplay} kitchen — perfect for a slow, flavourful ferment.`;
     } else if (amb >= 26) {
-      preset = RECIPE_PRESETS.find((p) => p.id === 'focaccia')!;
+      presetId = 'focaccia';
       reason = `Warm ${ambDisplay} — dough will ferment fast. A focaccia handles speed well.`;
     } else if (hour >= 16 && hour < 20) {
-      preset = RECIPE_PRESETS.find((p) => p.id === 'pita-naan')!;
+      presetId = 'pita-naan';
       reason = `Evening bake? Quick pita or naan — ready in time for dinner.`;
     } else if (hour >= 6 && hour < 11) {
-      preset = RECIPE_PRESETS.find((p) => p.id === 'classic-boule')!;
+      presetId = 'classic-boule';
       reason = `Morning start — you have all day for a classic sourdough boule.`;
     } else {
-      preset = RECIPE_PRESETS.find((p) => p.id === 'classic-boule')!;
+      presetId = 'classic-boule';
       reason = `${ambDisplay} ambient — a versatile day for sourdough.`;
     }
 
+    const preset = presetById(presetId);
+    if (!preset) return null;
     return { preset, reason };
   }, [ambientTempStr, breadType, dismissed, unitSystem]);
 

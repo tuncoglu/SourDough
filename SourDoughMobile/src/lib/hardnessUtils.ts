@@ -10,7 +10,7 @@ import { classifyHardness } from '../data/ukWaterHardness';
 /** Fallback hardness when neither geolocation nor manual override is available. */
 export const FALLBACK_HARDNESS: WaterHardness = {
   mgL: 120,
-  classification: 'moderately soft',
+  classification: classifyHardness(120), // 'slightly hard' on the DWI scale
   note: 'Unknown — assuming moderate',
   key: 'fallback',
 };

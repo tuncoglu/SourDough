@@ -62,6 +62,19 @@ describe('calculateFermentSalt', () => {
     expect(r.effectiveSalinity).toBeCloseTo(3.0, 1);
   });
 
+  it('dry method: cabbage brine-yield release (~55%) gives realistic salinity', () => {
+    const r = calculateFermentSalt(1000, 0, 2.0, 'dry', 'fine-sea', 92, 0.55);
+    // Released water = 1000 × 0.92 × 0.55 = 506g → brine 526g → ~3.8%
+    expect(r.totalBrineGrams).toBeCloseTo(526, 0);
+    expect(r.effectiveSalinity).toBeCloseTo(3.8, 1);
+  });
+
+  it('mash method: zero veg weight does not produce NaN salinity', () => {
+    const r = calculateFermentSalt(0, 0, 3.0, 'mash', 'fine-sea', 90);
+    expect(Number.isFinite(r.effectiveSalinity)).toBe(true);
+    expect(r.saltGrams).toBe(0);
+  });
+
   it('mash method: all veg water is available', () => {
     const r = calculateFermentSalt(500, 0, 3.0, 'mash', 'fine-sea', 90);
     // salt = 15g, total water = 500 * 0.9 = 450g
@@ -181,7 +194,7 @@ describe('buildLactoTimeline', () => {
     const timeline = buildLactoTimeline(7, 'brine');
     const last = timeline[timeline.length - 1];
     expect(last.day).toBe(7);
-    expect(last.label).toContain('Complete');
+    expect(last.label).toContain('Cold Storage');
   });
 
   it('includes Day 1 lag phase for ferments >= 1 day', () => {
@@ -279,6 +292,33 @@ describe('computeFermentTemp', () => {
     expect(r.source).toBe('forecast');
   });
 
+  it('integrates the Q10 rate curve instead of a biased arithmetic mean', () => {
+    // 12h at 10°C + 12h at 34°C: arithmetic mean is 22°C, but the
+    // integrated rate is (2.5^−1.2 + 2.5^1.2)/2 ≈ 1.67 → ~27.7°C effective.
+    // Start at local midnight so all 24 points fall inside one local day.
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const forecast: HourlyPoint[] = Array.from({ length: 24 }, (_, i) => ({
+      datetime: new Date(start.getTime() + i * 3600000).toISOString(),
+      tempC: i < 12 ? 10 : 34,
+    }));
+    const r = computeFermentTemp(forecast, null, 1);
+    expect(r.effectiveTemp).toBeCloseTo(27.7, 0);
+    expect(r.source).toBe('forecast');
+  });
+
+  it('skips malformed datetimes instead of crashing', () => {
+    const now = new Date();
+    now.setMinutes(0, 0, 0);
+    const forecast: HourlyPoint[] = [
+      { datetime: 'not-a-date', tempC: 20 },
+      { datetime: new Date(now.getTime() + 3600000).toISOString(), tempC: 22 },
+    ];
+    const r = computeFermentTemp(forecast, null, 1);
+    expect(r.effectiveTemp).toBe(22);
+    expect(r.source).toBe('forecast');
+  });
+
   it('returns daily summaries', () => {
     const forecast = makeForecast(48, 22);
     const r = computeFermentTemp(forecast, null, 2);
@@ -296,9 +336,9 @@ describe('computeFermentTemp', () => {
 // ── estimateWaterForJar ───────────────────────────────────────────────────
 
 describe('estimateWaterForJar', () => {
-  it('computes remaining volume after veg and headspace', () => {
+  it('computes remaining volume after veg and headspace (veg ≈ 0.9 g/ml)', () => {
     const water = estimateWaterForJar(1000, 600, 50);
-    expect(water).toBe(350);
+    expect(water).toBe(283); // 1000 − 600/0.9 − 50
   });
 
   it('returns 0 when veg fills the jar', () => {

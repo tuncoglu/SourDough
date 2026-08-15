@@ -116,9 +116,13 @@ export function useStarterTracker(): StarterTrackerState & StarterTrackerActions
       return;
     }
     const fridgeAt = new Date().toISOString();
-    await updateFeeding(lastFed.id, { fridgeAt });
-    const updated = { ...lastFed, fridgeAt };
-    setLastFed(updated);
+    try {
+      await updateFeeding(lastFed.id, { fridgeAt });
+      const updated = { ...lastFed, fridgeAt };
+      setLastFed(updated);
+    } catch {
+      alert('Error', 'Could not save fridge time. Please try again.', 'error');
+    }
   }, [lastFed]);
 
   const handleFridgeOut = useCallback(async () => {
@@ -132,14 +136,20 @@ export function useStarterTracker(): StarterTrackerState & StarterTrackerActions
       return;
     }
     const outOfFridgeAt = new Date().toISOString();
-    await updateFeeding(lastFed.id, { outOfFridgeAt });
-    const updated = { ...lastFed, outOfFridgeAt };
-    setLastFed(updated);
+    try {
+      await updateFeeding(lastFed.id, { outOfFridgeAt });
+      const updated = { ...lastFed, outOfFridgeAt };
+      setLastFed(updated);
+    } catch {
+      alert('Error', 'Could not save fridge time. Please try again.', 'error');
+    }
   }, [lastFed]);
 
   // Load persisted preferences on mount
   useEffect(() => {
-    getStarterFlour().then(setStarterFlourLabelState);
+    getStarterFlour().then(setStarterFlourLabelState).catch(() => {
+      // Keep the default label if storage is unavailable
+    });
     refresh();
   }, [refresh]);
 
@@ -159,6 +169,13 @@ export function useStarterTracker(): StarterTrackerState & StarterTrackerActions
   // tab is focused (expo-router keeps all tabs mounted, so an unfocused
   // calculator would otherwise re-render the app every minute).
   const isFocused = useIsFocused();
+
+  // Re-focus refresh: re-read feedings immediately so "hours since" is
+  // not up to a minute stale after switching back to this tab
+  useEffect(() => {
+    if (isFocused) refresh();
+  }, [isFocused, refresh]);
+
   useEffect(() => {
     if (appState !== 'active' || !lastFed || !isFocused) return;
     const t = setInterval(() => {

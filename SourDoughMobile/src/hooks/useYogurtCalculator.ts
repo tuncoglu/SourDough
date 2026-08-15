@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   YogurtType,
   YogurtCultureType,
@@ -24,6 +24,7 @@ import { computeFermentTemp, DailyTempSummary, FermentTempResult } from '../lib/
 import { useLocation } from './useLocation';
 import { useStaleResults, dirtySetter } from './useStaleResults';
 import type { LocationData } from '../lib/location';
+import { useAppTheme } from '../theme';
 
 export interface YogurtCalculatorState {
   // Inputs
@@ -96,15 +97,33 @@ export function useYogurtCalculator(): YogurtCalculatorState {
   const [preHeatEnabled, setPreHeatEnabled] = useState(true);
   const [showResults, setShowResults] = useState(false);
 
+  // Track manual edits so auto-derived starter amounts don't overwrite
+  // values the user deliberately set (milk-volume changes would otherwise
+  // silently rewrite them).
+  const sachetTouchedRef = useRef(false);
+  const prevBatchTouchedRef = useRef(false);
+
   const [results, setResults] = useState<YogurtResults | null>(null);
   const [timeline, setTimeline] = useState<YogurtStepPoint[]>([]);
   const [advice, setAdvice] = useState<string[]>([]);
   const [nutrition, setNutrition] = useState<{ fatPct: number; proteinPct: number } | null>(null);
   const { validationError, setValidationError, inputsDirty, markInputsChanged, markCalculated } = useStaleResults();
 
+  const wrappedSetSachetCount = useCallback((v: string) => {
+    sachetTouchedRef.current = true;
+    markInputsChanged();
+    setSachetCount(v);
+  }, [markInputsChanged]);
+  const wrappedSetPreviousBatchGrams = useCallback((v: string) => {
+    prevBatchTouchedRef.current = true;
+    markInputsChanged();
+    setPreviousBatchGrams(v);
+  }, [markInputsChanged]);
+
   // Derived
   const milk = useMemo(() => findMilk(milkId), [milkId]);
   const preset = YOGURT_CULTURES[yogurtType]!;
+  const { unitSystem } = useAppTheme();
   const cultureType = preset.type;
   const thickness = preset.thickness;
 
@@ -119,8 +138,9 @@ export function useYogurtCalculator(): YogurtCalculatorState {
       locationData?.hourlyForecast ?? null,
       locationData?.ambientTemp ?? null,
       roughDays,
+      unitSystem,
     );
-  }, [locationData]);
+  }, [locationData, unitSystem]);
 
   const effectiveTemp = tempResult.effectiveTemp;
   const dailyTemps = tempResult.dailyTemps;
@@ -131,11 +151,20 @@ export function useYogurtCalculator(): YogurtCalculatorState {
     setYogurtType(type);
     setShowResults(false);
     setStarterSource('sachet');
+    // Preset selection is programmatic — reset the manual-edit flags
+    sachetTouchedRef.current = false;
+    prevBatchTouchedRef.current = false;
     setSachetCount(String(calculateSachets(p.typicalMilkLitres, p.starterRatio)));
     setPreviousBatchGrams(String(p.typicalMilkLitres * 30)); // 30g per litre
     setMilkLitres(String(p.typicalMilkLitres));
     // Enable pre-heat by default for thermophilic, disable for mesophilic
     setPreHeatEnabled(p.type === 'thermophilic');
+    // Vegan culture requires plant milk; switch back to cow when leaving it
+    if (type === 'vegan-soya') {
+      setMilkId('soya');
+    } else {
+      setMilkId((prev) => (prev === 'soya' ? 'cow-whole' : prev));
+    }
   }, []);
 
   // When milk changes
@@ -144,24 +173,33 @@ export function useYogurtCalculator(): YogurtCalculatorState {
     setShowResults(false);
   }, []);
 
-  // Auto-update sachet count / previous-batch grams when milk volume changes
+  // Auto-update sachet count / previous-batch grams when milk volume
+  // changes — but only for fields the user hasn't hand-edited.
   useEffect(() => {
     const litres = parseFloat(milkLitres) || 0;
     if (litres > 0 && preset) {
-      setSachetCount(String(calculateSachets(litres, preset.starterRatio)));
-      setPreviousBatchGrams(String(litres * 30)); // 30g per litre (≈2 tbsp/L)
+      if (!sachetTouchedRef.current) {
+        setSachetCount(String(calculateSachets(litres, preset.starterRatio)));
+      }
+      if (!prevBatchTouchedRef.current) {
+        setPreviousBatchGrams(String(litres * 30)); // 30g per litre (≈2 tbsp/L)
+      }
     }
   }, [milkLitres, preset]);
 
   const calculate = useCallback(() => {
     const litres = parseFloat(milkLitres) || 0;
-    const sachets = parseInt(sachetCount) || 1;
+    const sachets = parseInt(sachetCount) || 0;
     const temp = cultureType === 'thermophilic'
       ? preset.typicalTempC
       : effectiveTemp; // mesophilic uses ambient temp
 
     if (litres <= 0) {
       setValidationError('Enter the amount of milk before calculating.');
+      return;
+    }
+    if (starterSource === 'sachet' && sachets <= 0) {
+      setValidationError('Enter the number of starter sachets before calculating.');
       return;
     }
 
@@ -191,7 +229,7 @@ export function useYogurtCalculator(): YogurtCalculatorState {
       finalTemp = accurateTemp.effectiveTemp;
 
       // Recalculate with accurate temp
-      const incubation = estimateIncubation(finalTemp, cultureType, preset.typicalHours);
+      const incubation = estimateIncubation(finalTemp, cultureType, preset.typicalHours, preset.tempMaxC);
       const yield_ = estimateYield(litres, preset.thickness);
 
       const finalResults: YogurtResults = {
@@ -208,14 +246,14 @@ export function useYogurtCalculator(): YogurtCalculatorState {
       };
 
       setResults(finalResults);
-      setTimeline(buildYogurtTimeline(finalResults.incubationHours, cultureType, preset.thickness, preHeatEnabled, starterSource, finalResults.previousBatchGrams));
-      setAdvice(yogurtAdvice(cultureType, finalTemp, milk.fatLevel, preHeatEnabled, preset.thickness, finalResults.incubationHours));
+      setTimeline(buildYogurtTimeline(finalResults.incubationHours, cultureType, preset.thickness, preHeatEnabled, starterSource, finalResults.previousBatchGrams, unitSystem));
+      setAdvice(yogurtAdvice(cultureType, finalTemp, milk.fatLevel, preHeatEnabled, preset.thickness, finalResults.incubationHours, unitSystem));
       setNutrition(calculateYogurtNutrition(milk, preset.thickness));
     } else {
       // Thermophilic — use preset temp directly
       setResults(baseResults);
-      setTimeline(buildYogurtTimeline(baseResults.incubationHours, cultureType, preset.thickness, preHeatEnabled, starterSource, baseResults.previousBatchGrams));
-      setAdvice(yogurtAdvice(cultureType, temp, milk.fatLevel, preHeatEnabled, preset.thickness, baseResults.incubationHours));
+      setTimeline(buildYogurtTimeline(baseResults.incubationHours, cultureType, preset.thickness, preHeatEnabled, starterSource, baseResults.previousBatchGrams, unitSystem));
+      setAdvice(yogurtAdvice(cultureType, temp, milk.fatLevel, preHeatEnabled, preset.thickness, baseResults.incubationHours, unitSystem));
       setNutrition(calculateYogurtNutrition(milk, preset.thickness));
     }
 
@@ -262,9 +300,9 @@ export function useYogurtCalculator(): YogurtCalculatorState {
     // Manual input setters: invalidate previous results so the stale banner
     // appears (preset/milk selection already resets showResults directly).
     setMilkLitres: dirtySetter(markInputsChanged, setMilkLitres),
-    setSachetCount: dirtySetter(markInputsChanged, setSachetCount),
+    setSachetCount: wrappedSetSachetCount,
     setStarterSource: dirtySetter(markInputsChanged, setStarterSource),
-    setPreviousBatchGrams: dirtySetter(markInputsChanged, setPreviousBatchGrams),
+    setPreviousBatchGrams: wrappedSetPreviousBatchGrams,
     setPreHeatEnabled: dirtySetter(markInputsChanged, setPreHeatEnabled),
     calculate,
   };

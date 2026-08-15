@@ -10,6 +10,7 @@ import { runAllCalculations } from '../lib/calculations';
 import { getBlendProtein, buildFlourTypeLabel, buildPrefermentConfig } from '../lib/blendUtils';
 import { resolveHardness } from '../lib/hardnessUtils';
 import { useFeedback } from '../lib/feedback';
+import { useAppTheme } from '../theme';
 import type { LocationData } from '../lib/location';
 
 interface CalculateParams {
@@ -43,6 +44,7 @@ export function useRecipeCalculation() {
   const scrollRef = useRef<ScrollView>(null);
   const rightScrollRef = useRef<ScrollView>(null);
   const { alert } = useFeedback();
+  const { unitSystem } = useAppTheme();
 
   const doCalculate = useCallback((params: CalculateParams, isDesktop: boolean) => {
     const {
@@ -76,6 +78,14 @@ export function useRecipeCalculation() {
     }
     if ([wg, sw, slt, amb, flr, wat, sta, shyd].some(isNaN)) {
       alert('Invalid input', 'All fields must be numbers.', 'error');
+      return;
+    }
+    if (wg <= 0) {
+      alert('Invalid input', 'Water must be greater than 0 g.', 'error');
+      return;
+    }
+    if (sw <= 0) {
+      alert('Invalid input', 'Starter weight must be greater than 0 g.', 'error');
       return;
     }
 
@@ -152,6 +162,7 @@ export function useRecipeCalculation() {
       locationData?.hourlyForecast ?? null,
       hardness,
       warnings,
+      unitSystem,
     );
 
     setResults(res);

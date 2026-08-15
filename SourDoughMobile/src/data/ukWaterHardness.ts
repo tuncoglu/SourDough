@@ -288,11 +288,18 @@ export function lookupUkPostcodeHardness(postcode: string): HardnessEntry {
   return [180, "moderately hard", "UK fallback — unable to match postcode area"];
 }
 
+/**
+ * Classify water hardness on the UK DWI scale — the single source of truth
+ * for classification labels everywhere (postcode lookups, country table,
+ * manual override). Regional data notes may add nuance; the label itself
+ * always comes from here so the same mg/L value can never be described
+ * two different ways.
+ */
 export function classifyHardness(mgL: number): string {
-  if (mgL < 30) return "very soft";
-  if (mgL < 60) return "soft";
-  if (mgL <= 120) return "moderately soft";
-  if (mgL < 200) return "moderately hard";
-  if (mgL < 300) return "hard";
+  if (mgL <= 50) return "soft";
+  if (mgL <= 100) return "moderately soft";
+  if (mgL <= 150) return "slightly hard";
+  if (mgL <= 200) return "moderately hard";
+  if (mgL <= 300) return "hard";
   return "very hard";
 }

@@ -195,7 +195,7 @@ export async function geocodePostcode(
   );
   const url = `${NOMINATIM_BASE}/search?q=${query}&format=json&limit=1`;
   const data = await nominatimGet(url);
-  if (!data || data.length === 0) return null;
+  if (!data || !Array.isArray(data) || data.length === 0) return null;
 
   const r = data[0];
   const addr = r.address || {};

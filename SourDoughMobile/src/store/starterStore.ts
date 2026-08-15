@@ -18,16 +18,26 @@ export async function loadFeedings(): Promise<StarterFeeding[]> {
   }
 }
 
+// Serialize read-modify-write cycles (see recipeStore for rationale).
+let writeQueue: Promise<unknown> = Promise.resolve();
+function serialized<T>(op: () => Promise<T>): Promise<T> {
+  const run = writeQueue.then(op, op);
+  writeQueue = run.then(() => undefined, () => undefined);
+  return run;
+}
+
 /** Log a new feeding */
-export async function logFeeding(feeding: StarterFeeding): Promise<void> {
-  try {
-    const feedings = await loadFeedings();
-    feedings.unshift(feeding);
-    await AsyncStorage.setItem(FEEDINGS_KEY, JSON.stringify(feedings.slice(0, 500)));
-  } catch (err) {
-    console.error('logFeeding: failed to persist feeding', err);
-    throw err; // re-throw so callers can show feedback
-  }
+export function logFeeding(feeding: StarterFeeding): Promise<void> {
+  return serialized(async () => {
+    try {
+      const feedings = await loadFeedings();
+      feedings.unshift(feeding);
+      await AsyncStorage.setItem(FEEDINGS_KEY, JSON.stringify(feedings.slice(0, 500)));
+    } catch (err) {
+      console.error('logFeeding: failed to persist feeding', err);
+      throw err; // re-throw so callers can show feedback
+    }
+  });
 }
 
 /** Get the most recent feeding, or null */
@@ -37,12 +47,14 @@ export async function getLastFeeding(): Promise<StarterFeeding | null> {
 }
 
 /** Update an existing feeding by id (merges fields). */
-export async function updateFeeding(id: string, patch: Partial<StarterFeeding>): Promise<void> {
-  const feedings = await loadFeedings();
-  const idx = feedings.findIndex((f) => f.id === id);
-  if (idx === -1) return;
-  feedings[idx] = { ...feedings[idx], ...patch };
-  await AsyncStorage.setItem(FEEDINGS_KEY, JSON.stringify(feedings));
+export function updateFeeding(id: string, patch: Partial<StarterFeeding>): Promise<void> {
+  return serialized(async () => {
+    const feedings = await loadFeedings();
+    const idx = feedings.findIndex((f) => f.id === id);
+    if (idx === -1) return;
+    feedings[idx] = { ...feedings[idx], ...patch };
+    await AsyncStorage.setItem(FEEDINGS_KEY, JSON.stringify(feedings));
+  });
 }
 
 /** Generate a unique feeding ID */

@@ -236,6 +236,20 @@ export const CATEGORY_COLORS: Record<FlourCategory, string> = {
   'Generic': '#BFB5AD',
 };
 
+/**
+ * Pick a readable text colour (near-black or white) for text drawn on a
+ * solid hex background, based on relative luminance. Used by the flour
+ * blend bar so labels stay legible on every category colour in both themes.
+ */
+export function readableTextColor(hex: string): string {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16) || 0;
+  const g = parseInt(h.slice(2, 4), 16) || 0;
+  const b = parseInt(h.slice(4, 6), 16) || 0;
+  const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+  return luminance > 150 ? '#3A2C1F' : '#FFFFFF';
+}
+
 // ── Pre-ferment Helpers ─────────────────────────────────────────────────
 
 export const POOLISH_HYDRATION = 100;

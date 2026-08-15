@@ -151,7 +151,10 @@ export function useCalculatorInputs(): CalculatorInputs {
     });
   }, [nextMixKey]);
 
-  // Reload settings on focus (for water hardness override)
+  // Reload settings on focus. The calculator stays mounted behind the
+  // settings tab, so changed defaults (flour, water, salt, starter
+  // hydration, hardness override) are re-applied here — otherwise the
+  // "New defaults will apply" toast would be a lie until app restart.
   const didMountRef = useRef(false);
   useFocusEffect(
     useCallback(() => {
@@ -160,11 +163,24 @@ export function useCalculatorInputs(): CalculatorInputs {
         return;
       }
       getSettings().then((s) => {
-        if (s.waterHardnessOverride !== settings.waterHardnessOverride) {
-          setSettings(s);
+        const defaultsChanged =
+          s.defaultFlourType !== settings.defaultFlourType ||
+          s.defaultFlourWeight !== settings.defaultFlourWeight ||
+          s.defaultWaterGrams !== settings.defaultWaterGrams ||
+          s.defaultSaltPct !== settings.defaultSaltPct ||
+          s.defaultStarterHydration !== settings.defaultStarterHydration ||
+          s.waterHardnessOverride !== settings.waterHardnessOverride;
+        if (!defaultsChanged) return;
+        setSettings(s);
+        // Only re-apply values the user hasn't touched in this session
+        if (!userInteractedRef.current) {
+          setMixRows([{ key: nextMixKey(), flour: findFlour(s.defaultFlourType), grams: String(s.defaultFlourWeight) }]);
+          setWaterGrams(String(s.defaultWaterGrams));
+          setSaltPct(String(s.defaultSaltPct));
+          setStarterHydrationStr(String(s.defaultStarterHydration));
         }
       });
-    }, [settings.waterHardnessOverride]),
+    }, [settings, nextMixKey]),
   );
 
   // Pre-fill temps when location detected — only once, don't overwrite user edits

@@ -40,10 +40,17 @@ export function tempUnit(system: UnitSystem): string {
   return system === 'imperial' ? '°F' : '°C';
 }
 
+/** Resolve display decimals: small ounce values (< 1 oz) need ≥ 2 places
+ *  or they render as "0 oz" (e.g. 10 g of salt = 0.35 oz). */
+function imperialDecimals(oz: number, decimals: number): number {
+  return oz > 0 && oz < 1 ? Math.max(decimals, 2) : decimals;
+}
+
 /** Format a weight for display, converting to imperial if needed. */
 export function formatWeight(grams: number, system: UnitSystem, decimals = 1): string {
   if (system === 'imperial') {
-    return `${gramsToOz(grams).toFixed(decimals)} oz`;
+    const oz = gramsToOz(grams);
+    return `${oz.toFixed(imperialDecimals(oz, decimals))} oz`;
   }
   return `${grams.toFixed(decimals)} g`;
 }
@@ -51,7 +58,8 @@ export function formatWeight(grams: number, system: UnitSystem, decimals = 1): s
 /** Format a weight without the unit suffix (for tables where the unit is a separate column). */
 export function formatWeightValue(grams: number, system: UnitSystem, decimals = 1): string {
   if (system === 'imperial') {
-    return gramsToOz(grams).toFixed(decimals);
+    const oz = gramsToOz(grams);
+    return oz.toFixed(imperialDecimals(oz, decimals));
   }
   return grams.toFixed(decimals);
 }

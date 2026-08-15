@@ -41,14 +41,21 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
   const unitSystemRef = useRef(unitSystem);
   unitSystemRef.current = unitSystem;
 
+  // Monotonic request id — a slow GPS/weather response must not clobber a
+  // newer postcode refinement (or vice versa).
+  const requestIdRef = useRef(0);
+
   const detect = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     setError(null);
     try {
       const { status } = await ExpoLocation.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        setError('Location permission denied. Enter temps manually.');
-        setLoading(false);
+        if (requestId === requestIdRef.current) {
+          setError('Location permission denied. Enter temps manually.');
+          setLoading(false);
+        }
         return;
       }
 
@@ -64,24 +71,32 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
         unitSystemRef.current,
       );
 
+      if (requestId !== requestIdRef.current) return; // stale — ignore
+
       if (result) {
         setData(result);
       } else {
         setError('Could not resolve location. Enter temps manually.');
       }
     } catch (e: unknown) {
-      setError(getErrorMessage(e) || 'Location detection failed.');
+      if (requestId === requestIdRef.current) {
+        setError(getErrorMessage(e) || 'Location detection failed.');
+      }
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) {
+        setLoading(false);
+      }
     }
   }, []);
 
   const refineWithPostcode = useCallback(async (pc: string, countryCode: string = '') => {
+    const requestId = ++requestIdRef.current;
     setLoading(true);
     setError(null);
     setPostcode(pc);
     try {
       const loc = await geocodePostcode(pc, countryCode);
+      if (requestId !== requestIdRef.current) return;
       if (!loc) {
         setError('Could not geocode that postcode.');
         setLoading(false);
@@ -89,15 +104,21 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
       }
 
       const result = await detectAll(loc.lat, loc.lon, pc, null, unitSystemRef.current);
+      if (requestId !== requestIdRef.current) return;
+
       if (result) {
         setData(result);
       } else {
         setError('Could not fetch weather for that location.');
       }
     } catch (e: unknown) {
-      setError(getErrorMessage(e) || 'Postcode lookup failed.');
+      if (requestId === requestIdRef.current) {
+        setError(getErrorMessage(e) || 'Postcode lookup failed.');
+      }
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) {
+        setLoading(false);
+      }
     }
   }, []);
 

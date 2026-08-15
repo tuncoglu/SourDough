@@ -21,7 +21,7 @@ const CARDS: LandingCard[] = [
     title: 'Sourdough Bread',
     description:
       'Recipe builder with flour blends, hydration targets, and temperature-adjusted fermentation timelines.',
-    route: '/(tabs)',
+    route: '/bread',
   },
   {
     emoji: '🥛',

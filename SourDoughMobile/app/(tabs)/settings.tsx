@@ -43,9 +43,13 @@ export default function SettingsScreen() {
       ...settings,
       defaultFlourType: flourLabel,
     };
-    await updateSettings(updated);
-    setSettings(updated);
-    showToast('Settings saved. New defaults will apply to new calculations.', 'success');
+    try {
+      await updateSettings(updated);
+      setSettings(updated);
+      showToast('Settings saved. New defaults will apply to new calculations.', 'success');
+    } catch {
+      showToast('Could not save settings — storage error.', 'error');
+    }
   };
 
   const handleReset = async () => {
@@ -56,10 +60,14 @@ export default function SettingsScreen() {
       destructive: true,
     });
     if (!ok) return;
-    await updateSettings(DEFAULT_SETTINGS);
-    setSettings(DEFAULT_SETTINGS);
-    setFlourLabel(DEFAULT_SETTINGS.defaultFlourType);
-    showToast('Settings reset to defaults.', 'success');
+    try {
+      await updateSettings(DEFAULT_SETTINGS);
+      setSettings(DEFAULT_SETTINGS);
+      setFlourLabel(DEFAULT_SETTINGS.defaultFlourType);
+      showToast('Settings reset to defaults.', 'success');
+    } catch {
+      showToast('Could not reset settings — storage error.', 'error');
+    }
   };
 
   if (loading) {
@@ -83,7 +91,7 @@ export default function SettingsScreen() {
         </Text>
 
         <NumberInput
-          label="Flour weight"
+          label="Flour weight (g)"
           value={String(settings.defaultFlourWeight)}
           onChangeText={(v) => {
             const n = parseFloat(v);
@@ -101,7 +109,7 @@ export default function SettingsScreen() {
         </View>
 
         <NumberInput
-          label="Water"
+          label="Water (g)"
           value={String(settings.defaultWaterGrams)}
           onChangeText={(v) => {
             const n = parseFloat(v);
@@ -111,7 +119,7 @@ export default function SettingsScreen() {
         />
 
         <NumberInput
-          label="Salt"
+          label="Salt (%)"
           value={String(settings.defaultSaltPct)}
           onChangeText={(v) => {
             const n = parseFloat(v);
@@ -121,7 +129,7 @@ export default function SettingsScreen() {
         />
 
         <NumberInput
-          label="Starter hyd."
+          label="Starter hydration %"
           value={String(settings.defaultStarterHydration)}
           onChangeText={(v) => {
             const n = parseFloat(v);
@@ -168,6 +176,9 @@ export default function SettingsScreen() {
               ]}
               onPress={() => setThemeMode(opt.key)}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityState={{ selected: themeMode === opt.key }}
+              accessibilityLabel={`Theme: ${opt.label}`}
             >
               <Text
                 style={[
@@ -195,6 +206,9 @@ export default function SettingsScreen() {
               ]}
               onPress={() => setUnitSystem(opt)}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityState={{ selected: unitSystem === opt }}
+              accessibilityLabel={`Units: ${opt === 'metric' ? 'metric' : 'imperial'}`}
             >
               <Text
                 style={[

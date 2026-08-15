@@ -31,8 +31,17 @@ export function FermentationTimeline({
   const now = new Date();
   const fermentHours = dynamic?.bulkHours ?? staticHours;
   const totalFermentHours = dynamic?.totalHours ?? staticHours;
-  const proofHours = fermentHours * PROOF_FRACTION;
-  const totalProcessHours = computeProcessHours(fermentHours, preset);
+  // The post-bulk phase actually modelled: with cold proof enabled the
+  // dynamic totalHours already includes the fridge hold, so use that
+  // instead of the default 0.6× warm-proof heuristic.
+  const proofHours = dynamic
+    ? Math.max(0, dynamic.totalHours - dynamic.bulkHours)
+    : fermentHours * PROOF_FRACTION;
+  const isColdProof =
+    dynamic != null &&
+    Math.abs(proofHours - fermentHours * PROOF_FRACTION) > 0.26;
+  const proofLabel = isColdProof ? 'cold proof' : 'proof';
+  const totalProcessHours = computeProcessHours(fermentHours, preset, proofHours);
 
   const readyTime = new Date(now.getTime() + totalProcessHours * 3600000);
 
@@ -52,11 +61,11 @@ export function FermentationTimeline({
               </Text>
             </View>
             <Text style={[styles.breakdown, { color: colors.muted }]}>
-              Bulk ~{fermentHours.toFixed(1)}h + proof ~{proofHours.toFixed(1)}h
+              Bulk ~{fermentHours.toFixed(1)}h + {proofLabel} ~{proofHours.toFixed(1)}h
             </Text>
             {preset && preset.id !== 'custom' && (
               <Text style={[styles.breakdown, { color: colors.muted }]}>
-                Full process ~{totalProcessHours.toFixed(1)}h: autolyse {preset.process.autolyseMinutes}min + bulk ~{fermentHours.toFixed(1)}h + proof ~{proofHours.toFixed(1)}h + bench/shape/bake
+                Full process ~{totalProcessHours.toFixed(1)}h: autolyse {preset.process.autolyseMinutes}min + bulk ~{fermentHours.toFixed(1)}h + {proofLabel} ~{proofHours.toFixed(1)}h + bench/shape/bake
               </Text>
             )}
             <Text style={[styles.meta, { color: colors.muted }]}>
@@ -72,11 +81,11 @@ export function FermentationTimeline({
               </Text>
             </View>
             <Text style={[styles.breakdown, { color: colors.muted }]}>
-              Bulk ~{fermentHours.toFixed(1)}h + proof ~{proofHours.toFixed(1)}h
+              Bulk ~{fermentHours.toFixed(1)}h + {proofLabel} ~{proofHours.toFixed(1)}h
             </Text>
             {preset && preset.id !== 'custom' && (
               <Text style={[styles.breakdown, { color: colors.muted }]}>
-                Full process ~{totalProcessHours.toFixed(1)}h: autolyse {preset.process.autolyseMinutes}min + bulk ~{fermentHours.toFixed(1)}h + proof ~{proofHours.toFixed(1)}h + bench/shape/bake
+                Full process ~{totalProcessHours.toFixed(1)}h: autolyse {preset.process.autolyseMinutes}min + bulk ~{fermentHours.toFixed(1)}h + {proofLabel} ~{proofHours.toFixed(1)}h + bench/shape/bake
               </Text>
             )}
             <Text style={[styles.meta, { color: colors.muted }]}>{staticNote}</Text>

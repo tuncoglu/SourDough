@@ -18,6 +18,8 @@ import { useStaleResults, dirtySetter } from './useStaleResults';
 import { isValidDecimalInput } from '../lib/inputValidation';
 import { getSettings } from '../store/settingsCache';
 import { classifyHardness } from '../data/ukWaterHardness';
+import { FALLBACK_HARDNESS } from '../lib/hardnessUtils';
+import { useAppTheme } from '../theme';
 import type { LocationData } from '../lib/location';
 
 /** Which vegetable each preset defaults to. */
@@ -84,6 +86,7 @@ export interface LactoCalculatorState {
   selectPreset: (type: FermentType) => void;
   selectVeg: (id: string) => void;
   toggleVegInMix: (id: string) => void;
+  clearMix: () => void;
   updateMixGrams: (id: string, grams: string) => void;
   applyCombo: (combo: typeof VEG_COMBOS[number]) => void;
   setVegWeight: (v: string) => void;
@@ -95,6 +98,7 @@ export interface LactoCalculatorState {
 
 export function useLactoCalculator(): LactoCalculatorState {
   const { locationData, locLoading, locError, onRefreshLocation, onPostcodeSubmit } = useLocation();
+  const { unitSystem } = useAppTheme();
 
   const [fermentType, setFermentType] = useState<FermentType>('sauerkraut');
   const [vegId, setVegId] = useState('green-cabbage');
@@ -198,6 +202,14 @@ export function useLactoCalculator(): LactoCalculatorState {
     markInputsChanged();
   }, [markInputsChanged]);
 
+  /** Reset the multi-veg mix and return to the primary single-veg mode.
+   *  (Previously "Clear selection" looped toggleVegInMix, whose updater had
+   *  side effects and left the last veg selected.) */
+  const clearMix = useCallback(() => {
+    setVegMix([]);
+    setShowResults(false);
+  }, []);
+
   const applyCombo = useCallback((combo: typeof VEG_COMBOS[number]) => {
     setFermentType('custom');
     setVegId(combo.vegetables[0].vegId); // set primary veg
@@ -221,7 +233,7 @@ export function useLactoCalculator(): LactoCalculatorState {
       return { mgL: waterHardnessOverride, classification: classifyHardness(waterHardnessOverride), note: 'Manual override', key: 'manual' };
     }
     if (locationData?.hardness) return locationData.hardness;
-    return { mgL: 120, classification: 'moderately soft', note: 'Unknown — assuming moderate', key: 'fallback' };
+    return FALLBACK_HARDNESS;
   }, [waterHardnessOverride, locationData]);
 
   // Compute temperature from forecast in real time
@@ -232,8 +244,9 @@ export function useLactoCalculator(): LactoCalculatorState {
       locationData?.hourlyForecast ?? null,
       locationData?.ambientTemp ?? null,
       roughDays,
+      unitSystem,
     );
-  }, [locationData]);
+  }, [locationData, unitSystem]);
 
   const effectiveTemp = tempResult.effectiveTemp;
   const dailyTemps = tempResult.dailyTemps;
@@ -279,7 +292,7 @@ export function useLactoCalculator(): LactoCalculatorState {
   const calculate = useCallback(() => {
     const vegW = isMultiVeg ? totalMixGrams : (parseFloat(vegWeight) || 0);
     const waterW = parseFloat(waterAmount) || 0;
-    const salt = parseFloat(saltPct) || 2.0;
+    const salt = parseFloat(saltPct);
 
     if (vegW <= 0) {
       setValidationError(
@@ -291,6 +304,10 @@ export function useLactoCalculator(): LactoCalculatorState {
     }
     if (method === 'brine' && waterW <= 0) {
       setValidationError('Enter the amount of water for your brine.');
+      return;
+    }
+    if (Number.isNaN(salt) || salt <= 0) {
+      setValidationError('Enter a salt percentage greater than 0 before calculating.');
       return;
     }
 
@@ -316,6 +333,7 @@ export function useLactoCalculator(): LactoCalculatorState {
       locationData?.hourlyForecast ?? null,
       locationData?.ambientTemp ?? null,
       baseResults.estimatedDays,
+      unitSystem,
     );
     const temp = accurateTemp.effectiveTemp;
 
@@ -332,7 +350,7 @@ export function useLactoCalculator(): LactoCalculatorState {
 
     setResults(finalResults);
     setTimeline(buildLactoTimeline(finalResults.estimatedDays, method));
-    setAdvice(lactoAdvice(method, salt, temp, finalResults.estimatedDays));
+    setAdvice(lactoAdvice(method, salt, temp, finalResults.estimatedDays, unitSystem));
     setWaterAdvice(waterHardnessFermentAdvice(h));
     setShowResults(true);
     markCalculated();
@@ -373,6 +391,7 @@ export function useLactoCalculator(): LactoCalculatorState {
     inputsDirty,
     selectPreset,
     toggleVegInMix,
+    clearMix,
     updateMixGrams,
     applyCombo,
     VEG_COMBOS,

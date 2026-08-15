@@ -92,7 +92,7 @@ export function LactoScience({ vegResearchNote, presetHealthNote }: Props) {
 
           {/* Health evidence */}
           <Text style={[styles.subheading, { color: colors.terracotta }]}>
-            Health evidence (2024–2026)
+            Health evidence
           </Text>
           <Text style={[styles.text, { color: colors.muted }]}>
             • Kimchi: 11 clinical trials — reduced body weight, IBS symptoms,
@@ -103,10 +103,7 @@ export function LactoScience({ vegResearchNote, presetHealthNote }: Props) {
             biomarkers.{'\n'}
             • German sauerkraut crossover trial (2025): both live and
             pasteurised sauerkraut shifted the gut microbiome — postbiotics
-            (bacterial metabolites) may matter as much as live cultures.{'\n'}
-            • USDA pilot study (2026): establishing safety benchmarks for
-            fermented vegetables as dietary interventions (target: &gt;10⁷
-            CFU/g LAB, pH ≤3.5).
+            (bacterial metabolites) may matter as much as live cultures.
           </Text>
 
           {/* Vegetable-specific research */}
@@ -139,11 +136,9 @@ export function LactoScience({ vegResearchNote, presetHealthNote }: Props) {
           </Text>
           <Text style={[styles.text, { color: colors.lightText }]}>
             Wierzbicka & Janiszewska-Turak, Appl. Sci. (2024) · Valence et
-            al., Peer Community J. (2025) · Zeng et al., China Brewing
-            (2025) · Pihelgas et al., Front. Nutr. (2025) · Wei et al., Annu.
-            Rev. Food Sci. Technol. (2025) · Chen et al., Food Res. Int.
-            (2026) · Couderc et al., Food Microbiol. (2026) · Andreson et
-            al., Fermentation (2024)
+            al., Peer Community J. (2025) · Pihelgas et al., Front. Nutr.
+            (2025) · Wei et al. (2025), review of bioactive compounds in
+            lacto-fermented vegetables · Chen et al., Food Res. Int. (2026)
           </Text>
         </View>
       )}

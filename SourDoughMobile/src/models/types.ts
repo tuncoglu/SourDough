@@ -433,11 +433,10 @@ export type YogurtType =
   | 'caspian-sea'
   | 'filmjolk'
   | 'piima'
-  | 'viili'
-  | 'custom';
+  | 'viili';
 
-export type MilkSource = 'cow' | 'goat' | 'sheep';
-export type MilkFatLevel = 'whole' | 'semi-skimmed' | 'skimmed';
+export type MilkSource = 'cow' | 'goat' | 'sheep' | 'plant';
+export type MilkFatLevel = 'whole' | 'semi-skimmed' | 'skimmed' | 'plant';
 
 export interface MilkEntry {
   id: string;              // e.g. "cow-whole"

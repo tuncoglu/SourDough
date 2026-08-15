@@ -15,6 +15,8 @@ import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { buildSummary } from '../../src/lib/location';
 import { PROOF_FRACTION } from '../../src/lib/calculations';
 import { buildManualHardness } from '../../src/lib/hardnessUtils';
+import { formatTemp } from '../../src/lib/unitConversion';
+import { isValidDecimalInput } from '../../src/lib/inputValidation';
 import { getRecipe } from '../../src/store/recipeStore';
 import { findFlour } from '../../src/lib/flourSearch';
 import { getPreset } from '../../src/data/recipePresets';
@@ -190,14 +192,21 @@ export default function CalculatorScreen() {
       coldProofEnabled,
       coldProofHours,
       coldProofTemp,
+      editId: editRecipeId,
+    }).then((ok) => {
+      // Leave "edit" mode after a successful update so a second Save creates
+      // a new recipe instead of overwriting the original again.
+      if (ok && editRecipeId) {
+        router.setParams({ editRecipeId: undefined });
+      }
     });
-  }, [inputs, preset, starter.starterFlourLabel, calc.results, actions, coldProofEnabled, coldProofHours, coldProofTemp]);
+  }, [inputs, preset, starter.starterFlourLabel, calc.results, actions, coldProofEnabled, coldProofHours, coldProofTemp, editRecipeId, router]);
 
   // ── Share ─────────────────────────────────────────────────────────────
   const handleShare = useCallback(() => {
     if (!calc.results) return;
     const bakeInfo = preset.selectedPreset
-      ? `Bake at ${preset.selectedPreset.bake.ovenTempC}°C${preset.selectedPreset.bake.steamRequired ? ' with steam' : ''} in ${preset.selectedPreset.bake.bakingVessel} for ${preset.selectedPreset.bake.bakeTimeMinutes} min`
+      ? `Bake at ${formatTemp(preset.selectedPreset.bake.ovenTempC, unitSystem, 0)}${preset.selectedPreset.bake.steamRequired ? ' with steam' : ''} in ${preset.selectedPreset.bake.bakingVessel} for ${preset.selectedPreset.bake.bakeTimeMinutes} min`
       : undefined;
     actions.handleShare({
       blend: inputs.blend,
@@ -247,11 +256,16 @@ export default function CalculatorScreen() {
       totalMinutes += 5;
     }
 
-    // Cold proof: replace room-temp proof with longer fridge hold
+    // Cold proof: replace room-temp proof with longer fridge hold.
+    // Only subtract the room-temp proof if a preset actually added it
+    // (custom recipes never add it, so subtracting would start the
+    // schedule too early by 0.6× bulk).
     const cpHours = parseFloat(coldProofHours);
     const cpValid = coldProofEnabled && !isNaN(cpHours) && cpHours > 0;
     if (cpValid) {
-      totalMinutes -= fermentHours * PROOF_FRACTION * 60;
+      if (preset.selectedPreset) {
+        totalMinutes -= fermentHours * PROOF_FRACTION * 60;
+      }
       totalMinutes += cpHours * 60;
     }
     const totalHours = totalMinutes / 60;
@@ -383,7 +397,7 @@ export default function CalculatorScreen() {
               <TextInput
                 style={[prefStyles.input, { backgroundColor: colors.white, borderColor: colors.border, color: colors.espresso }]}
                 value={preset.prefermentFlourPct}
-                onChangeText={preset.setPrefermentFlourPct}
+                onChangeText={(t) => { if (isValidDecimalInput(t)) preset.setPrefermentFlourPct(t); }}
                 keyboardType="decimal-pad"
                 placeholderTextColor={colors.muted}
               />
@@ -513,7 +527,7 @@ export default function CalculatorScreen() {
             <TextInput
               style={[coldStyles.input, { backgroundColor: colors.white, borderColor: colors.border, color: colors.espresso }]}
               value={coldProofHours}
-              onChangeText={setColdProofHours}
+              onChangeText={(t) => { if (isValidDecimalInput(t)) setColdProofHours(t); }}
               keyboardType="decimal-pad"
               placeholder="12"
               placeholderTextColor={colors.lightText}
@@ -535,6 +549,8 @@ export default function CalculatorScreen() {
         waterTemp={inputs.waterTemp}
         starterTemp={inputs.starterTemp}
         isLocationAuto={!!inputs.locationData}
+        autoAmbientTemp={inputs.locationData?.ambientTemp != null ? String(inputs.locationData.ambientTemp) : null}
+        autoWaterTemp={inputs.locationData?.waterTemp != null ? String(inputs.locationData.waterTemp) : null}
         setAmbientTemp={inputs.setAmbientTemp}
         setFlourTemp={inputs.setFlourTemp}
         setWaterTemp={inputs.setWaterTemp}

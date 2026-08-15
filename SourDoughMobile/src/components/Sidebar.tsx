@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-nati
 import { useRouter, usePathname } from 'expo-router';
 import { Spacing, FontSize, BorderRadius, MaxWidth, useAppTheme } from '../theme';
 
-type AppRoute = '/' | '/yogurt' | '/ferments' | '/history' | '/settings' | '/about';
+type AppRoute = '/bread' | '/yogurt' | '/ferments' | '/history' | '/settings' | '/about';
 
 interface NavItem {
   path: AppRoute;
@@ -12,7 +12,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { path: '/', label: 'Sourdough', icon: '🥖' },
+  { path: '/bread', label: 'Sourdough', icon: '🥖' },
   { path: '/yogurt', label: 'Yogurt', icon: '🥛' },
   { path: '/ferments', label: 'Lacto-ferment', icon: '🫙' },
   { path: '/history', label: 'History', icon: '📋' },
@@ -26,8 +26,7 @@ export function Sidebar() {
   const { colors } = useAppTheme();
 
   const isActive = (path: AppRoute) => {
-    if (path === '/') return pathname === '/';
-    return pathname.startsWith(path);
+    return pathname === path || pathname.startsWith(path + '/');
   };
 
   return (

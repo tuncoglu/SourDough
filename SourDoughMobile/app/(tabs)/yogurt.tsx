@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import {
   View,
@@ -48,7 +48,7 @@ export default function YogurtScreen() {
           <Text style={[styles.heading, { color: colors.espresso }]}>🥖  Just Dough It</Text>
         </TouchableOpacity>
         <Text style={[styles.subtitle, { color: colors.muted }]}>
-          Perfect bread, less guesswork
+          Cultured at home, your way
         </Text>
       </View>
 
@@ -151,7 +151,9 @@ export default function YogurtScreen() {
           style={styles.chipScroll}
           contentContainerStyle={styles.chipRow}
         >
-          {MILK_TYPES.map((m) => (
+          {MILK_TYPES.filter((m) =>
+              calc.yogurtType === 'vegan-soya' ? m.source === 'plant' : m.source !== 'plant'
+            ).map((m) => (
               <Chip
                 key={m.id}
                 selected={calc.milkId === m.id}
@@ -236,7 +238,7 @@ export default function YogurtScreen() {
               />
               <View style={styles.hintRow}>
                 <Text style={[styles.hintText, { color: colors.lightText }]}>
-                  2 tbsp ≈ 30g per litre of milk. Use plain, unflavored yogurt.
+                  2 tbsp ≈ 30g per litre of milk. Use plain, unflavoured yogurt.
                 </Text>
               </View>
             </>
@@ -301,9 +303,18 @@ export default function YogurtScreen() {
     </View>
   );
 
+  const scrollRef = React.useRef<ScrollView>(null);
+
+  // Scroll to results when they first appear (mobile single-column layout)
+  useEffect(() => {
+    if (calc.showResults) {
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+    }
+  }, [calc.showResults]);
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.cream }]} edges={['top']}>
-      <CalculatorShell right={resultsPanel}>
+      <CalculatorShell right={resultsPanel} leftRef={scrollRef}>
         {inputPanels}
       </CalculatorShell>
     </SafeAreaView>

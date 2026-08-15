@@ -96,7 +96,25 @@ describe('estimateFermentation', () => {
   it('extends time when cold', () => {
     const { hours } = estimateFermentation(20, 20, 70, 'Generic: Bread Flour');
     expect(hours).toBeGreaterThan(4);
-    expect(hours).toBeCloseTo(7, 1); // ~3h extra per °C below baseline
+    // Exponential Q10 scaling: 2.5^(−0.6) ≈ 0.577 → ~0.6 h/°C near baseline
+    expect(hours).toBeCloseTo(7, 1);
+  });
+
+  it('lean doughs scale near-linearly, not by sqrt (Franco Manca 8%)', () => {
+    // 8% inoculation, 66% hydration at 22°C — empirically 16–18h.
+    // The blended model gives ~15h; the old sqrt model gave ~9.5h.
+    const { hours } = estimateFermentation(22, 8, 66, 'Generic: Bread Flour');
+    expect(hours).toBeGreaterThanOrEqual(13);
+    expect(hours).toBeLessThanOrEqual(18);
+  });
+
+  it('caps runaway acceleration above ~38°C', () => {
+    const at38 = estimateFermentation(38, 20, 70, 'Generic: Bread Flour');
+    const at45 = estimateFermentation(45, 20, 70, 'Generic: Bread Flour');
+    // Without a cap, pure Q10 would give ~1.4h at 45°C; the penalty keeps
+    // the estimate above the static floor and well above the raw curve.
+    expect(at45.hours).toBeGreaterThanOrEqual(1.5);
+    expect(at45.hours).toBeGreaterThan(at38.hours * 0.6);
   });
 
   it('shortens time when warm', () => {
@@ -170,6 +188,22 @@ describe('estimateDynamicFermentation', () => {
     const white = estimateDynamicFermentation(22, makeForecast(48, 22), 20, 70, 'Generic: Bread Flour');
     const rye = estimateDynamicFermentation(22, makeForecast(48, 22), 20, 70, 'Generic: Rye Flour');
     expect(rye!.totalHours).toBeLessThan(white!.totalHours);
+  });
+
+  it('zero inoculation returns a bounded estimate instead of dividing by zero', () => {
+    const result = estimateDynamicFermentation(26, makeForecast(48, 26), 0, 70, 'Generic: Bread Flour');
+    expect(result).not.toBeNull();
+    expect(result!.totalHours).toBeLessThanOrEqual(100);
+    // A 0% starter is a real input; the static model returns ~80h, the
+    // dynamic model hits its 100h window cap — both "very slow", no NaN.
+    const staticR = estimateFermentation(26, 0, 70, 'Generic: Bread Flour');
+    expect(staticR.hours).toBeCloseTo(80, 0);
+  });
+
+  it('agrees with the static model on lean doughs', () => {
+    const staticR = estimateFermentation(22, 8, 66, 'Generic: Bread Flour');
+    const dynamicR = estimateDynamicFermentation(22, makeForecast(48, 22), 8, 66, 'Generic: Bread Flour');
+    expect(dynamicR!.bulkHours).toBeCloseTo(staticR.hours, 0);
   });
 });
 

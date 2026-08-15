@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import {
   View,
@@ -26,11 +26,12 @@ import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyleLg } from '@/src
 import { FERMENT_TYPE_ORDER } from '@/src/data/fermentPresets';
 import { VEGETABLES, VEG_CATEGORIES } from '@/src/data/vegetables';
 import { FermentType, SALT_LABELS, SALT_TYPE_ORDER } from '@/src/models/types';
+import { gramsToOz, ozToGrams, formatWeight, weightUnit } from '@/src/lib/unitConversion';
 
 export default function FermentsScreen() {
   const router = useRouter();
   const calc = useLactoCalculator();
-  const { colors } = useAppTheme();
+  const { colors, unitSystem } = useAppTheme();
   const { isDesktop } = useBreakpoint();
 
   const handleCalculate = useCallback(() => {
@@ -47,7 +48,7 @@ export default function FermentsScreen() {
             <Text style={[styles.heading, { color: colors.espresso }]}>🥖  Just Dough It</Text>
           </TouchableOpacity>
           <Text style={[styles.subtitle, { color: colors.muted }]}>
-            Perfect bread, less guesswork
+            Live-culture ferments, by the jar
           </Text>
         </View>
 
@@ -176,8 +177,10 @@ export default function FermentsScreen() {
           {calc.isMultiVeg && (
             <TouchableOpacity
               style={styles.clearMixBtn}
-              onPress={() => { calc.vegMix.forEach(m => calc.toggleVegInMix(m.vegId)); }}
+              onPress={calc.clearMix}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Clear vegetable selection"
             >
               <Text style={[styles.clearMixText, { color: colors.terracotta }]}>Clear selection</Text>
             </TouchableOpacity>
@@ -194,18 +197,18 @@ export default function FermentsScreen() {
                 <Text style={[styles.mixWeightLabel, { color: colors.espresso }]} numberOfLines={1}>{m.veg.name}</Text>
                 <TextInput
                   style={[styles.mixWeightInput, { backgroundColor: colors.white, borderColor: colors.border, color: colors.espresso }]}
-                  value={m.grams}
-                  onChangeText={(t) => calc.updateMixGrams(m.vegId, t)}
+                  value={unitSystem === 'imperial' ? gramsToOz(parseFloat(m.grams) || 0).toFixed(1) : m.grams}
+                  onChangeText={(t) => calc.updateMixGrams(m.vegId, unitSystem === 'imperial' ? String(Math.round(ozToGrams(parseFloat(t) || 0) * 10) / 10) : t)}
                   keyboardType="decimal-pad"
                   selectTextOnFocus
-                  accessibilityLabel={`${m.veg.name} weight in grams`}
+                  accessibilityLabel={`${m.veg.name} weight in ${weightUnit(unitSystem)}`}
                 />
-                <Text style={[styles.mixWeightUnit, { color: colors.muted }]}>g</Text>
+                <Text style={[styles.mixWeightUnit, { color: colors.muted }]}>{weightUnit(unitSystem)}</Text>
               </View>
             ))}
             <View style={[styles.mixTotalRow, { borderTopColor: colors.border }]}>
               <Text style={[styles.mixTotalLabel, { color: colors.espresso }]}>Total weight</Text>
-              <Text style={[styles.mixTotalValue, { color: colors.terracotta }]}>{calc.totalMixGrams}g</Text>
+              <Text style={[styles.mixTotalValue, { color: colors.terracotta }]}>{formatWeight(calc.totalMixGrams, unitSystem, 0)}</Text>
             </View>
           </View>
         )}
@@ -242,8 +245,8 @@ export default function FermentsScreen() {
           <View style={styles.hintRow}>
             <Text style={[styles.hintText, { color: colors.lightText }]}>
               {calc.method === 'brine'
-                ? `Recommended ${calc.veg.typicalBrineSaltPct}% for ${calc.veg.name.toLowerCase()}`
-                : `Recommended ${calc.veg.typicalDrySaltPct}% for ${calc.veg.name.toLowerCase()}`}
+                ? `Recommended ${calc.veg.typicalBrineSaltPct}% for ${calc.isMultiVeg ? 'your selected mix' : calc.veg.name.toLowerCase()}`
+                : `Recommended ${calc.veg.typicalDrySaltPct}% for ${calc.isMultiVeg ? 'your selected mix' : calc.veg.name.toLowerCase()}`}
             </Text>
           </View>
 
@@ -316,9 +319,18 @@ export default function FermentsScreen() {
           </View>
   );
 
+  const scrollRef = React.useRef<ScrollView>(null);
+
+  // Scroll to results when they first appear (mobile single-column layout)
+  useEffect(() => {
+    if (calc.showResults) {
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+    }
+  }, [calc.showResults]);
+
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.cream }]} edges={['top']}>
-      <CalculatorShell right={resultsPanel}>
+      <CalculatorShell right={resultsPanel} leftRef={scrollRef}>
         {inputPanels}
       </CalculatorShell>
     </SafeAreaView>

@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Spacing, FontSize, BorderRadius, useAppTheme } from '../../src/theme';
+import { Spacing, FontSize, BorderRadius, MaxWidth, useAppTheme } from '../../src/theme';
 import { useFeedback } from '../../src/lib/feedback';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { SavedRecipe, BreadType } from '../../src/models/types';
@@ -83,7 +83,7 @@ export default function HistoryScreen() {
   const handleEdit = (recipe: SavedRecipe) => {
     // Navigate to calculator with the recipe data pre-filled
     router.push({
-      pathname: '/',
+      pathname: '/bread',
       params: { editRecipeId: recipe.id },
     } as any);
   };
@@ -218,7 +218,7 @@ export default function HistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, width: '100%', maxWidth: MaxWidth.content, alignSelf: 'center' },
   header: {
     fontSize: FontSize.xl, fontWeight: '800',
     textAlign: 'center', marginVertical: Spacing.md,

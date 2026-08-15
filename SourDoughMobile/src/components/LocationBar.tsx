@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
+import { FALLBACK_HARDNESS } from '../lib/hardnessUtils';
 
 interface Props {
   summary: string | null;
@@ -82,8 +83,8 @@ export function LocationBar({ summary, loading, error, onRefresh, showFallbackWa
       <Text style={styles.fallbackIcon}>{icon}</Text>
       <Text style={[styles.fallbackText, { color: colors.terracottaDark }]} numberOfLines={lines}>
         {lines === 2
-          ? 'Assuming moderately soft water (120 mg/L). Tap to open Settings → Water Hardness Override.'
-          : 'Location unavailable. Assuming moderately soft water (120 mg/L). Tap to open Settings → Water Hardness Override.'}
+          ? `Assuming ${FALLBACK_HARDNESS.classification} water (${FALLBACK_HARDNESS.mgL} mg/L). Tap to open Settings → Water Hardness Override.`
+          : `Location unavailable. Assuming ${FALLBACK_HARDNESS.classification} water (${FALLBACK_HARDNESS.mgL} mg/L). Tap to open Settings → Water Hardness Override.`}
       </Text>
     </TouchableOpacity>
   );

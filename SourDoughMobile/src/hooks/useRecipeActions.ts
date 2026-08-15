@@ -7,7 +7,7 @@ import {
   SavedRecipe,
   FlourBlendEntry,
 } from '../models/types';
-import { saveRecipe, generateRecipeId } from '../store/recipeStore';
+import { saveRecipe, updateRecipe, generateRecipeId } from '../store/recipeStore';
 import { getBlendProtein, buildFlourTypeLabel, buildPrefermentConfig, POOLISH_HYDRATION, BIGA_HYDRATION } from '../lib/blendUtils';
 import { formatRecipeTextFromState } from '../lib/recipeFormatter';
 import { copyToClipboard } from '../lib/clipboard';
@@ -39,6 +39,8 @@ interface SaveParams {
   coldProofEnabled: boolean;
   coldProofHours: string;
   coldProofTemp: string;
+  /** When set, update this existing recipe instead of creating a new one. */
+  editId?: string;
 }
 
 interface ShareParams {
@@ -75,6 +77,7 @@ export function useRecipeActions() {
       prefermentType,
       breadType, results, locationSummary,
       coldProofEnabled, coldProofHours, coldProofTemp,
+      editId,
     } = params;
 
     if (!results) return;
@@ -92,7 +95,7 @@ export function useRecipeActions() {
       : undefined;
 
     const recipe: SavedRecipe = {
-      id: generateRecipeId(),
+      id: editId ?? generateRecipeId(),
       createdAt: new Date().toISOString(),
       inputs: {
         flourWeight: totalFlourWeight,
@@ -122,7 +125,11 @@ export function useRecipeActions() {
     };
 
     try {
-      await saveRecipe(recipe);
+      if (editId) {
+        await updateRecipe(recipe);
+      } else {
+        await saveRecipe(recipe);
+      }
 
       // Review prompt tracking
       try {
@@ -142,9 +149,11 @@ export function useRecipeActions() {
         // Silently ignore review tracking failures
       }
 
-      showToast('Recipe saved to your history.', 'success');
+      showToast(editId ? 'Recipe updated in your history.' : 'Recipe saved to your history.', 'success');
+      return true;
     } catch {
       alert('Error', 'Could not save recipe.', 'error');
+      return false;
     } finally {
       setSaving(false);
     }
