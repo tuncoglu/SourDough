@@ -3,9 +3,11 @@ import { useWindowDimensions } from 'react-native';
 /**
  * Responsive breakpoints for adapting layout between mobile, tablet, and desktop.
  *
- *   mobile  < 768px   — phone, current single-column behaviour
- *   tablet  768–1024  — intermediate (side-by-side where it fits)
+ *   mobile  < 1024px  — phones AND tablets, single-column behaviour
  *   desktop ≥ 1024px  — sidebar, multi-column, dropdowns instead of modals
+ *
+ * (Tablets currently share the mobile layout; a dedicated 768–1024
+ * side-by-side layout would be a future enhancement.)
  *
  * On web, useWindowDimensions may return 0×0 during SSR/hydration. We clamp to
  * a reasonable phone viewport (375×812) so the first render matches the final

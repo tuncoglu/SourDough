@@ -30,6 +30,8 @@ interface Props {
   saving: boolean;
   onSave: () => void;
   onShare: () => void;
+  /** When the current results were calculated (for "Ready ≈" times). */
+  calculatedAt?: Date | null;
   /** Ready-by planner result (null if not enabled) */
   readyByResult?: {
     startTimeStr: string;
@@ -39,6 +41,8 @@ interface Props {
     totalHours: number;
     breakdownParts: string[];
     fermentHours: number;
+    /** True when inputs changed after the last calculation. */
+    stale?: boolean;
   } | null;
 }
 
@@ -47,6 +51,7 @@ export function ResultsSection({
   preferredType, selectedPreset,
   flourTemp, ambientTemp, waterTemp, starterTemp,
   saving, onSave, onShare, readyByResult,
+  calculatedAt,
 }: Props) {
   const { unitSystem, colors } = useAppTheme();
   const zoneInfo = getTempZoneInfo(results.tempZone);
@@ -137,6 +142,7 @@ export function ResultsSection({
         staticNote={results.staticFermentNote}
         fdt={results.fdt}
         preset={selectedPreset}
+        calculatedAt={calculatedAt}
       />
 
       {readyByResult && (
@@ -161,6 +167,11 @@ export function ResultsSection({
           <Text style={[styles.cardHint, { color: colors.muted }]}>
             ~{readyByResult.totalHours.toFixed(1)}h total · {readyByResult.breakdownParts.join(' · ')}
           </Text>
+          {readyByResult.stale && (
+            <Text style={[styles.cardHint, { color: colors.warm }]}>
+              Inputs changed — tap Calculate to refresh this schedule.
+            </Text>
+          )}
         </View>
       )}
 

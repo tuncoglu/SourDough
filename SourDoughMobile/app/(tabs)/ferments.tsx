@@ -70,6 +70,7 @@ export default function FermentsScreen() {
             title="🌡 Fermentation temperature"
             summary={calc.tempResult?.summary ?? 'Using weather forecast for accurate timing'}
             source={calc.tempResult?.source}
+            locationEnabled={!!calc.locationData}
             dayColor={(avg) => avg > 24 ? colors.hot : avg > 20 ? colors.olive : avg > 16 ? colors.cool : colors.cold}
           />
         )}

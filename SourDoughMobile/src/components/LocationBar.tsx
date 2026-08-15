@@ -97,7 +97,7 @@ export function LocationBar({ summary, loading, error, onRefresh, showFallbackWa
           <Text style={[styles.text, { color: colors.espresso }]}>Detecting location…</Text>
         </View>
       )}
-      {!loading && error && (
+      {!loading && error && !summary && (
         <View>
           <View style={styles.inner}>
             <Text style={[styles.error, { color: colors.error }]} numberOfLines={2}>{error}</Text>
@@ -116,7 +116,7 @@ export function LocationBar({ summary, loading, error, onRefresh, showFallbackWa
           {showPostcode && <View style={styles.postcodeRow}>{postcodeInput}</View>}
         </View>
       )}
-      {!loading && !error && summary && (
+      {!loading && summary && (
         <View>
           <TouchableOpacity
             onPress={onRefresh}
@@ -127,6 +127,20 @@ export function LocationBar({ summary, loading, error, onRefresh, showFallbackWa
             <Text style={[styles.text, { color: colors.espresso }]} numberOfLines={2}>{summary}</Text>
             <Text style={[styles.retryText, { color: colors.terracotta }]}>↺</Text>
           </TouchableOpacity>
+          {error && (
+            <View style={styles.inner}>
+              <Text style={[styles.error, { color: colors.error }]} numberOfLines={2}>{error}</Text>
+              <TouchableOpacity
+                onPress={onRefresh}
+                style={styles.retryBtn}
+                accessibilityLabel="Retry location detection"
+                accessibilityRole="button"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={[styles.retryText, { color: colors.terracotta }]}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          )}
           {onPostcodeSubmit && (
             <View>
               {!showPostcode ? postcodeLink : <View style={styles.postcodeRow}>{postcodeInput}</View>}

@@ -87,7 +87,8 @@ export default function SettingsScreen() {
       <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Text style={[sectionTitleStyle, { color: colors.muted }]}>DEFAULT VALUES</Text>
         <Text style={[styles.description, { color: colors.muted }]}>
-          These defaults are pre-filled when you open the calculator.
+          These defaults are pre-filled when you open the calculator.{'\n'}
+          Typical ranges: flour 100–2000 g · water 50–2000 g · salt 0.5–5% · starter hydration 40–200%.
         </Text>
 
         <NumberInput

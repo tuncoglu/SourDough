@@ -19,6 +19,10 @@ interface Props {
   summary: string;
   /** Source of the summary — appends the "enable location" hint when fallback. */
   source?: FermentTempResult['source'];
+  /** Whether location/weather is available at all — the "enable location"
+   *  hint is only appended when fallback AND location is actually off
+   *  (not when the weather fetch merely failed). */
+  locationEnabled?: boolean;
   /** Additional screen-specific suffixes (e.g. yogurt culture hints). */
   suffixes?: string[];
   /** Map an average daily temp (°C) to a theme color. */
@@ -30,6 +34,7 @@ export function TempForecastCard({
   title,
   summary,
   source,
+  locationEnabled = false,
   suffixes,
   dayColor,
 }: Props) {
@@ -37,7 +42,7 @@ export function TempForecastCard({
   const days = dailyTemps.slice(0, 10);
   const summaryText = [
     summary,
-    source === 'fallback' ? ' — enable location for local temps' : '',
+    source === 'fallback' && !locationEnabled ? ' — enable location for local temps' : '',
     ...(suffixes ?? []),
   ].filter(Boolean).join('');
 

@@ -12,6 +12,9 @@ interface Props {
   fdt: number;
   /** If a recipe preset is selected, compute full process end time (not just ferment) */
   preset?: RecipePreset | null;
+  /** When the current results were calculated — "Ready ≈" is anchored to
+   *  this moment (not the render time) and a hint appears once it ages. */
+  calculatedAt?: Date | null;
 }
 
 /** Format a Date to a friendly time string like "2:30 PM" */
@@ -26,9 +29,13 @@ export function FermentationTimeline({
   staticNote,
   fdt,
   preset,
+  calculatedAt,
 }: Props) {
   const { unitSystem, colors } = useAppTheme();
-  const now = new Date();
+  const now = calculatedAt ?? new Date();
+  const ageMinutes = calculatedAt
+    ? Math.round((Date.now() - calculatedAt.getTime()) / 60000)
+    : 0;
   const fermentHours = dynamic?.bulkHours ?? staticHours;
   const totalFermentHours = dynamic?.totalHours ?? staticHours;
   // The post-bulk phase actually modelled: with cold proof enabled the
@@ -71,6 +78,11 @@ export function FermentationTimeline({
             <Text style={[styles.meta, { color: colors.muted }]}>
               Avg ambient: {formatTemp(dynamic.avgAmbient, unitSystem)} · Peak rate: {dynamic.peakRate}× baseline
             </Text>
+            {ageMinutes > 15 && (
+              <Text style={[styles.staleHint, { color: colors.warm }]}>
+                Calculated {ageMinutes} min ago — tap Calculate for an updated time.
+              </Text>
+            )}
           </>
         ) : (
           <>
@@ -92,6 +104,11 @@ export function FermentationTimeline({
             <Text style={[styles.noForecast, { color: colors.muted }]}>
               ⚡ No hourly forecast — using constant-temp estimate
             </Text>
+            {ageMinutes > 15 && (
+              <Text style={[styles.staleHint, { color: colors.warm }]}>
+                Calculated {ageMinutes} min ago — tap Calculate for an updated time.
+              </Text>
+            )}
           </>
         )}
       </View>
@@ -134,6 +151,11 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   noForecast: {
+    fontSize: FontSize.xs,
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
+  staleHint: {
     fontSize: FontSize.xs,
     fontStyle: 'italic',
     marginTop: 4,

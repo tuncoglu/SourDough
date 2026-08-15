@@ -40,6 +40,8 @@ interface CalculateParams {
 
 export function useRecipeCalculation() {
   const [results, setResults] = useState<CalculationResults | null>(null);
+  /** When the current results were produced — used for "Ready ≈" times. */
+  const [calculatedAt, setCalculatedAt] = useState<Date | null>(null);
   const [calculating, setCalculating] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   const rightScrollRef = useRef<ScrollView>(null);
@@ -166,6 +168,7 @@ export function useRecipeCalculation() {
     );
 
     setResults(res);
+    setCalculatedAt(new Date());
     setCalculating(false);
 
     if (isDesktop) {
@@ -175,5 +178,5 @@ export function useRecipeCalculation() {
     }
   }, []);
 
-  return { results, calculating, doCalculate, scrollRef, rightScrollRef };
+  return { results, calculatedAt, calculating, doCalculate, scrollRef, rightScrollRef };
 }

@@ -302,8 +302,9 @@ export default function CalculatorScreen() {
       totalHours,
       breakdownParts,
       fermentHours,
+      stale: inputsDirty,
     };
-  }, [planByReadyEnabled, calc.results, readyByHour, readyByMinute, preset.selectedPreset, coldProofEnabled, coldProofHours]);
+  }, [planByReadyEnabled, calc.results, readyByHour, readyByMinute, preset.selectedPreset, coldProofEnabled, coldProofHours, inputsDirty]);
 
   // ═══════════════════════════════════════════════════════════════════════
   //  RENDER
@@ -610,10 +611,11 @@ export default function CalculatorScreen() {
         onSave={handleSave}
         onShare={handleShare}
         readyByResult={readyByResult}
+        calculatedAt={calc.calculatedAt}
       />
     </>
   ), [
-    calc.results, inputs.blend, inputs.totalFlourWeight, starter.starterFlourLabel,
+    calc.results, calc.calculatedAt, inputs.blend, inputs.totalFlourWeight, starter.starterFlourLabel,
     preset.selectedPreset,
     inputs.flourTemp, inputs.ambientTemp, inputs.waterTemp, inputs.starterTemp,
     actions.saving, handleSave, handleShare, readyByResult,

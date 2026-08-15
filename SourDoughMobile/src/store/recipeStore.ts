@@ -28,14 +28,16 @@ function serialized<T>(op: () => Promise<T>): Promise<T> {
   return run;
 }
 
-/** Save a recipe (appends to start) */
-export function saveRecipe(recipe: SavedRecipe): Promise<void> {
+/** Save a recipe (appends to start). Resolves true when the history cap
+ *  trimmed the oldest entries, so callers can tell the user. */
+export function saveRecipe(recipe: SavedRecipe): Promise<boolean> {
   return serialized(async () => {
     const recipes = await loadRecipes();
     recipes.unshift(recipe);
     // Keep max 200 recipes
-    const trimmed = recipes.slice(0, 200);
-    await AsyncStorage.setItem(RECIPES_KEY, JSON.stringify(trimmed));
+    const trimmed = recipes.length > 200;
+    await AsyncStorage.setItem(RECIPES_KEY, JSON.stringify(recipes.slice(0, 200)));
+    return trimmed;
   });
 }
 

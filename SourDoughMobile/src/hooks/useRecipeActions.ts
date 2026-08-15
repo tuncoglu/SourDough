@@ -124,11 +124,12 @@ export function useRecipeActions() {
       breadType: breadType !== 'custom' ? breadType : undefined,
     };
 
+    let trimmedOldest = false;
     try {
       if (editId) {
         await updateRecipe(recipe);
       } else {
-        await saveRecipe(recipe);
+        trimmedOldest = await saveRecipe(recipe);
       }
 
       // Review prompt tracking
@@ -150,6 +151,9 @@ export function useRecipeActions() {
       }
 
       showToast(editId ? 'Recipe updated in your history.' : 'Recipe saved to your history.', 'success');
+      if (trimmedOldest) {
+        showToast('History keeps the latest 200 recipes — the oldest were removed.', 'info');
+      }
       return true;
     } catch {
       alert('Error', 'Could not save recipe.', 'error');

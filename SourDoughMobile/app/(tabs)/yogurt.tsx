@@ -70,8 +70,9 @@ export default function YogurtScreen() {
           title="🌡 Ambient temperature"
           summary={calc.tempResult?.summary ?? 'Using weather forecast for ambient temp'}
           source={calc.tempResult?.source}
+          locationEnabled={!!calc.locationData}
           suffixes={[
-            calc.cultureType === 'thermophilic' ? ' (thermophilic — use a heat source at 40–45°C)' : '',
+            calc.cultureType === 'thermophilic' ? ` (thermophilic — use a heat source at ${formatTemp(40, unitSystem, 0)}–${formatTemp(45, unitSystem, 0)})` : '',
             calc.cultureType === 'mesophilic' ? ' (mesophilic — room temp is your incubation temp)' : '',
           ]}
           dayColor={(avg) => avg > 28 ? colors.hot : avg > 24 ? colors.warm : avg > 20 ? colors.olive : avg > 16 ? colors.cool : colors.cold}
