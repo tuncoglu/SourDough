@@ -24,6 +24,7 @@ import { LocationBar } from '@/src/components/LocationBar';
 import { NumberInput } from '@/src/components/NumberInput';
 import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyleLg } from '@/src/theme';
 import { formatTemp } from '@/src/lib/unitConversion';
+import { Seo } from '@/src/components/Seo';
 import { PREHEAT_TEMP_C } from '@/src/lib/yogurtCalculations';
 import { YogurtType, StarterSource } from '@/src/models/types';
 import { MILK_TYPES } from '@/src/data/yogurtCultures';
@@ -315,6 +316,11 @@ export default function YogurtScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.cream }]} edges={['top']}>
+      <Seo
+        title="Yogurt Maker Calculator — Just Dough It"
+        description="Incubation time, starter culture, yield and nutrition for 10 yogurt cultures, adjusted to your kitchen temperature. Free, private, open source."
+        path="/yogurt"
+      />
       <CalculatorShell right={resultsPanel} leftRef={scrollRef}>
         {inputPanels}
       </CalculatorShell>

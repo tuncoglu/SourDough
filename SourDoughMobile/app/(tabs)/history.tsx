@@ -11,6 +11,7 @@ import {
 import { useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Spacing, FontSize, BorderRadius, MaxWidth, useAppTheme } from '../../src/theme';
+import { Seo } from '../../src/components/Seo';
 import { useFeedback } from '../../src/lib/feedback';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { SavedRecipe, BreadType } from '../../src/models/types';
@@ -120,6 +121,11 @@ export default function HistoryScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.cream }]} edges={['top']}>
+      <Seo
+        title="Saved Recipes — Just Dough It"
+        description="Your saved sourdough recipes, stored locally on your device — private by design."
+        path="/history"
+      />
       <Text style={[styles.header, { color: colors.espresso }]}>📖  Recipe History</Text>
 
       {/* Search bar */}

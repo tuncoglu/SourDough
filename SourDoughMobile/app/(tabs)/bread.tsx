@@ -29,6 +29,7 @@ import { FlourBlendCard } from '../../src/components/FlourBlendCard';
 import { TemperatureCard } from '../../src/components/TemperatureCard';
 import { TempRow } from '../../src/components/TempRow';
 import { ResultsSection } from '../../src/components/ResultsSection';
+import { Seo } from '../../src/components/Seo';
 import { CalculatorShell } from '../../src/components/CalculatorShell';
 import { StaleResultsBanner } from '../../src/components/StaleResultsBanner';
 
@@ -650,6 +651,11 @@ export default function CalculatorScreen() {
 
   return (
     <SafeAreaView style={[layoutStyles.container, { backgroundColor: colors.cream }]} edges={['top']}>
+      <Seo
+        title="Sourdough Calculator — Just Dough It"
+        description="Final dough temperature, hydration, flour blends and temperature-adjusted fermentation timelines from your local weather and water hardness. Free, private, open source."
+        path="/bread"
+      />
       <CalculatorShell
         leftRef={calc.scrollRef}
         rightRef={calc.rightScrollRef}

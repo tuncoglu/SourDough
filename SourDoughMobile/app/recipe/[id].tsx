@@ -26,6 +26,7 @@ import { AdviceCards } from '../../src/components/FermentAdvice';
 import { MethodTimeline } from '../../src/components/MethodTimeline';
 import { getPreset } from '../../src/data/recipePresets';
 import { copyToClipboard } from '../../src/lib/clipboard';
+import { Seo } from '../../src/components/Seo';
 
 export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -235,6 +236,11 @@ export default function RecipeDetailScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.cream }]} edges={['top']}>
       <Stack.Screen options={{ title: 'Recipe Detail' }} />
+      <Seo
+        title="Recipe — Just Dough It"
+        description="A saved sourdough recipe from Just Dough It, with weights, temperatures and fermentation timeline."
+        path={id ? `/recipe/${id}` : '/history'}
+      />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[

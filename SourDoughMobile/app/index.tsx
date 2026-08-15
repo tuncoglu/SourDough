@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppTheme, Spacing, FontSize, BorderRadius, cardStyleLg } from '../src/theme';
+import { Seo } from '../src/components/Seo';
 
 interface LandingCard {
   emoji: string;
@@ -44,6 +45,11 @@ export default function LandingScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.cream }]} edges={['top', 'bottom']}>
+      <Seo
+        title="Just Dough It — Sourdough, Yogurt & Ferment Calculators"
+        description="Location-aware sourdough bread, yogurt and lacto-fermentation calculators. Recipes adjusted to your kitchen's temperature and water — private, open source, no tracking."
+        path="/"
+      />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}

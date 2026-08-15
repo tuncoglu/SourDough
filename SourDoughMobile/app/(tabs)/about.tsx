@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, StyleSheet, Linking, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppTheme, Spacing, FontSize, BorderRadius, cardStyle, sectionTitleStyle } from '../../src/theme';
+import { Seo } from '../../src/components/Seo';
 import { KeyboardScreen } from '../../src/components/KeyboardScreen';
 
 function LinkText({ children, url }: { children: string; url: string }) {
@@ -18,6 +19,11 @@ export default function AboutScreen() {
 
   return (
     <SafeAreaView style={[aboutStyles.safe, { backgroundColor: colors.cream }]} edges={['top']}>
+      <Seo
+        title="About — Just Dough It"
+        description="About Just Dough It: the private, open-source sourdough, yogurt and lacto-fermentation calculators that adapt to your kitchen."
+        path="/about"
+      />
       <KeyboardScreen>
         <ScrollView
           style={aboutStyles.scroll}

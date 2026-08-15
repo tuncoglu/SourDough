@@ -27,6 +27,7 @@ import { FERMENT_TYPE_ORDER } from '@/src/data/fermentPresets';
 import { VEGETABLES, VEG_CATEGORIES } from '@/src/data/vegetables';
 import { FermentType, SALT_LABELS, SALT_TYPE_ORDER } from '@/src/models/types';
 import { gramsToOz, ozToGrams, formatWeight, weightUnit } from '@/src/lib/unitConversion';
+import { Seo } from '@/src/components/Seo';
 
 export default function FermentsScreen() {
   const router = useRouter();
@@ -331,6 +332,11 @@ export default function FermentsScreen() {
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.cream }]} edges={['top']}>
+      <Seo
+        title="Lacto-Fermentation Calculator — Just Dough It"
+        description="Salt, brine and a day-by-day pH timeline for sauerkraut, kimchi, pickles and hot sauce — adjusted to your ambient temperature. Free, private, open source."
+        path="/ferments"
+      />
       <CalculatorShell right={resultsPanel} leftRef={scrollRef}>
         {inputPanels}
       </CalculatorShell>

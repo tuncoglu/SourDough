@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Spacing, FontSize, BorderRadius, MaxWidth, useAppTheme, cardStyle, sectionTitleStyle } from '../../src/theme';
+import { Seo } from '../../src/components/Seo';
 import { useFeedback } from '../../src/lib/feedback';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { UserSettings, DEFAULT_SETTINGS, ThemeMode, UnitSystem } from '../../src/models/types';
@@ -264,6 +265,11 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.cream }]} edges={['top']}>
+      <Seo
+        title="Settings — Just Dough It"
+        description="Defaults, units, theme and water hardness for the Just Dough It calculators."
+        path="/settings"
+      />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[

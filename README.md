@@ -52,6 +52,11 @@ pick bread, yogurt, or lacto-fermentation — then dive into the full calculator
 - **No tracking** — no analytics, no telemetry, no cloud storage
 - **Location is transient** — coordinates are sent only to fetch weather and geocode your city; never stored or shared
 
+### 🌐 Web
+- **Installable PWA** — add to home screen; works offline once loaded
+- **Share-friendly** — every page has Open Graph/Twitter card metadata and a generated share image
+- **Optional cookieless analytics** — set the `EXPO_PUBLIC_CF_BEACON_TOKEN` repo variable in GitHub Actions to enable Cloudflare Web Analytics (privacy-respecting, no cookie banner needed)
+
 ### 🥛 Yogurt Calculator
 - **10 starter cultures** — thermophilic and mesophilic, each with its own incubation model
 - **Milk picker** — cow, goat, sheep, and plant-based milks with adjusted yield

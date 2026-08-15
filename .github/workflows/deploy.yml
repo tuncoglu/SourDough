@@ -31,6 +31,9 @@ jobs:
       - name: Build web export
         run: npx expo export --platform web
         working-directory: SourDoughMobile
+        env:
+          EXPO_PUBLIC_SITE_URL: ${{ vars.EXPO_PUBLIC_SITE_URL }}
+          EXPO_PUBLIC_CF_BEACON_TOKEN: ${{ vars.EXPO_PUBLIC_CF_BEACON_TOKEN }}
 
       - name: Ensure Cloudflare _headers is present
         run: cp -f SourDoughMobile/public/_headers SourDoughMobile/dist/_headers 2>/dev/null || true
