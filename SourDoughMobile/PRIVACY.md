@@ -61,8 +61,9 @@ changes constitutes acceptance.
 
 ## Contact
 
-For questions about this policy, open an issue at the App's repository
-or contact the developer via the Play Store listing.
+For questions about this policy, email info@sourdoughcalculator.uk,
+open an issue at the App's repository, or contact the developer via
+the Play Store listing.
 
 ---
 

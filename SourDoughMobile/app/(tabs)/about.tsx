@@ -104,6 +104,15 @@ export default function AboutScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* Contact */}
+          <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[sectionTitleStyle, { color: colors.muted }]}>CONTACT</Text>
+            <Text style={[aboutStyles.body, { color: colors.espresso }]}>
+              Questions, feedback or privacy concerns? Email us at{' '}
+              <LinkText url="mailto:info@sourdoughcalculator.uk">info@sourdoughcalculator.uk</LinkText>
+            </Text>
+          </View>
+
           {/* Acknowledgements */}
           <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[sectionTitleStyle, { color: colors.muted }]}>ACKNOWLEDGEMENTS</Text>

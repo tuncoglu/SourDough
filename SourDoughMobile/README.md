@@ -208,6 +208,10 @@ MIT — see [LICENSE](LICENSE) for the full text.
 
 ---
 
+## Contact
+
+Questions, feedback or privacy concerns: info@sourdoughcalculator.uk
+
 ## Related
 
 - [SourDough](https://github.com/tuncoglu/SourDough) — open-source project home
