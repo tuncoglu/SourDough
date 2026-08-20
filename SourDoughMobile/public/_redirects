@@ -1,3 +1,0 @@
-# Canonical host: apex (matches EXPO_PUBLIC_SITE_URL and SEO canonical tags).
-# Keeps www visitors on a single origin so AsyncStorage (localStorage) state is shared.
-https://www.sourdoughcalculator.uk/* https://sourdoughcalculator.uk/:splat 301
