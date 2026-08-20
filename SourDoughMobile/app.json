@@ -46,7 +46,8 @@
         {
           "locationWhenInUsePermission": "Allow Just Dough It to use your location to detect local temperature and water hardness for accurate baking guidance. Your coordinates are sent to Open-Meteo (weather) and OpenStreetMap (geocoding)."
         }
-      ]
+      ],
+      "./plugins/withAndroidSigningConfig"
     ],
     "experiments": {
       "typedRoutes": false
