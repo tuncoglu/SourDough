@@ -12,9 +12,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyle, sectionTitleStyle } from '../../src/theme';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
-import { buildSummary } from '../../src/lib/location';
+import { summaryWithHardnessOverride } from '../../src/lib/location';
 import { PROOF_FRACTION } from '../../src/lib/calculations';
-import { buildManualHardness } from '../../src/lib/hardnessUtils';
 import { formatTemp } from '../../src/lib/unitConversion';
 import { isValidDecimalInput } from '../../src/lib/inputValidation';
 import { getRecipe } from '../../src/store/recipeStore';
@@ -135,9 +134,7 @@ export default function CalculatorScreen() {
 
   // ── Derived ───────────────────────────────────────────────────────────
   const displaySummary = !inputs.locationData ? null
-    : inputs.settings.waterHardnessOverride > 0
-      ? buildSummary(inputs.locationData.location, inputs.locationData.ambientTemp, inputs.locationData.waterTemp, buildManualHardness(inputs.settings.waterHardnessOverride))
-      : inputs.locationData.summary;
+    : summaryWithHardnessOverride(inputs.locationData, inputs.settings.waterHardnessOverride, unitSystem);
 
   // ── Calculate ─────────────────────────────────────────────────────────
   const doCalculate = useCallback(() => {

@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
   YogurtType,
   YogurtCultureType,
@@ -23,6 +24,7 @@ import {
 import { computeFermentTemp, DailyTempSummary, FermentTempResult } from '../lib/lactoCalculations';
 import { useLocation } from './useLocation';
 import { useStaleResults, dirtySetter } from './useStaleResults';
+import { getSettings } from '../store/settingsCache';
 import type { LocationData } from '../lib/location';
 import { useAppTheme } from '../theme';
 
@@ -58,6 +60,8 @@ export interface YogurtCalculatorState {
   locError: string | null;
   onRefreshLocation: () => void;
   onPostcodeSubmit: (postcode: string) => void;
+  /** Manual hardness override from Settings (mg/L CaCO₃, 0 = auto-detect). */
+  waterHardnessOverride: number;
 
   // Results
   results: YogurtResults | null;
@@ -96,6 +100,7 @@ export function useYogurtCalculator(): YogurtCalculatorState {
   const [previousBatchGrams, setPreviousBatchGrams] = useState('60'); // 30g/L × 2L default
   const [preHeatEnabled, setPreHeatEnabled] = useState(true);
   const [showResults, setShowResults] = useState(false);
+  const [waterHardnessOverride, setWaterHardnessOverride] = useState(0);
 
   // Track manual edits so auto-derived starter amounts don't overwrite
   // values the user deliberately set (milk-volume changes would otherwise
@@ -172,6 +177,13 @@ export function useYogurtCalculator(): YogurtCalculatorState {
     setMilkId(id);
     setShowResults(false);
   }, []);
+
+  // Load water hardness override from settings
+  useFocusEffect(useCallback(() => {
+    getSettings().then((s) => {
+      setWaterHardnessOverride(s.waterHardnessOverride ?? 0);
+    });
+  }, []));
 
   // Auto-update sachet count / previous-batch grams when milk volume
   // changes — but only for fields the user hasn't hand-edited.
@@ -286,6 +298,7 @@ export function useYogurtCalculator(): YogurtCalculatorState {
     locError,
     onRefreshLocation,
     onPostcodeSubmit,
+    waterHardnessOverride,
     results,
     timeline,
     advice,

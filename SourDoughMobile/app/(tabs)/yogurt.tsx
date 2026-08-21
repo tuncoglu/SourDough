@@ -24,6 +24,7 @@ import { LocationBar } from '@/src/components/LocationBar';
 import { NumberInput } from '@/src/components/NumberInput';
 import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyleLg } from '@/src/theme';
 import { formatTemp } from '@/src/lib/unitConversion';
+import { summaryWithHardnessOverride } from '@/src/lib/location';
 import { Seo } from '@/src/components/Seo';
 import { PREHEAT_TEMP_C } from '@/src/lib/yogurtCalculations';
 import { YogurtType, StarterSource } from '@/src/models/types';
@@ -39,7 +40,9 @@ export default function YogurtScreen() {
     calc.calculate();
   }, [calc.calculate]);
 
-  const locationSummary = calc.locationData?.summary ?? null;
+  const locationSummary = calc.locationData
+    ? summaryWithHardnessOverride(calc.locationData, calc.waterHardnessOverride, unitSystem)
+    : null;
 
   const inputPanels = (
     <>

@@ -27,6 +27,7 @@ import { FERMENT_TYPE_ORDER } from '@/src/data/fermentPresets';
 import { VEGETABLES, VEG_CATEGORIES } from '@/src/data/vegetables';
 import { FermentType, SALT_LABELS, SALT_TYPE_ORDER } from '@/src/models/types';
 import { gramsToOz, ozToGrams, formatWeight, weightUnit } from '@/src/lib/unitConversion';
+import { summaryWithHardnessOverride } from '@/src/lib/location';
 import { Seo } from '@/src/components/Seo';
 
 export default function FermentsScreen() {
@@ -39,7 +40,9 @@ export default function FermentsScreen() {
     calc.calculate();
   }, [calc.calculate]);
 
-  const locationSummary = calc.locationData?.summary ?? null;
+  const locationSummary = calc.locationData
+    ? summaryWithHardnessOverride(calc.locationData, calc.waterHardnessOverride, unitSystem)
+    : null;
 
   const inputPanels = (
     <>

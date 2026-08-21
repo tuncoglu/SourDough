@@ -70,6 +70,8 @@ export interface LactoCalculatorState {
   onRefreshLocation: () => void;
   onPostcodeSubmit: (postcode: string) => void;
   hardness: WaterHardness | null;
+  /** Manual hardness override from Settings (mg/L CaCO₃, 0 = auto-detect). */
+  waterHardnessOverride: number;
 
   // Results
   results: FermentResults | null;
@@ -382,6 +384,7 @@ export function useLactoCalculator(): LactoCalculatorState {
     onRefreshLocation,
     onPostcodeSubmit,
     hardness: getHardness(),
+    waterHardnessOverride,
     results,
     timeline,
     advice,
