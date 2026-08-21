@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -31,13 +31,42 @@ export default function SettingsScreen() {
   const { confirm, showToast } = useFeedback();
   const { colors, themeMode, setThemeMode, unitSystem, setUnitSystem } = useAppTheme();
 
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hydratedRef = useRef(false);
+
   useEffect(() => {
     getSettings().then((s) => {
       setSettings(s);
       setFlourLabel(s.defaultFlourType);
       setLoading(false);
+      hydratedRef.current = true;
     });
   }, []);
+
+  // Auto-save settings shortly after the user changes a value.
+  useEffect(() => {
+    if (!hydratedRef.current || loading) return;
+
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+
+    saveTimerRef.current = setTimeout(() => {
+      const updated: UserSettings = {
+        ...settings,
+        defaultFlourType: flourLabel,
+      };
+      updateSettings(updated).catch(() => {
+        showToast('Could not save settings — storage error.', 'error');
+      });
+    }, 600);
+
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+      }
+    };
+  }, [settings, flourLabel, loading, showToast]);
 
   const handleSave = async () => {
     const updated: UserSettings = {
@@ -226,13 +255,16 @@ export default function SettingsScreen() {
       </View>
 
       {/* Actions */}
+      <Text style={[styles.autoSaveHint, { color: colors.muted }]}>
+        Changes save automatically.
+      </Text>
       <TouchableOpacity
         style={[styles.saveBtn, { backgroundColor: colors.terracotta }]}
         onPress={handleSave}
         activeOpacity={0.8}
         accessibilityRole="button"
       >
-        <Text style={[styles.saveBtnText, { color: colors.white }]}>Save Defaults</Text>
+        <Text style={[styles.saveBtnText, { color: colors.white }]}>Save now</Text>
       </TouchableOpacity>
 
       <View style={{ height: 1, backgroundColor: colors.border, marginTop: Spacing.lg, marginBottom: Spacing.md }} />
@@ -243,23 +275,6 @@ export default function SettingsScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* About */}
-      <View style={[cardStyle, styles.aboutCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={[sectionTitleStyle, { color: colors.muted }]}>ABOUT</Text>
-        <Text style={[styles.aboutText, { color: colors.espresso }]}>
-          🥖 Just Dough It v3.0
-        </Text>
-        <Text style={[styles.aboutText, { color: colors.espresso }]}>
-          Auto-detects your location, local temperature, and water hardness
-          to calculate exact ingredient weights and predict fermentation time
-          dynamically based on the weather forecast.
-        </Text>
-        <Text style={[styles.aboutText, styles.aboutCredit, { color: colors.muted }]}>
-          Flour catalogue: Shipton Mill + generics.{'\n'}
-          Weather: Open-Meteo (free, no API key).{'\n'}
-          Geocoding: OpenStreetMap Nominatim.
-        </Text>
-      </View>
     </>
   );
 
@@ -318,9 +333,9 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   description: {
-    fontSize: FontSize.xs,
+    fontSize: FontSize.sm,
     marginBottom: Spacing.md,
-    lineHeight: 18,
+    lineHeight: 20,
   },
   flourRow: {
     flexDirection: 'row',
@@ -330,6 +345,11 @@ const styles = StyleSheet.create({
   flourLabel: {
     width: 90,
     fontSize: FontSize.sm,
+  },
+  autoSaveHint: {
+    fontSize: FontSize.xs,
+    textAlign: 'center',
+    marginBottom: Spacing.sm,
   },
   saveBtn: {
     borderRadius: BorderRadius.md,
@@ -350,17 +370,6 @@ const styles = StyleSheet.create({
   },
   resetBtnText: {
     fontSize: FontSize.sm,
-  },
-  aboutCard: {
-    marginTop: Spacing.md,
-  },
-  aboutText: {
-    fontSize: FontSize.sm,
-    lineHeight: 20,
-    marginBottom: Spacing.sm,
-  },
-  aboutCredit: {
-    fontSize: FontSize.xs,
   },
   themeRow: {
     flexDirection: 'row',

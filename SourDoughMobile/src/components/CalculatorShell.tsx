@@ -7,7 +7,7 @@
  * inputs, then results. This was previously copy-pasted ~80 lines per
  * screen with slightly different bottom padding and ref wiring.
  */
-import React, { RefObject } from 'react';
+import React, { RefObject, useEffect, useRef } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { MaxWidth, Spacing } from '../theme';
 import { useBreakpoint } from '../hooks/useBreakpoint';
@@ -36,6 +36,19 @@ export function CalculatorShell({
   bottomPad = 60,
 }: Props) {
   const { isDesktop } = useBreakpoint();
+  const hasResults = right != null;
+  const prevHasResultsRef = useRef(hasResults);
+
+  // On mobile, when results first appear below the inputs, scroll them into
+  // view so the user doesn't have to hunt for the output after calculating.
+  useEffect(() => {
+    if (hasResults && !prevHasResultsRef.current && !isDesktop) {
+      requestAnimationFrame(() => {
+        leftRef?.current?.scrollToEnd({ animated: true });
+      });
+    }
+    prevHasResultsRef.current = hasResults;
+  }, [hasResults, isDesktop, leftRef]);
 
   return (
     <KeyboardScreen>
