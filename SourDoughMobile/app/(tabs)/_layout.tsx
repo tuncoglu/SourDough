@@ -15,8 +15,13 @@ function useTabBarStyle() {
 
 const TAB_ICON_SIZE = 24;
 
-function TabEmoji({ emoji }: { emoji: string }) {
-  return <Text style={{ fontSize: TAB_ICON_SIZE }}>{emoji}</Text>;
+function TabEmoji({ emoji, focused }: { emoji: string; focused: boolean }) {
+  const { colors } = useAppTheme();
+  return (
+    <View style={[styles.tabIconWrap, focused && { backgroundColor: colors.badgeBg }]}>
+      <Text style={{ fontSize: TAB_ICON_SIZE, opacity: focused ? 1 : 0.75 }}>{emoji}</Text>
+    </View>
+  );
 }
 
 // Icons shared between sidebar (Sidebar.tsx) and tab bar — keep in sync.
@@ -58,42 +63,42 @@ export default function TabLayout() {
               name="bread"
               options={{
                 title: 'Sourdough',
-                tabBarIcon: () => <TabEmoji emoji={TAB_ICONS.calculator} />,
+                tabBarIcon: ({ focused }) => <TabEmoji emoji={TAB_ICONS.calculator} focused={focused} />,
               }}
             />
             <Tabs.Screen
               name="yogurt"
               options={{
                 title: 'Yogurt',
-                tabBarIcon: () => <TabEmoji emoji={TAB_ICONS.yogurt} />,
+                tabBarIcon: ({ focused }) => <TabEmoji emoji={TAB_ICONS.yogurt} focused={focused} />,
               }}
             />
             <Tabs.Screen
               name="ferments"
               options={{
                 title: 'Lacto-ferment',
-                tabBarIcon: () => <TabEmoji emoji={TAB_ICONS.ferments} />,
+                tabBarIcon: ({ focused }) => <TabEmoji emoji={TAB_ICONS.ferments} focused={focused} />,
               }}
             />
             <Tabs.Screen
               name="history"
               options={{
                 title: 'History',
-                tabBarIcon: () => <TabEmoji emoji={TAB_ICONS.history} />,
+                tabBarIcon: ({ focused }) => <TabEmoji emoji={TAB_ICONS.history} focused={focused} />,
               }}
             />
             <Tabs.Screen
               name="settings"
               options={{
                 title: 'Settings',
-                tabBarIcon: () => <TabEmoji emoji={TAB_ICONS.settings} />,
+                tabBarIcon: ({ focused }) => <TabEmoji emoji={TAB_ICONS.settings} focused={focused} />,
               }}
             />
             <Tabs.Screen
               name="about"
               options={{
                 title: 'About',
-                tabBarIcon: () => <TabEmoji emoji={TAB_ICONS.about} />,
+                tabBarIcon: ({ focused }) => <TabEmoji emoji={TAB_ICONS.about} focused={focused} />,
               }}
             />
           </Tabs>
@@ -113,6 +118,13 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     overflow: 'visible' as any,
+  },
+  tabIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   maxWidth: {
     flex: 1,
