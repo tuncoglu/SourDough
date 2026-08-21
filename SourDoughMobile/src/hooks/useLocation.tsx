@@ -48,7 +48,89 @@ function getExpoLocation(): typeof ExpoLocationType | null {
   return require('expo-location') as typeof ExpoLocationType;
 }
 
+/** Good enough for weather & water-hardness lookups (street/neighbourhood level). */
+const GOOD_ACCURACY_M = 5_000;
+/** Max time to keep watching for a better fix before settling for the best one seen. */
+const MAX_WAIT_MS = 10_000;
+
+/**
+ * Web geolocation via the browser API.
+ *
+ * Desktop browsers (no GPS) typically answer instantly with a coarse
+ * IP-based fix — e.g. "Greater London" for anywhere in the capital — and
+ * only refine to WiFi triangulation a few seconds later. A single
+ * `getCurrentPosition` call (what expo-location does on web, with
+ * `enableHighAccuracy` off at `Accuracy.Low`) therefore never sees the good
+ * fix. `watchPosition` with high accuracy keeps receiving updates, so we
+ * take the best fix inside a short window, or bail out early on a good one.
+ */
+function getWebPosition(): Promise<GeoPosition> {
+  return new Promise((resolve, reject) => {
+    if (!('geolocation' in navigator)) {
+      reject(new Error('Geolocation is not supported by this browser.'));
+      return;
+    }
+
+    let best: GeoPosition | null = null;
+    let settled = false;
+    let watchId = -1;
+
+    const finish = (pos: GeoPosition) => {
+      if (settled) return;
+      settled = true;
+      navigator.geolocation.clearWatch(watchId);
+      resolve(pos);
+    };
+
+    watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const accuracy = pos.coords.accuracy ?? Number.POSITIVE_INFINITY;
+        if (!best || accuracy < (best.coords.accuracy ?? Number.POSITIVE_INFINITY)) {
+          best = {
+            coords: {
+              latitude: pos.coords.latitude,
+              longitude: pos.coords.longitude,
+              accuracy,
+              altitude: pos.coords.altitude ?? null,
+              altitudeAccuracy: pos.coords.altitudeAccuracy ?? null,
+              heading: pos.coords.heading ?? null,
+              speed: pos.coords.speed ?? null,
+            },
+            timestamp: pos.timestamp,
+          };
+        }
+        if (accuracy <= GOOD_ACCURACY_M) finish(best as GeoPosition);
+      },
+      (err) => {
+        if (best) {
+          finish(best); // we have something usable — prefer it over the error
+          return;
+        }
+        settled = true;
+        reject(err);
+      },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: MAX_WAIT_MS },
+    );
+
+    // Safety net: settle with the best fix seen even if none hit the
+    // accuracy target (or fail outright if nothing arrived at all).
+    setTimeout(() => {
+      if (best) {
+        finish(best);
+      } else if (!settled) {
+        settled = true;
+        navigator.geolocation.clearWatch(watchId);
+        reject(new Error('Location request timed out.'));
+      }
+    }, MAX_WAIT_MS + 500);
+  });
+}
+
 function getCurrentPosition(): Promise<GeoPosition> {
+  if (Platform.OS === 'web') {
+    return getWebPosition();
+  }
+
   if (Platform.OS === 'android') {
     if (!SourdoughLocation?.getCurrentPositionAsync) {
       return Promise.reject(new Error('Degoogled location module is not available.'));
