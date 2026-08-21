@@ -3,6 +3,7 @@ import { View, Text, ScrollView, StyleSheet, Linking, TouchableOpacity } from 'r
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppTheme, Spacing, FontSize, BorderRadius, cardStyle, sectionTitleStyle } from '../../src/theme';
 import { Seo } from '../../src/components/Seo';
+import { Icon } from '../../src/components/Icon';
 import { KeyboardScreen } from '../../src/components/KeyboardScreen';
 
 function LinkText({ children, url }: { children: string; url: string }) {
@@ -44,7 +45,7 @@ export default function AboutScreen() {
             <Text style={[sectionTitleStyle, { color: colors.muted }]}>WHAT IT DOES</Text>
 
             <View style={[aboutStyles.featureItem, { borderTopColor: colors.border }]}>
-              <Text style={[aboutStyles.featureEmoji, { color: colors.espresso }]}>🥖</Text>
+              <Icon name="restaurant-outline" size={24} color={colors.terracotta} />
               <View style={aboutStyles.featureBody}>
                 <Text style={[aboutStyles.featureTitle, { color: colors.espresso }]}>Sourdough Bread Calculator</Text>
                 <Text style={[aboutStyles.featureDesc, { color: colors.muted }]}>
@@ -54,7 +55,7 @@ export default function AboutScreen() {
             </View>
 
             <View style={[aboutStyles.featureItem, { borderTopColor: colors.border }]}>
-              <Text style={[aboutStyles.featureEmoji, { color: colors.espresso }]}>🥛</Text>
+              <Icon name="water-outline" size={24} color={colors.terracotta} />
               <View style={aboutStyles.featureBody}>
                 <Text style={[aboutStyles.featureTitle, { color: colors.espresso }]}>Yogurt Calculator</Text>
                 <Text style={[aboutStyles.featureDesc, { color: colors.muted }]}>
@@ -64,7 +65,7 @@ export default function AboutScreen() {
             </View>
 
             <View style={[aboutStyles.featureItem, { borderTopColor: colors.border }]}>
-              <Text style={[aboutStyles.featureEmoji, { color: colors.espresso }]}>🫙</Text>
+              <Icon name="flask-outline" size={24} color={colors.terracotta} />
               <View style={aboutStyles.featureBody}>
                 <Text style={[aboutStyles.featureTitle, { color: colors.espresso }]}>Lacto-Fermentation Calculator</Text>
                 <Text style={[aboutStyles.featureDesc, { color: colors.muted }]}>

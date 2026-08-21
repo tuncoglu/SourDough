@@ -7,6 +7,7 @@ import {
   View,
 } from 'react-native';
 import { useAppTheme, Spacing, FontSize, BorderRadius, cardStyle } from '../theme';
+import { Icon } from './Icon';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -80,7 +81,10 @@ export function InstallAppCard() {
         { backgroundColor: colors.card, borderColor: colors.border },
       ]}
     >
-      <Text style={[styles.title, { color: colors.espresso }]}>📲 Install Just Dough It</Text>
+      <View style={styles.titleRow}>
+        <Icon name="phone-portrait-outline" size={20} color={colors.espresso} />
+        <Text style={[styles.title, { color: colors.espresso }]}>Install Just Dough It</Text>
+      </View>
       <Text style={[styles.body, { color: colors.muted }]}>
         Add the app to your home screen for quick access and offline use.
       </Text>
@@ -99,6 +103,11 @@ export function InstallAppCard() {
 const styles = StyleSheet.create({
   card: {
     marginTop: Spacing.sm,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
   },
   title: {
     fontSize: FontSize.md,

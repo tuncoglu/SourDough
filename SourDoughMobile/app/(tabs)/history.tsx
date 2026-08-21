@@ -12,6 +12,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Spacing, FontSize, BorderRadius, MaxWidth, useAppTheme } from '../../src/theme';
 import { Seo } from '../../src/components/Seo';
+import { Icon } from '../../src/components/Icon';
 import { useFeedback } from '../../src/lib/feedback';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { SavedRecipe, BreadType } from '../../src/models/types';
@@ -126,7 +127,10 @@ export default function HistoryScreen() {
         description="Your saved sourdough recipes, stored locally on your device — private by design."
         path="/history"
       />
-      <Text style={[styles.header, { color: colors.espresso }]}>📖  Recipe History</Text>
+      <View style={styles.headerRow}>
+        <Icon name="time-outline" size={24} color={colors.espresso} />
+        <Text style={[styles.header, { color: colors.espresso }]}>Recipe History</Text>
+      </View>
 
       {/* Search bar */}
       <View style={styles.searchRow}>
@@ -187,7 +191,7 @@ export default function HistoryScreen() {
                   accessibilityLabel="Edit recipe"
                   accessibilityRole="button"
                 >
-                  <Text style={styles.actionBtn}>✏️</Text>
+                  <Icon name="pencil-outline" size={20} color={colors.espresso} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => handleDuplicate(item)}
@@ -195,7 +199,7 @@ export default function HistoryScreen() {
                   accessibilityLabel="Duplicate recipe"
                   accessibilityRole="button"
                 >
-                  <Text style={styles.actionBtn}>📋</Text>
+                  <Icon name="copy-outline" size={20} color={colors.espresso} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => handleDelete(item)}
@@ -203,7 +207,7 @@ export default function HistoryScreen() {
                   accessibilityLabel="Delete recipe"
                   accessibilityRole="button"
                 >
-                  <Text style={[styles.actionBtn, { color: colors.error }]}>🗑️</Text>
+                  <Icon name="trash-outline" size={20} color={colors.error} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -225,9 +229,16 @@ export default function HistoryScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, width: '100%', maxWidth: MaxWidth.content, alignSelf: 'center' },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    marginVertical: Spacing.md,
+  },
   header: {
     fontSize: FontSize.xl, fontWeight: '800',
-    textAlign: 'center', marginVertical: Spacing.md,
+    textAlign: 'center',
   },
   searchRow: {
     paddingHorizontal: Spacing.lg,
@@ -266,5 +277,4 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
     paddingRight: Spacing.lg,
   },
-  actionBtn: { fontSize: FontSize.md },
 });

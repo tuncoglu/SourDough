@@ -16,6 +16,7 @@ import { UserSettings, DEFAULT_SETTINGS, ThemeMode, UnitSystem } from '../../src
 import { getSettings, updateSettings } from '../../src/store/settingsCache';
 import { NumberInput } from '../../src/components/NumberInput';
 import { FlourPicker } from '../../src/components/FlourPicker';
+import { Icon } from '../../src/components/Icon';
 
 const THEME_OPTIONS: { key: ThemeMode; label: string }[] = [
   { key: 'system', label: '🌓  System' },
@@ -293,7 +294,10 @@ export default function SettingsScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.header, { color: colors.espresso }]}>⚙️  Settings</Text>
+        <View style={styles.headerRow}>
+          <Icon name="settings-outline" size={24} color={colors.espresso} />
+          <Text style={[styles.header, { color: colors.espresso }]}>Settings</Text>
+        </View>
         {isDesktop ? (
           <View style={{ maxWidth: MaxWidth.form, alignSelf: 'center', width: '100%' }}>
             {content}
@@ -326,11 +330,17 @@ const styles = StyleSheet.create({
   scrollContentDesktop: {
     alignItems: 'center',
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
   header: {
     fontSize: FontSize.xl,
     fontWeight: '800',
     textAlign: 'center',
-    marginBottom: Spacing.lg,
   },
   description: {
     fontSize: FontSize.sm,

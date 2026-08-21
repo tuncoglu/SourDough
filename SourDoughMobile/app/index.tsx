@@ -10,10 +10,11 @@ import { useAppTheme, Spacing, FontSize, BorderRadius, cardStyleLg, MaxWidth } f
 import { useBreakpoint } from '../src/hooks/useBreakpoint';
 import { Seo } from '../src/components/Seo';
 import { InstallAppCard, useInstallPrompt } from '../src/components/InstallAppCard';
+import { Icon, type IconName } from '../src/components/Icon';
 import { WaitlistCard } from '../src/components/WaitlistCard';
 
 interface LandingCard {
-  emoji: string;
+  icon: IconName;
   title: string;
   description: string;
   route: string;
@@ -21,21 +22,21 @@ interface LandingCard {
 
 const CARDS: LandingCard[] = [
   {
-    emoji: '🥖',
+    icon: 'restaurant-outline',
     title: 'Sourdough Bread',
     description:
       'Recipe builder with flour blends, hydration targets, and temperature-adjusted fermentation timelines.',
     route: '/bread',
   },
   {
-    emoji: '🥛',
+    icon: 'water-outline',
     title: 'Yogurt',
     description:
       'Starter culture calculator with 10 cultures, milk types, incubation timeline, and yield estimates.',
     route: '/yogurt',
   },
   {
-    emoji: '🫙',
+    icon: 'flask-outline',
     title: 'Lacto-Fermentation',
     description:
       'Salt calculator for sauerkraut, kimchi, pickles, hot sauce, and more — with day-by-day pH timeline.',
@@ -91,7 +92,7 @@ export default function LandingScreen() {
               accessibilityLabel={`${card.title}: ${card.description}`}
             >
               <View style={[styles.cardIconWrap, { backgroundColor: colors.badgeBg }]}>
-                <Text style={styles.cardEmoji}>{card.emoji}</Text>
+                <Icon name={card.icon} size={24} color={colors.terracotta} />
               </View>
               <View style={styles.cardBody}>
                 <Text style={[styles.cardTitle, { color: colors.espresso }]}>
@@ -101,7 +102,7 @@ export default function LandingScreen() {
                   {card.description}
                 </Text>
               </View>
-              <Text style={[styles.cardArrow, isDesktop && styles.cardArrowDesktop, { color: colors.muted }]}>→</Text>
+              <Icon name="chevron-forward" size={20} color={colors.muted} />
             </Link>
           ))}
         </View>
@@ -114,14 +115,17 @@ export default function LandingScreen() {
 
         {/* Footer */}
         <View style={[styles.footer, { borderTopColor: colors.border }]}>
-          <Link href="/history" style={[styles.footerLink, { color: colors.muted }]} accessibilityLabel="View saved recipe history">
-            📋  Saved recipes
+          <Link href="/history" style={styles.footerLink} accessibilityLabel="View saved recipe history">
+            <Icon name="time-outline" size={16} color={colors.muted} />
+            <Text style={[styles.footerLinkText, { color: colors.muted }]}>Saved recipes</Text>
           </Link>
-          <Link href="/about" style={[styles.footerLink, { color: colors.muted }]} accessibilityLabel="About this app">
-            ℹ️  About
+          <Link href="/about" style={styles.footerLink} accessibilityLabel="About this app">
+            <Icon name="information-circle-outline" size={16} color={colors.muted} />
+            <Text style={[styles.footerLinkText, { color: colors.muted }]}>About</Text>
           </Link>
-          <Link href="/settings" style={[styles.footerLink, { color: colors.muted }]} accessibilityLabel="Open settings">
-            ⚙️  Settings
+          <Link href="/settings" style={styles.footerLink} accessibilityLabel="Open settings">
+            <Icon name="settings-outline" size={16} color={colors.muted} />
+            <Text style={[styles.footerLinkText, { color: colors.muted }]}>Settings</Text>
           </Link>
         </View>
       </ScrollView>
@@ -248,6 +252,12 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   footerLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingVertical: Spacing.xs,
+  },
+  footerLinkText: {
     fontSize: FontSize.sm,
     fontWeight: '500',
   },

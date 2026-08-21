@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
+import { Icon } from './Icon';
 import { FALLBACK_HARDNESS } from '../lib/hardnessUtils';
 
 interface Props {
@@ -125,7 +126,7 @@ export function LocationBar({ summary, loading, error, onRefresh, showFallbackWa
             accessibilityRole="button"
           >
             <Text style={[styles.text, { color: colors.espresso }]} numberOfLines={2}>{summary}</Text>
-            <Text style={[styles.retryText, { color: colors.terracotta }]}>↺</Text>
+            <Icon name="refresh-outline" size={18} color={colors.terracotta} />
           </TouchableOpacity>
           {error && (
             <View style={styles.inner}>

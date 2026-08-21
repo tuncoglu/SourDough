@@ -2,22 +2,23 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Spacing, FontSize, BorderRadius, MaxWidth, useAppTheme } from '../theme';
+import { Icon, type IconName } from './Icon';
 
 type AppRoute = '/bread' | '/yogurt' | '/ferments' | '/history' | '/settings' | '/about';
 
 interface NavItem {
   path: AppRoute;
   label: string;
-  icon: string;
+  icon: IconName;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { path: '/bread', label: 'Sourdough', icon: '🥖' },
-  { path: '/yogurt', label: 'Yogurt', icon: '🥛' },
-  { path: '/ferments', label: 'Lacto-ferment', icon: '🫙' },
-  { path: '/history', label: 'History', icon: '📋' },
-  { path: '/settings', label: 'Settings', icon: '⚙️' },
-  { path: '/about', label: 'About', icon: 'ℹ️' },
+  { path: '/bread', label: 'Sourdough', icon: 'restaurant-outline' },
+  { path: '/yogurt', label: 'Yogurt', icon: 'water-outline' },
+  { path: '/ferments', label: 'Lacto-ferment', icon: 'flask-outline' },
+  { path: '/history', label: 'History', icon: 'time-outline' },
+  { path: '/settings', label: 'Settings', icon: 'settings-outline' },
+  { path: '/about', label: 'About', icon: 'information-circle-outline' },
 ];
 
 export function Sidebar() {
@@ -54,7 +55,7 @@ export function Sidebar() {
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
             >
-              <Text style={styles.navIcon}>{item.icon}</Text>
+              <Icon name={item.icon} size={22} color={active ? colors.terracotta : colors.muted} />
               <Text style={[styles.navLabel, { color: active ? colors.terracotta : colors.muted }, active && styles.navLabelActive]}>
                 {item.label}
               </Text>
