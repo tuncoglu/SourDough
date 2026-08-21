@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyleLg } from '../theme';
+import { Icon } from './Icon';
 import { YogurtResults, YogurtCultureType } from '../models/types';
 import { weightUnit } from '../lib/unitConversion';
 
@@ -25,7 +26,10 @@ export function YogurtResultCard({ results, cultureType, thickness, nutrition }:
 
   return (
     <View style={[cardStyleLg, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <Text style={[styles.title, { color: colors.espresso }]}>🫙 Yield & Timing</Text>
+      <View style={styles.titleRow}>
+        <Icon name="flask-outline" size={18} color={colors.espresso} />
+        <Text style={[styles.title, { color: colors.espresso }]}>Yield & Timing</Text>
+      </View>
 
       {/* Milk → Yogurt */}
       <View style={styles.resultRow}>
@@ -105,10 +109,15 @@ export function YogurtResultCard({ results, cultureType, thickness, nutrition }:
 }
 
 const styles = StyleSheet.create({
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.xs,
+  },
   title: {
     fontSize: FontSize.lg,
     fontWeight: '700',
-    marginBottom: Spacing.xs,
   },
   resultRow: {
     flexDirection: 'row',

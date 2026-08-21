@@ -185,10 +185,6 @@ const aboutStyles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  featureEmoji: {
-    fontSize: 22,
-    marginTop: 2,
-  },
   featureBody: {
     flex: 1,
   },

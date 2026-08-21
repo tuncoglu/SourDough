@@ -27,6 +27,7 @@ import { MethodTimeline } from '../../src/components/MethodTimeline';
 import { getPreset } from '../../src/data/recipePresets';
 import { copyToClipboard } from '../../src/lib/clipboard';
 import { Seo } from '../../src/components/Seo';
+import { Icon } from '../../src/components/Icon';
 
 export default function RecipeDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -92,7 +93,10 @@ export default function RecipeDetailScreen() {
 
   const inputsCard = (
     <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <Text style={[sectionTitleStyle, { color: colors.muted }]}>📋  INPUTS</Text>
+      <View style={styles.sectionTitleRow}>
+        <Icon name="list-outline" size={16} color={colors.muted} />
+        <Text style={[sectionTitleStyle, { color: colors.muted }]}>INPUTS</Text>
+      </View>
 
       {showBlendDetail ? (
         // Multi-flour breakdown
@@ -307,6 +311,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 60,
     fontSize: FontSize.lg,
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    marginBottom: Spacing.xs,
   },
   sectionLabel: {
     fontSize: FontSize.sm,

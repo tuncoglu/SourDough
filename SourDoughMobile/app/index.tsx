@@ -221,9 +221,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cardEmoji: {
-    fontSize: 24,
-  },
   cardBody: {
     flex: 1,
   },
@@ -235,13 +232,6 @@ const styles = StyleSheet.create({
     fontSize: FontSize.sm,
     lineHeight: 18,
     marginTop: 2,
-  },
-  cardArrow: {
-    fontSize: FontSize.xl,
-    fontWeight: '300',
-  },
-  cardArrowDesktop: {
-    marginTop: Spacing.sm,
   },
   footer: {
     flexDirection: 'row',

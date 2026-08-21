@@ -114,11 +114,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
     gap: Spacing.md,
   },
-  navIcon: {
-    fontSize: FontSize.lg,
-    width: 28,
-    textAlign: 'center',
-  },
   navLabel: {
     fontSize: FontSize.md,
     fontWeight: '500',
