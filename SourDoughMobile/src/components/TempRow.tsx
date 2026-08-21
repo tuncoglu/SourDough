@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
+import { useBreakpoint } from '../hooks/useBreakpoint';
 import { tempUnit, celsiusToFahrenheit, fahrenheitToCelsius } from '../lib/unitConversion';
 import { useExternalValueSync } from '../hooks/useExternalValueSync';
 import { isValidDecimalInput } from '../lib/inputValidation';
@@ -23,6 +24,7 @@ export function TempRow({
   editing = false,
 }: Props) {
   const { unitSystem, colors } = useAppTheme();
+  const { isMobile } = useBreakpoint();
   const displayUnit = unit ?? tempUnit(unitSystem);
   const isImperial = unitSystem === 'imperial';
 
@@ -69,20 +71,22 @@ export function TempRow({
   };
 
   return (
-    <View style={styles.row}>
-      <Text style={[styles.label, { color: colors.espresso }]}>{label}</Text>
-      <TextInput
-        style={[styles.input, { backgroundColor: colors.white, borderColor: editing ? colors.terracotta : colors.border, color: colors.espresso }]}
-        value={display}
-        onChangeText={handleChange}
-        keyboardType="decimal-pad"
-        placeholderTextColor={colors.muted}
-        accessibilityLabel={`${label} (${displayUnit})`}
-      />
-      <Text style={[styles.unit, { color: colors.muted }]}>{displayUnit}</Text>
-      {isAuto && !editing && (
-        <Text style={[styles.autoBadge, { color: colors.olive }]}>auto</Text>
-      )}
+    <View style={[styles.row, isMobile && styles.rowMobile]}>
+      <Text style={[styles.label, isMobile && styles.labelMobile, { color: colors.espresso }]}>{label}</Text>
+      <View style={[styles.inputGroup, isMobile && styles.inputGroupMobile]}>
+        <TextInput
+          style={[styles.input, isMobile && styles.inputMobile, { backgroundColor: colors.white, borderColor: editing ? colors.terracotta : colors.border, color: colors.espresso }]}
+          value={display}
+          onChangeText={handleChange}
+          keyboardType="decimal-pad"
+          placeholderTextColor={colors.muted}
+          accessibilityLabel={`${label} (${displayUnit})`}
+        />
+        <Text style={[styles.unit, { color: colors.muted }]}>{displayUnit}</Text>
+        {isAuto && !editing && (
+          <Text style={[styles.autoBadge, { color: colors.olive }]}>auto</Text>
+        )}
+      </View>
     </View>
   );
 }
@@ -93,9 +97,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: Spacing.xs + 1,
   },
+  rowMobile: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: Spacing.xs,
+  },
   label: {
     width: 90,
     fontSize: FontSize.sm,
+  },
+  labelMobile: {
+    width: 'auto',
+  },
+  inputGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  inputGroupMobile: {
+    flex: 1,
   },
   input: {
     flex: 1,
@@ -106,6 +126,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.sm,
     fontSize: FontSize.md,
     textAlign: 'right',
+  },
+  inputMobile: {
+    maxWidth: '100%',
   },
   unit: {
     marginLeft: Spacing.xs + 2,
