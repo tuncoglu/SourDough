@@ -90,7 +90,9 @@ export default function LandingScreen() {
               ]}
               accessibilityLabel={`${card.title}: ${card.description}`}
             >
-              <Text style={styles.cardEmoji}>{card.emoji}</Text>
+              <View style={[styles.cardIconWrap, { backgroundColor: colors.badgeBg }]}>
+                <Text style={styles.cardEmoji}>{card.emoji}</Text>
+              </View>
               <View style={styles.cardBody}>
                 <Text style={[styles.cardTitle, { color: colors.espresso }]}>
                   {card.title}
@@ -208,8 +210,15 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     minWidth: 240,
   },
+  cardIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   cardEmoji: {
-    fontSize: 32,
+    fontSize: 24,
   },
   cardBody: {
     flex: 1,
