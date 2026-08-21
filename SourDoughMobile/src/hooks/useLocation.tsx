@@ -12,7 +12,8 @@
  * updates the location for the whole app.
  */
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { NativeModules, PermissionsAndroid, Platform } from 'react-native';
+import { PermissionsAndroid, Platform } from 'react-native';
+import { requireOptionalNativeModule } from 'expo-modules-core';
 import type * as ExpoLocationType from 'expo-location';
 import { LocationData, detectAll } from '../lib/location';
 import { geocodePostcode } from '../lib/api';
@@ -32,7 +33,11 @@ interface GeoPosition {
   timestamp: number;
 }
 
-const SourdoughLocation = NativeModules.SourdoughLocation;
+// Expo modules are not exposed through RN's `NativeModules` proxy on the new
+// architecture — resolve through the Expo module registry instead.
+const SourdoughLocation = requireOptionalNativeModule<{
+  getCurrentPositionAsync: () => Promise<GeoPosition>;
+}>('SourdoughLocation');
 
 function getExpoLocation(): typeof ExpoLocationType | null {
   if (Platform.OS === 'android') {
