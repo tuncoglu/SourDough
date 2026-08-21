@@ -34,6 +34,22 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
+  // Register the PWA service worker on web so Android Chrome can offer
+  // installation again. The worker also gives us offline support for the
+  // app shell once it has been visited.
+  useEffect(() => {
+    if (
+      process.env.NODE_ENV === 'production' &&
+      typeof window !== 'undefined' &&
+      'serviceWorker' in navigator
+    ) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {
+        // Service worker registration is progressive enhancement; ignore
+        // failures (e.g. unsupported browsers or private mode).
+      });
+    }
+  }, []);
+
   if (!loaded) {
     return null;
   }

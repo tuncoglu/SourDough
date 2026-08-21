@@ -1,11 +1,15 @@
 {
+  "id": "/",
   "name": "Just Dough It — Sourdough, Yogurt & Ferment Calculators",
   "short_name": "Just Dough It",
   "description": "Location-aware sourdough, yogurt and lacto-fermentation calculators. Private by design — no accounts, no tracking.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#FFF5ED",
   "theme_color": "#954D28",
+  "lang": "en",
   "icons": [
     { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
