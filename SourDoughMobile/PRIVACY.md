@@ -1,6 +1,6 @@
 # Privacy Policy for Just Dough It
 
-**Last updated:** August 5, 2026
+**Last updated:** August 20, 2026
 
 Just Dough It ("the App") is a baking tool with calculators for sourdough
 bread, yogurt, and lacto-fermentation. This policy explains what data the
@@ -11,9 +11,22 @@ App handles and how it is used.
 **The App does not require an account, does not collect personal
 identifiers, and does not use analytics or tracking.**
 
-All your data — starter feeding history, saved recipes, and settings —
+All your app data — starter feeding history, saved recipes, and settings —
 is stored **only on your device** using local storage. We do not have
 access to this data.
+
+### Optional waitlist email
+
+If you choose to join the launch waitlist on the website, we collect the
+email address you provide for the sole purpose of notifying you when the
+iOS and Android apps are available. You can unsubscribe or ask us to delete
+it at any time by emailing info@sourdoughcalculator.uk.
+
+If the website is configured with a waitlist endpoint (for example, a
+form service or Cloudflare Worker), your email is sent directly to that
+processor. If no endpoint is configured, your email is not transmitted to
+us automatically — the site opens a pre-filled email in your mail app, and
+you choose whether to send it.
 
 ## Location data
 

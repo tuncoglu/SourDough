@@ -193,12 +193,13 @@ Contributions are welcome! Here's the flow:
 
 ## Privacy
 
-**No accounts. No tracking. No cloud storage.** Everything stays on your device.
+**No accounts required. No tracking. No cloud storage.** Everything stays on your device.
 
 When you grant location permission, only your coordinates are sent to
 Open-Meteo (weather) and OpenStreetMap (geocoding). Nothing else.
 
-Full details: [PRIVACY.md](PRIVACY.md)
+The website has an optional email waitlist for iOS/Android launch updates;
+your address is used only for that purpose. Full details: [PRIVACY.md](PRIVACY.md)
 
 ---
 

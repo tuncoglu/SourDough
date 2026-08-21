@@ -55,6 +55,7 @@ pick bread, yogurt, or lacto-fermentation — then dive into the full calculator
 ### 🌐 Web
 - **Installable PWA** — add to home screen; works offline once loaded
 - **Share-friendly** — every page has Open Graph/Twitter card metadata and a generated share image
+- **Launch waitlist** — landing page email capture for iOS/Android; set `EXPO_PUBLIC_WAITLIST_ENDPOINT` to a form endpoint or it falls back to a pre-filled email. If you use a custom endpoint, add its origin to `connect-src` in `SourDoughMobile/public/_headers`
 - **Optional cookieless analytics** — set the `EXPO_PUBLIC_CF_BEACON_TOKEN` repo variable in GitHub Actions to enable Cloudflare Web Analytics (privacy-respecting, no cookie banner needed)
 
 ### 🥛 Yogurt Calculator
@@ -177,10 +178,11 @@ the copyright notice and don't hold us liable.
 
 SourDough takes your privacy seriously:
 
-- ❌ **No accounts** — no sign-up, no login
+- ❌ **No accounts required** — no sign-up, no login
 - ❌ **No tracking** — no analytics, no telemetry
 - ❌ **No cloud storage** — your recipes stay on your device
 - ✅ **Location is transient** — coordinates are sent only to fetch weather and geocode your city; never stored or shared
+- 📬 **Optional waitlist** — if you join the iOS/Android launch list, only your email is used for launch updates; see the privacy policy
 
 See [SourDoughMobile/PRIVACY.md](SourDoughMobile/PRIVACY.md) for details.
 

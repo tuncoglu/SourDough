@@ -8,6 +8,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppTheme, Spacing, FontSize, BorderRadius, cardStyleLg } from '../src/theme';
 import { Seo } from '../src/components/Seo';
+import { WaitlistCard } from '../src/components/WaitlistCard';
 
 interface LandingCard {
   emoji: string;
@@ -85,6 +86,9 @@ export default function LandingScreen() {
             </Link>
           ))}
         </View>
+
+        {/* Waitlist for native launch */}
+        <WaitlistCard />
 
         {/* Footer */}
         <View style={[styles.footer, { borderTopColor: colors.border }]}>
