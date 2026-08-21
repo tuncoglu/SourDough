@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Share, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as StoreReview from 'expo-store-review';
 import {
   CalculationResults,
   SavedRecipe,
@@ -13,9 +12,6 @@ import { formatRecipeTextFromState } from '../lib/recipeFormatter';
 import { copyToClipboard } from '../lib/clipboard';
 import { useAppTheme } from '../theme';
 import { useFeedback } from '../lib/feedback';
-
-const SAVE_COUNT_KEY = 'sourdough_save_count';
-const REVIEW_REQUESTED_KEY = 'sourdough_review_requested';
 
 interface SaveParams {
   blend: FlourBlendEntry[];
@@ -130,24 +126,6 @@ export function useRecipeActions() {
         await updateRecipe(recipe);
       } else {
         trimmedOldest = await saveRecipe(recipe);
-      }
-
-      // Review prompt tracking
-      try {
-        const raw = await AsyncStorage.getItem(SAVE_COUNT_KEY);
-        const count = (raw ? parseInt(raw, 10) : 0) + 1;
-        await AsyncStorage.setItem(SAVE_COUNT_KEY, String(count));
-
-        const alreadyRequested = await AsyncStorage.getItem(REVIEW_REQUESTED_KEY);
-        if (count >= 3 && !alreadyRequested) {
-          const available = await StoreReview.isAvailableAsync();
-          if (available) {
-            await AsyncStorage.setItem(REVIEW_REQUESTED_KEY, 'true');
-            await StoreReview.requestReview();
-          }
-        }
-      } catch {
-        // Silently ignore review tracking failures
       }
 
       showToast(editId ? 'Recipe updated in your history.' : 'Recipe saved to your history.', 'success');

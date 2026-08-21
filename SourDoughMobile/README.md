@@ -191,6 +191,13 @@ Contributions are welcome! Here's the flow:
 
 ---
 
+## F-Droid / degoogled Android builds
+
+The Android build intentionally excludes `expo-location` from autolinking
+(see `expo.autolinking.android.exclude` in `package.json`) and uses the local
+`modules/sourdough-location` module, which talks to Android's `LocationManager`
+directly instead of Google Play Services. `expo-store-review` has been removed.
+
 ## Privacy
 
 **No accounts required. No tracking. No cloud storage.** Everything stays on your device.

@@ -12,11 +12,88 @@
  * updates the location for the whole app.
  */
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import * as ExpoLocation from 'expo-location';
+import { NativeModules, PermissionsAndroid, Platform } from 'react-native';
+import type * as ExpoLocationType from 'expo-location';
 import { LocationData, detectAll } from '../lib/location';
 import { geocodePostcode } from '../lib/api';
 import { getErrorMessage } from '../lib/errors';
 import { useAppTheme } from '../theme';
+
+interface GeoPosition {
+  coords: {
+    latitude: number;
+    longitude: number;
+    accuracy: number | null;
+    altitude: number | null;
+    altitudeAccuracy: number | null;
+    heading: number | null;
+    speed: number | null;
+  };
+  timestamp: number;
+}
+
+const SourdoughLocation = NativeModules.SourdoughLocation;
+
+function getExpoLocation(): typeof ExpoLocationType | null {
+  if (Platform.OS === 'android') {
+    // expo-location is intentionally excluded from the Android build for F-Droid.
+    return null;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  return require('expo-location') as typeof ExpoLocationType;
+}
+
+function getCurrentPosition(): Promise<GeoPosition> {
+  if (Platform.OS === 'android') {
+    if (!SourdoughLocation?.getCurrentPositionAsync) {
+      return Promise.reject(new Error('Degoogled location module is not available.'));
+    }
+    return SourdoughLocation.getCurrentPositionAsync() as Promise<GeoPosition>;
+  }
+
+  const ExpoLocation = getExpoLocation();
+  if (!ExpoLocation) {
+    return Promise.reject(new Error('Location module is not available.'));
+  }
+
+  return ExpoLocation.getCurrentPositionAsync({
+    accuracy: ExpoLocation.Accuracy.Low,
+  });
+}
+
+async function requestLocationPermission(): Promise<boolean> {
+  if (Platform.OS === 'web') {
+    // The browser will show its own permission prompt when getCurrentPosition is called.
+    return true;
+  }
+
+  if (Platform.OS === 'android') {
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        {
+          title: 'Location access',
+          message:
+            'Just Dough It uses your location to detect local temperature and water hardness for accurate baking guidance.',
+          buttonNeutral: 'Ask Me Later',
+          buttonNegative: 'Cancel',
+          buttonPositive: 'OK',
+        },
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    } catch {
+      return false;
+    }
+  }
+
+  const ExpoLocation = getExpoLocation();
+  if (!ExpoLocation) {
+    return false;
+  }
+
+  const { status } = await ExpoLocation.requestForegroundPermissionsAsync();
+  return status === 'granted';
+}
 
 export interface LocationState {
   locationData: LocationData | null;
@@ -50,8 +127,8 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setError(null);
     try {
-      const { status } = await ExpoLocation.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
+      const granted = await requestLocationPermission();
+      if (!granted) {
         if (requestId === requestIdRef.current) {
           setError('Location permission denied. Enter temps manually.');
           setLoading(false);
@@ -59,9 +136,7 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const pos = await ExpoLocation.getCurrentPositionAsync({
-        accuracy: ExpoLocation.Accuracy.Low,
-      });
+      const pos = await getCurrentPosition();
 
       const result = await detectAll(
         pos.coords.latitude,
