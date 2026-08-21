@@ -1,6 +1,6 @@
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
-import { Ionicon } from '../src/components/Ionicon';
+import { MciIcon } from '../src/components/MciIcon';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
@@ -23,7 +23,7 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-    ...Ionicon.font,
+    ...MciIcon.font,
   });
 
   useEffect(() => {

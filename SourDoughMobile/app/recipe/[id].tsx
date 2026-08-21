@@ -94,7 +94,7 @@ export default function RecipeDetailScreen() {
   const inputsCard = (
     <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={styles.sectionTitleRow}>
-        <Icon name="list-outline" size={16} color={colors.muted} />
+        <Icon name="format-list-bulleted" size={16} color={colors.muted} />
         <Text style={[sectionTitleStyle, { color: colors.muted }]}>INPUTS</Text>
       </View>
 

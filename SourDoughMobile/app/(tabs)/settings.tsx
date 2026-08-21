@@ -295,7 +295,7 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerRow}>
-          <Icon name="settings-outline" size={24} color={colors.espresso} />
+          <Icon name="cog-outline" size={24} color={colors.espresso} />
           <Text style={[styles.header, { color: colors.espresso }]}>Settings</Text>
         </View>
         {isDesktop ? (

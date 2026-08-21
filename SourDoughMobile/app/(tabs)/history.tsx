@@ -128,7 +128,7 @@ export default function HistoryScreen() {
         path="/history"
       />
       <View style={styles.headerRow}>
-        <Icon name="time-outline" size={24} color={colors.espresso} />
+        <Icon name="history" size={24} color={colors.espresso} />
         <Text style={[styles.header, { color: colors.espresso }]}>Recipe History</Text>
       </View>
 
@@ -199,7 +199,7 @@ export default function HistoryScreen() {
                   accessibilityLabel="Duplicate recipe"
                   accessibilityRole="button"
                 >
-                  <Icon name="copy-outline" size={20} color={colors.espresso} />
+                  <Icon name="content-copy" size={20} color={colors.espresso} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => handleDelete(item)}
@@ -207,7 +207,7 @@ export default function HistoryScreen() {
                   accessibilityLabel="Delete recipe"
                   accessibilityRole="button"
                 >
-                  <Icon name="trash-outline" size={20} color={colors.error} />
+                  <Icon name="trash-can-outline" size={20} color={colors.error} />
                 </TouchableOpacity>
               </View>
             </View>

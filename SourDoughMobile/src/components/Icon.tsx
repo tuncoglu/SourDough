@@ -1,8 +1,8 @@
 import React from 'react';
-import { Ionicon } from './Ionicon';
+import { MciIcon } from './MciIcon';
 import type { ComponentProps } from 'react';
 
-export type IconName = ComponentProps<typeof Ionicon>['name'];
+export type IconName = ComponentProps<typeof MciIcon>['name'];
 
 interface IconProps {
   name: IconName;
@@ -11,10 +11,10 @@ interface IconProps {
 }
 
 /**
- * Small wrapper around Ionicons so the rest of the app doesn't need to know
- * which icon library is used. Ionicons is MIT-licensed and bundled with
- * @expo/vector-icons.
+ * Small wrapper around MaterialCommunityIcons so the rest of the app doesn't
+ * need to know which icon library is used. MDI is open-source and bundled
+ * with @expo/vector-icons.
  */
 export function Icon({ name, size = 20, color }: IconProps) {
-  return <Ionicon name={name} size={size} color={color} />;
+  return <MciIcon name={name} size={size} color={color} />;
 }

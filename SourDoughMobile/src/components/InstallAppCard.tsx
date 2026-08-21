@@ -82,7 +82,7 @@ export function InstallAppCard() {
       ]}
     >
       <View style={styles.titleRow}>
-        <Icon name="phone-portrait-outline" size={20} color={colors.espresso} />
+        <Icon name="cellphone" size={20} color={colors.espresso} />
         <Text style={[styles.title, { color: colors.espresso }]}>Install Just Dough It</Text>
       </View>
       <Text style={[styles.body, { color: colors.muted }]}>

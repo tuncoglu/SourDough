@@ -27,12 +27,12 @@ function TabIcon({ name, focused, color }: { name: IconName; focused: boolean; c
 
 // Icons shared between sidebar (Sidebar.tsx) and tab bar — keep in sync.
 const TAB_ICONS = {
-  calculator: 'restaurant-outline',
-  yogurt: 'water-outline',
-  ferments: 'flask-outline',
-  history: 'time-outline',
-  settings: 'settings-outline',
-  about: 'information-circle-outline',
+  calculator: 'bread-slice-outline',
+  yogurt: 'cup-outline',
+  ferments: 'barrel-outline',
+  history: 'history',
+  settings: 'cog-outline',
+  about: 'information-outline',
 } as const;
 
 export default function TabLayout() {

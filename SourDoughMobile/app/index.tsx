@@ -22,21 +22,21 @@ interface LandingCard {
 
 const CARDS: LandingCard[] = [
   {
-    icon: 'restaurant-outline',
+    icon: 'bread-slice-outline',
     title: 'Sourdough Bread',
     description:
       'Recipe builder with flour blends, hydration targets, and temperature-adjusted fermentation timelines.',
     route: '/bread',
   },
   {
-    icon: 'water-outline',
+    icon: 'cup-outline',
     title: 'Yogurt',
     description:
       'Starter culture calculator with 10 cultures, milk types, incubation timeline, and yield estimates.',
     route: '/yogurt',
   },
   {
-    icon: 'flask-outline',
+    icon: 'barrel-outline',
     title: 'Lacto-Fermentation',
     description:
       'Salt calculator for sauerkraut, kimchi, pickles, hot sauce, and more — with day-by-day pH timeline.',
@@ -102,7 +102,7 @@ export default function LandingScreen() {
                   {card.description}
                 </Text>
               </View>
-              <Icon name="chevron-forward" size={20} color={colors.muted} />
+              <Icon name="chevron-right" size={20} color={colors.muted} />
             </Link>
           ))}
         </View>
@@ -116,15 +116,15 @@ export default function LandingScreen() {
         {/* Footer */}
         <View style={[styles.footer, { borderTopColor: colors.border }]}>
           <Link href="/history" style={styles.footerLink} accessibilityLabel="View saved recipe history">
-            <Icon name="time-outline" size={16} color={colors.muted} />
+            <Icon name="history" size={16} color={colors.muted} />
             <Text style={[styles.footerLinkText, { color: colors.muted }]}>Saved recipes</Text>
           </Link>
           <Link href="/about" style={styles.footerLink} accessibilityLabel="About this app">
-            <Icon name="information-circle-outline" size={16} color={colors.muted} />
+            <Icon name="information-outline" size={16} color={colors.muted} />
             <Text style={[styles.footerLinkText, { color: colors.muted }]}>About</Text>
           </Link>
           <Link href="/settings" style={styles.footerLink} accessibilityLabel="Open settings">
-            <Icon name="settings-outline" size={16} color={colors.muted} />
+            <Icon name="cog-outline" size={16} color={colors.muted} />
             <Text style={[styles.footerLinkText, { color: colors.muted }]}>Settings</Text>
           </Link>
         </View>

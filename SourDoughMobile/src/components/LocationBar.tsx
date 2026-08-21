@@ -126,7 +126,7 @@ export function LocationBar({ summary, loading, error, onRefresh, showFallbackWa
             accessibilityRole="button"
           >
             <Text style={[styles.text, { color: colors.espresso }]} numberOfLines={2}>{summary}</Text>
-            <Icon name="refresh-outline" size={18} color={colors.terracotta} />
+            <Icon name="refresh" size={18} color={colors.terracotta} />
           </TouchableOpacity>
           {error && (
             <View style={styles.inner}>

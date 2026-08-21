@@ -13,12 +13,12 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { path: '/bread', label: 'Sourdough', icon: 'restaurant-outline' },
-  { path: '/yogurt', label: 'Yogurt', icon: 'water-outline' },
-  { path: '/ferments', label: 'Lacto-ferment', icon: 'flask-outline' },
-  { path: '/history', label: 'History', icon: 'time-outline' },
-  { path: '/settings', label: 'Settings', icon: 'settings-outline' },
-  { path: '/about', label: 'About', icon: 'information-circle-outline' },
+  { path: '/bread', label: 'Sourdough', icon: 'bread-slice-outline' },
+  { path: '/yogurt', label: 'Yogurt', icon: 'cup-outline' },
+  { path: '/ferments', label: 'Lacto-ferment', icon: 'barrel-outline' },
+  { path: '/history', label: 'History', icon: 'history' },
+  { path: '/settings', label: 'Settings', icon: 'cog-outline' },
+  { path: '/about', label: 'About', icon: 'information-outline' },
 ];
 
 export function Sidebar() {

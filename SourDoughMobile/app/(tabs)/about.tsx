@@ -45,7 +45,7 @@ export default function AboutScreen() {
             <Text style={[sectionTitleStyle, { color: colors.muted }]}>WHAT IT DOES</Text>
 
             <View style={[aboutStyles.featureItem, { borderTopColor: colors.border }]}>
-              <Icon name="restaurant-outline" size={24} color={colors.terracotta} />
+              <Icon name="bread-slice-outline" size={24} color={colors.terracotta} />
               <View style={aboutStyles.featureBody}>
                 <Text style={[aboutStyles.featureTitle, { color: colors.espresso }]}>Sourdough Bread Calculator</Text>
                 <Text style={[aboutStyles.featureDesc, { color: colors.muted }]}>
@@ -55,7 +55,7 @@ export default function AboutScreen() {
             </View>
 
             <View style={[aboutStyles.featureItem, { borderTopColor: colors.border }]}>
-              <Icon name="water-outline" size={24} color={colors.terracotta} />
+              <Icon name="cup-outline" size={24} color={colors.terracotta} />
               <View style={aboutStyles.featureBody}>
                 <Text style={[aboutStyles.featureTitle, { color: colors.espresso }]}>Yogurt Calculator</Text>
                 <Text style={[aboutStyles.featureDesc, { color: colors.muted }]}>
@@ -65,7 +65,7 @@ export default function AboutScreen() {
             </View>
 
             <View style={[aboutStyles.featureItem, { borderTopColor: colors.border }]}>
-              <Icon name="flask-outline" size={24} color={colors.terracotta} />
+              <Icon name="barrel-outline" size={24} color={colors.terracotta} />
               <View style={aboutStyles.featureBody}>
                 <Text style={[aboutStyles.featureTitle, { color: colors.espresso }]}>Lacto-Fermentation Calculator</Text>
                 <Text style={[aboutStyles.featureDesc, { color: colors.muted }]}>
