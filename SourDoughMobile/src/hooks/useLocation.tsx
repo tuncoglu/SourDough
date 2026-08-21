@@ -13,6 +13,7 @@
  */
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { PermissionsAndroid, Platform } from 'react-native';
+import { usePathname } from 'expo-router';
 import { requireOptionalNativeModule } from 'expo-modules-core';
 import type * as ExpoLocationType from 'expo-location';
 import { LocationData, detectAll } from '../lib/location';
@@ -192,12 +193,17 @@ export interface LocationState {
 
 const LocationContext = createContext<LocationState | null>(null);
 
+/** Only request location when the user actually reaches a calculator. */
+const AUTO_DETECT_PATHS = new Set(['/bread', '/yogurt', '/ferments']);
+
 export function LocationProvider({ children }: { children: React.ReactNode }) {
   const { unitSystem } = useAppTheme();
+  const pathname = usePathname();
   const [data, setData] = useState<LocationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [postcode, setPostcode] = useState<string>('');
+  const hasAutoDetectedRef = useRef(false);
 
   // Refs to avoid rebuilding detect() when postcode or unitSystem change
   const postcodeRef = useRef(postcode);
@@ -284,10 +290,16 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Detect once on mount — shared by every consumer below the provider.
+  // Detect once when the user reaches a calculator. Avoid requesting
+  // location on the landing page so first-time visitors aren't greeted with
+  // a permission prompt before they understand the app.
   useEffect(() => {
-    detect();
-  }, [detect]);
+    if (hasAutoDetectedRef.current) return;
+    if (pathname && AUTO_DETECT_PATHS.has(pathname)) {
+      hasAutoDetectedRef.current = true;
+      detect();
+    }
+  }, [pathname, detect]);
 
   const value = useMemo<LocationState>(
     () => ({

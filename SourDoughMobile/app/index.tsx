@@ -6,8 +6,10 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAppTheme, Spacing, FontSize, BorderRadius, cardStyleLg } from '../src/theme';
+import { useAppTheme, Spacing, FontSize, BorderRadius, cardStyleLg, MaxWidth } from '../src/theme';
+import { useBreakpoint } from '../src/hooks/useBreakpoint';
 import { Seo } from '../src/components/Seo';
+import { InstallAppCard } from '../src/components/InstallAppCard';
 import { WaitlistCard } from '../src/components/WaitlistCard';
 
 interface LandingCard {
@@ -43,6 +45,7 @@ const CARDS: LandingCard[] = [
 
 export default function LandingScreen() {
   const { colors } = useAppTheme();
+  const { isDesktop } = useBreakpoint();
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.cream }]} edges={['top', 'bottom']}>
@@ -53,24 +56,37 @@ export default function LandingScreen() {
       />
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, isDesktop && styles.contentDesktop]}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.espresso }]}>🥖  Just Dough It</Text>
-          <Text style={[styles.subtitle, { color: colors.muted }]}>
+        <View style={[styles.header, isDesktop && styles.headerDesktop]}>
+          <Text style={[styles.title, isDesktop && styles.titleDesktop, { color: colors.espresso }]}>
+            🥖  Just Dough It
+          </Text>
+          <Text style={[styles.subtitle, isDesktop && styles.subtitleDesktop, { color: colors.muted }]}>
             Perfect bread, less guesswork
           </Text>
+          <Text style={[styles.heroBody, isDesktop && styles.heroBodyDesktop, { color: colors.muted }]}>
+            Location-aware sourdough, yogurt and lacto-fermentation calculators that adapt to your kitchen.
+          </Text>
+          <Link href="/bread" style={[styles.cta, { backgroundColor: colors.terracotta }]}>
+            <Text style={[styles.ctaText, { color: colors.white }]}>Start calculating →</Text>
+          </Link>
         </View>
 
         {/* Cards */}
-        <View style={styles.cards}>
+        <View style={[styles.cards, isDesktop && styles.cardsDesktop]}>
           {CARDS.map((card) => (
             <Link
               key={card.route}
               href={card.route}
-              style={[cardStyleLg, styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+              style={[
+                cardStyleLg,
+                styles.card,
+                isDesktop && styles.cardDesktop,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
               accessibilityLabel={`${card.title}: ${card.description}`}
             >
               <Text style={styles.cardEmoji}>{card.emoji}</Text>
@@ -82,10 +98,13 @@ export default function LandingScreen() {
                   {card.description}
                 </Text>
               </View>
-              <Text style={[styles.cardArrow, { color: colors.muted }]}>→</Text>
+              <Text style={[styles.cardArrow, isDesktop && styles.cardArrowDesktop, { color: colors.muted }]}>→</Text>
             </Link>
           ))}
         </View>
+
+        {/* Install PWA when the browser supports it */}
+        <InstallAppCard />
 
         {/* Waitlist for native launch */}
         <WaitlistCard />
@@ -118,27 +137,75 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center' as any,
   },
+  contentDesktop: {
+    maxWidth: MaxWidth.content,
+    paddingTop: Spacing.xxl + Spacing.lg,
+  },
   header: {
     marginBottom: Spacing.xxl + Spacing.md,
     alignItems: 'center',
+  },
+  headerDesktop: {
+    marginBottom: Spacing.xxl + Spacing.lg,
   },
   title: {
     fontSize: FontSize.title + 4,
     fontWeight: '800',
     textAlign: 'center',
   },
+  titleDesktop: {
+    fontSize: FontSize.title + 10,
+  },
   subtitle: {
     fontSize: FontSize.lg,
     marginTop: Spacing.sm,
     textAlign: 'center',
   },
+  subtitleDesktop: {
+    fontSize: FontSize.xl,
+    marginTop: Spacing.md,
+  },
+  heroBody: {
+    fontSize: FontSize.sm,
+    lineHeight: 20,
+    textAlign: 'center',
+    marginTop: Spacing.md,
+    maxWidth: 420,
+  },
+  heroBodyDesktop: {
+    fontSize: FontSize.md,
+    lineHeight: 24,
+    marginTop: Spacing.lg,
+  },
+  cta: {
+    marginTop: Spacing.lg + Spacing.sm,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.xl + Spacing.sm,
+    borderRadius: BorderRadius.md,
+  },
+  ctaText: {
+    fontSize: FontSize.md,
+    fontWeight: '700',
+  },
   cards: {
     gap: Spacing.md,
+  },
+  cardsDesktop: {
+    flexDirection: 'row' as any,
+    flexWrap: 'wrap' as any,
+    gap: Spacing.lg,
   },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
+  },
+  cardDesktop: {
+    flexDirection: 'column' as any,
+    alignItems: 'flex-start',
+    flexBasis: '30%',
+    flexGrow: 1,
+    minWidth: 240,
   },
   cardEmoji: {
     fontSize: 32,
@@ -158,6 +225,9 @@ const styles = StyleSheet.create({
   cardArrow: {
     fontSize: FontSize.xl,
     fontWeight: '300',
+  },
+  cardArrowDesktop: {
+    marginTop: Spacing.sm,
   },
   footer: {
     flexDirection: 'row',

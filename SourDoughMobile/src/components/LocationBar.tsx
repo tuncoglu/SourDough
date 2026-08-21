@@ -174,12 +174,12 @@ const styles = StyleSheet.create({
   },
   text: {
     flex: 1,
-    fontSize: FontSize.xs,
-    lineHeight: 18,
+    fontSize: FontSize.sm,
+    lineHeight: 20,
   },
   error: {
     flex: 1,
-    fontSize: FontSize.xs,
+    fontSize: FontSize.sm,
   },
   retryBtn: {
     paddingHorizontal: Spacing.sm,
@@ -201,8 +201,8 @@ const styles = StyleSheet.create({
   },
   fallbackText: {
     flex: 1,
-    fontSize: FontSize.xs,
-    lineHeight: 18,
+    fontSize: FontSize.sm,
+    lineHeight: 20,
     fontWeight: '500',
   },
   postcodeLink: {
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.xs,
   },
   postcodeLinkText: {
-    fontSize: FontSize.xs,
+    fontSize: FontSize.sm,
     fontWeight: '600',
   },
   postcodeRow: {
