@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Platform,
   StyleSheet,
@@ -14,12 +14,11 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 /**
- * Small install card shown only on web when the browser offers PWA
- * installation (Chrome/Android). This complements the native browser prompt
- * and gives users a persistent tap target to install the app.
+ * Shared PWA install-prompt state. Lets other parts of the UI (e.g. the
+ * landing page) know when an install prompt is available so they can avoid
+ * showing competing calls-to-action.
  */
-export function InstallAppCard() {
-  const { colors } = useAppTheme();
+export function useInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(false);
 
@@ -47,16 +46,31 @@ export function InstallAppCard() {
     };
   }, []);
 
-  if (Platform.OS !== 'web' || installed || !deferredPrompt) {
-    return null;
-  }
-
-  const handleInstall = async () => {
+  const handleInstall = useCallback(async () => {
     if (!deferredPrompt) return;
     await deferredPrompt.prompt();
     await deferredPrompt.userChoice;
     setDeferredPrompt(null);
+  }, [deferredPrompt]);
+
+  return {
+    canInstall: Platform.OS === 'web' && !installed && !!deferredPrompt,
+    handleInstall,
   };
+}
+
+/**
+ * Small install card shown only on web when the browser offers PWA
+ * installation (Chrome/Android). This complements the native browser prompt
+ * and gives users a persistent tap target to install the app.
+ */
+export function InstallAppCard() {
+  const { colors } = useAppTheme();
+  const { canInstall, handleInstall } = useInstallPrompt();
+
+  if (!canInstall) {
+    return null;
+  }
 
   return (
     <View
