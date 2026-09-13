@@ -20,11 +20,12 @@ import {
 import { useLocation } from './useLocation';
 import { useStaleResults, dirtySetter } from './useStaleResults';
 import { isValidDecimalInput } from '../lib/inputValidation';
-import { buildComboSetup, comboReferenceSpeed, presetReferenceSpeed, recommendedSaltPct, relativeVegSpeed, DEFAULT_BRINE_WATER_G } from '../lib/fermentSetup';
+import { buildComboSetup, comboReferenceSpeed, effectivePrepSize, presetReferenceSpeed, recommendedSaltPct, relativeVegSpeed, DEFAULT_BRINE_WATER_G } from '../lib/fermentSetup';
 import { getSettings } from '../store/settingsCache';
 import { classifyHardness } from '../data/ukWaterHardness';
 import { FALLBACK_HARDNESS } from '../lib/hardnessUtils';
 import { useAppTheme } from '../theme';
+import { formatTemp } from '../lib/unitConversion';
 import type { LocationData } from '../lib/location';
 
 export interface LactoCalculatorState {
@@ -47,6 +48,10 @@ export interface LactoCalculatorState {
   // Temperature (auto-detected from weather)
   effectiveTemp: number;
   tempResult: FermentTempResult | null;
+  /** Human-readable source of the temperature actually being used. */
+  tempSummary: string;
+  /** Where that temperature came from — 'manual' when overridden in Settings. */
+  tempSource: FermentTempResult['source'];
   dailyTemps: DailyTempSummary[];
 
   // Preset
@@ -71,6 +76,8 @@ export interface LactoCalculatorState {
   hardness: WaterHardness | null;
   /** Manual hardness override from Settings (mg/L CaCO₃, 0 = auto-detect). */
   waterHardnessOverride: number;
+  /** Manual fermentation temperature in °C, or 0 when following the forecast. */
+  fermTempOverride: number;
 
   // Results
   results: FermentResults | null;
@@ -114,6 +121,8 @@ export function useLactoCalculator(): LactoCalculatorState {
   const [saltType, setSaltType] = useState<SaltCrystal>('maldon-flake');
   const [showResults, setShowResults] = useState(false);
   const [waterHardnessOverride, setWaterHardnessOverride] = useState(0);
+  /** Manual fermentation temperature (°C); 0 = use the local forecast. */
+  const [fermTempOverride, setFermTempOverride] = useState(0);
   /**
    * Method override for curated combos, which carry their own method.
    * `null` = follow the selected preset (see `method` below).
@@ -271,6 +280,7 @@ export function useLactoCalculator(): LactoCalculatorState {
   useFocusEffect(useCallback(() => {
     getSettings().then((s) => {
       setWaterHardnessOverride(s.waterHardnessOverride ?? 0);
+      setFermTempOverride(s.fermTempOverride ?? 0);
     });
   }, []));
 
@@ -294,8 +304,19 @@ export function useLactoCalculator(): LactoCalculatorState {
     );
   }, [locationData, unitSystem]);
 
-  const effectiveTemp = tempResult.effectiveTemp;
+  /**
+   * The forecast is the OUTDOOR temperature; a jar on a kitchen counter sits
+   * warmer than that, so an explicit override wins. This is the single biggest
+   * error source in the estimate — a UK autumn forecast can read 16 °C while
+   * the kitchen is 20 °C, which is a 1.8× difference in time.
+   */
+  const effectiveTemp = fermTempOverride > 0 ? fermTempOverride : tempResult.effectiveTemp;
   const dailyTemps = tempResult.dailyTemps;
+
+  /** What the temperature card should say — the forecast is outdoor, so say so. */
+  const tempSummary = fermTempOverride > 0
+    ? `Using your set temperature ${formatTemp(fermTempOverride, unitSystem, 1)} — the local forecast would have been ${formatTemp(tempResult.effectiveTemp, unitSystem, 1)}`
+    : `${tempResult.summary} · fermenting indoors? Set your kitchen temperature in Settings`;
 
   // When preset changes, update method + default veg + salt%
   const selectPreset = useCallback((type: FermentType) => {
@@ -370,6 +391,7 @@ export function useLactoCalculator(): LactoCalculatorState {
     // ferments that actually use added water), vegetables from the mix.
     const h = getHardness();
     const typicalDays = activeCombo?.typicalDays ?? preset.typicalDays;
+    const referencePrep = activeCombo?.referencePrep ?? preset.referencePrep;
     const referenceSpeed = activeCombo
       ? comboReferenceSpeed(activeCombo)
       : presetReferenceSpeed(preset);
@@ -380,8 +402,8 @@ export function useLactoCalculator(): LactoCalculatorState {
       // The recipe's own salt level: a combo's, or what we recommend for
       // these vegetables. Keeps "as written" exactly on its documented days.
       recipeSaltPct: activeCombo?.typicalSaltPct ?? recommendedSaltPct(effectiveVeg, method),
-      prepSize,
-      referencePrep: activeCombo?.referencePrep ?? preset.referencePrep,
+      prepSize: effectivePrepSize(method, referencePrep, prepSize),
+      referencePrep,
       starter: useStarter,
       hardnessMgL: h.mgL,
       usesAddedWater: method === 'brine' && waterW > 0,
@@ -402,7 +424,9 @@ export function useLactoCalculator(): LactoCalculatorState {
       baseResults.estimatedDays,
       unitSystem,
     );
-    const temp = accurateTemp.effectiveTemp;
+    // A manual override wins here too — this second pass used to recompute
+    // straight from the forecast and silently discard the user's temperature.
+    const temp = fermTempOverride > 0 ? fermTempOverride : accurateTemp.effectiveTemp;
 
     // Recalculate with accurate temp (salinity unchanged — already correct from baseResults)
     const timing = estimateFermentTiming(temp, timingInput);
@@ -454,6 +478,8 @@ export function useLactoCalculator(): LactoCalculatorState {
     saltType,
     effectiveTemp,
     tempResult,
+    tempSummary,
+    tempSource: fermTempOverride > 0 ? 'manual' : tempResult.source,
     dailyTemps,
     presetName: activeCombo?.name ?? preset.name,
     presetEmoji: activeCombo?.emoji ?? preset.emoji,
@@ -466,6 +492,7 @@ export function useLactoCalculator(): LactoCalculatorState {
     onPostcodeSubmit,
     hardness: getHardness(),
     waterHardnessOverride,
+    fermTempOverride,
     results,
     timing,
     timeline,

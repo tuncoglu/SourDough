@@ -31,20 +31,16 @@ import { FermentPreset } from '../src/models/types';
 
 const REFERENCE_TEMP = 22.0;
 
-/** "Ferment 7–14 days", "Ready in 3-5 days", "expect 7 — 14 days" … */
-const DAY_RANGE = /(\d+)\s*[–—-]\s*(\d+)\s*days?/i;
-
 /**
- * Day range a recipe promises the user, read from its own copy.
- * Throws rather than silently skipping — a recipe with no stated range in
- * prose but a number in the data would be exactly the drift we are fixing.
+ * Day range a recipe's anchor came from.
+ *
+ * This used to be parsed out of the user-facing `tips`; the ranges now live in
+ * `documentedDays` instead, because nothing user-facing states a flat number
+ * of days any more (see the copy guard below). Same protection, different
+ * source: the anchor can still be held to the guidance it came from.
  */
-function promisedDays(copy: string[]): [number, number] | null {
-  for (const line of copy) {
-    const match = DAY_RANGE.exec(line);
-    if (match) return [Number(match[1]), Number(match[2])];
-  }
-  return null;
+function promisedDays(recipe: FermentPreset | VegCombo): [number, number] | null {
+  return recipe.documentedDays ?? null;
 }
 
 /** Days the engine reports for a recipe exactly as written, at 22 °C. */
@@ -99,39 +95,41 @@ describe('the data matches the copy the user reads', () => {
     const violations: string[] = [];
     const checked: string[] = [];
     Object.values(FERMENT_PRESETS).forEach((preset) => {
-      const promised = promisedDays(preset.tips ?? []);
-      if (!promised) return; // sauerkraut & custom make no numeric promise
+      const promised = promisedDays(preset);
+      if (!promised) return; // sauerkraut is the reference ferment — see below
       violations.push(...timingViolations(preset.id, preset.typicalDays, promised));
       checked.push(preset.id);
     });
     expect(violations).toEqual([]);
-    // Guard: the regex must actually be finding the ranges, otherwise this
-    // whole suite would pass vacuously.
+    // Guard: most presets must carry a documented range, or this passes vacuously.
     expect(checked).toEqual(
       expect.arrayContaining(['kimchi', 'dill-pickles', 'carrot-sticks', 'hot-sauce', 'beet-kvass', 'radish-cauliflower']),
     );
+    // Sauerkraut is the engine's reference ferment, so its anchor is
+    // REFERENCE_DAYS rather than a quoted range.
+    expect(FERMENT_PRESETS.sauerkraut!.typicalDays).toBe(REFERENCE_DAYS);
+    expect(FERMENT_PRESETS.sauerkraut!.documentedDays).toBeUndefined();
   });
 
   it('combos: typicalDays sits inside the range their tips quote', () => {
     const violations: string[] = [];
     VEG_COMBOS.forEach((combo) => {
-      const promised = promisedDays(combo.tips);
-      // Every combo promises a range in its tips; a missing one would mean
-      // the copy and the timing data have drifted apart again.
-      expect(`${combo.id}: ${promised ? 'ok' : 'NO DAY RANGE IN TIPS'}`).toBe(`${combo.id}: ok`);
+      const promised = promisedDays(combo);
+      expect(`${combo.id}: ${promised ? 'ok' : 'NO DOCUMENTED RANGE'}`).toBe(`${combo.id}: ok`);
       violations.push(...timingViolations(combo.id, combo.typicalDays, promised));
     });
     expect(violations).toEqual([]);
   });
 
-  it('the two combos that used to contradict their copy now agree', () => {
-    // Both inherited the neutral custom rate and overshot their own guidance.
+  it('the two combos that used to contradict their guidance now agree', () => {
+    // Both inherited the neutral custom rate and overshot their own source
+    // guidance — that range now lives in documentedDays rather than the copy.
     const cucumberOnion = VEG_COMBOS.find((c) => c.id === 'cucumber-onion-dill')!;
-    expect(cucumberOnion.tips.join(' ')).toContain('3–5 days');
+    expect(cucumberOnion.documentedDays).toEqual([3, 5]);
     expect(daysAsWritten(cucumberOnion)).toBe(4);
 
     const fruit = VEG_COMBOS.find((c) => c.id === 'mixed-ferment-fruit')!;
-    expect(fruit.tips.join(' ')).toContain('2–3 days');
+    expect(fruit.documentedDays).toEqual([2, 3]);
     expect(daysAsWritten(fruit)).toBe(3);
   });
 
@@ -146,6 +144,37 @@ describe('the data matches the copy the user reads', () => {
     }).days;
     expect(brined).toBeLessThan(hotSauce.typicalDays);
     expect(brined).toBeCloseTo(5.8, 1);
+  });
+});
+
+describe('copy is aligned with the user\'s conditions, not a flat range', () => {
+  const DAY_RANGE = /\d+\s*[–—-]\s*\d+\s*days?/i;
+
+  it('no preset tip or description states a number of days', () => {
+    const offenders: string[] = [];
+    Object.values(FERMENT_PRESETS).forEach((preset) => {
+      [...(preset.tips ?? []), preset.description].forEach((line) => {
+        if (DAY_RANGE.test(line)) offenders.push(`${preset.id}: ${line}`);
+      });
+    });
+    expect(offenders).toEqual([]);
+  });
+
+  it('no combo tip or description states a number of days', () => {
+    const offenders: string[] = [];
+    VEG_COMBOS.forEach((combo) => {
+      [...combo.tips, combo.description].forEach((line) => {
+        if (DAY_RANGE.test(line)) offenders.push(`${combo.id}: ${line}`);
+      });
+    });
+    expect(offenders).toEqual([]);
+  });
+
+  it('still has the guidance on record, just not in the copy', () => {
+    // The ranges exist as provenance — the guard above would be pointless if
+    // the data had simply been deleted.
+    const withRanges = Object.values(FERMENT_PRESETS).filter((p) => p.documentedDays);
+    expect(withRanges.length).toBeGreaterThanOrEqual(7);
   });
 });
 

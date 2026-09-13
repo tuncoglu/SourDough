@@ -7,6 +7,7 @@
  * of water and failed validation.
  */
 import {
+  effectivePrepSize,
   buildComboSetup,
   comboReferenceSpeed,
   relativeVegSpeed,
@@ -69,6 +70,20 @@ describe('buildComboSetup', () => {
     expect(setup.fermentType).toBe('custom');
     expect(setup.vegId).toBe('pickling-cucumber');
     expect(setup.saltPct).toBe('3.5');
+  });
+});
+
+describe('effectivePrepSize', () => {
+  it('ignores the cut size for a mash, which is blended by definition', () => {
+    // Selecting "Whole" on a pepper mash once multiplied the estimate by 2.3x.
+    expect(effectivePrepSize('mash', 'grated', 'whole')).toBe('grated');
+    expect(effectivePrepSize('mash', 'grated', 'chunks')).toBe('grated');
+  });
+
+  it('honours the choice for dry and brine ferments', () => {
+    expect(effectivePrepSize('dry', 'shredded', 'whole')).toBe('whole');
+    expect(effectivePrepSize('brine', 'whole', 'sliced')).toBe('sliced');
+    expect(effectivePrepSize('brine', 'whole', 'whole')).toBe('whole');
   });
 });
 

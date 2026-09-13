@@ -1,12 +1,15 @@
 import { FermentPreset, PrepSize } from '../models/types';
 
 /**
- * TIMING: `typicalDays` is days to full sourness at 22 °C with `defaultVegId`,
- * and it must agree with the day range a preset promises in its own `tips` —
- * __tests__/fermentTiming.test.ts parses those tips and fails if they drift
- * apart. Temperature and vegetable swaps are relative adjustments on top of
- * that anchor (see estimateFermentDuration); nothing here is a bare
- * multiplier that no one can check against the copy the user reads.
+ * TIMING: `typicalDays` is the reference duration at 22 °C with
+ * `defaultVegId`, taken from the range recorded in `documentedDays`.
+ *
+ * That range is PROVENANCE, not copy. Nothing user-facing states a flat number
+ * of days: the app shows a date computed from the user's own temperature, salt,
+ * prep and starter, and a flat "7–14 days" would contradict it whenever their
+ * conditions differ from 22 °C. __tests__/fermentTiming.test.ts holds the
+ * anchor inside its documented range and asserts that no tip or description
+ * states a day range.
  */
 
 /**
@@ -50,12 +53,13 @@ export const FERMENT_PRESETS: Record<string, FermentPreset> = {
     saltPctMax: 4.0,
     typicalVegWeight: 800,
     typicalDays: 3, // days to full sourness at 22 C with napa-cabbage
+    documentedDays: [2, 5],
     defaultVegId: 'napa-cabbage',
     referencePrep: 'chunks',
     waterContentPct: 95, // matches napa cabbage in vegetables.ts
     tips: [
       'Salt cabbage leaves first, let wilt 1–2h, then rinse and mix with paste.',
-      'Kimchi is usually ready in 2–5 days at room temp, then moved to fridge.',
+      'Once it tastes right, move it to the fridge — it keeps fermenting there, just slowly.',
       'The paste includes gochugaru, garlic, ginger, fish sauce (or soy sauce for vegan).',
       '🔬 Reusing ripe kimchi juice is not a free speed-up: mature brine is acidic enough to suppress the Leuconostoc that should start the ferment, and it carries the previous batch\'s yeasts with it. A fresh starter culture is the reliable way to shorten the lag.',
       '🔬 Garlic selectively shapes LAB communities — it favours Leuconostoc and Lactiplantibacillus over Weissella (recent kimchi model studies).',
@@ -73,6 +77,7 @@ export const FERMENT_PRESETS: Record<string, FermentPreset> = {
     saltPctMax: 5.0,
     typicalVegWeight: 500,
     typicalDays: 7, // days to full sourness at 22 C with pickling-cucumber
+    documentedDays: [5, 10],
     defaultVegId: 'pickling-cucumber',
     referencePrep: 'whole',
     waterContentPct: 96,
@@ -81,7 +86,7 @@ export const FERMENT_PRESETS: Record<string, FermentPreset> = {
       'Use pickling cucumbers (Kirby) — they stay crisper than slicing cucumbers.',
       'Add a grape leaf, oak leaf, or horseradish leaf for tannins that preserve crunch. Or ¼ tsp food-grade calcium chloride (CaCl₂) per 1 kg veg.',
       'Garlic, dill, mustard seeds, and black peppercorns are classic.',
-      'Ferment 5–10 days at room temp. Move to fridge when you like the sourness.',
+      'Move to the fridge when you like the sourness.',
       '🔬 Variable-temp strategy: 3 days at room temp → fridge for 2+ weeks = superior crunch, colour & aroma vs. constant warm ferment (recent cucumber fermentation research).',
     ],
   },
@@ -96,6 +101,7 @@ export const FERMENT_PRESETS: Record<string, FermentPreset> = {
     saltPctMax: 5.0,
     typicalVegWeight: 400,
     typicalDays: 6, // days to full sourness at 22 C with carrot
+    documentedDays: [5, 7],
     defaultVegId: 'carrot',
     referencePrep: 'sliced',
     waterContentPct: 88,
@@ -103,7 +109,7 @@ export const FERMENT_PRESETS: Record<string, FermentPreset> = {
     tips: [
       'Cut carrots into uniform sticks so they ferment evenly.',
       'Garlic cloves and fresh dill sprigs are great additions.',
-      'Ready in about 5–7 days. Carrots stay crunchy for weeks in the fridge.',
+      'Carrots stay crunchy for weeks once refrigerated.',
       '🔬 2025 clinical trial (Pihelgas et al.): fermented carrots ↑ butyrate-producing gut bacteria and improved cellular health biomarkers after 3 weeks of daily consumption.',
     ],
   },
@@ -119,15 +125,16 @@ export const FERMENT_PRESETS: Record<string, FermentPreset> = {
     typicalVegWeight: 300,
     // Mash is a genuinely slow ferment — no brine cover, lower water
     // activity, capsaicin inhibition — hence 10 days, not the 5–6 the
-    // peppers would take in brine. Matches the 7–14 days promised below.
+    // peppers would take in brine. Matches the documentedDays range below.
     typicalDays: 10, // days to full sourness at 22 C with jalapeno
+    documentedDays: [7, 14],
     defaultVegId: 'jalapeno',
     referencePrep: 'grated',
     waterContentPct: 88,
     tips: [
       'Use a mix of hot chillies (habanero, bird\'s eye, Scotch bonnet, jalapeño) for complexity.',
       'Blend peppers + garlic + salt into a rough mash. No added water.',
-      'Ferment 7–14 days. After fermenting, blend smooth and optionally strain.',
+      'After fermenting, blend smooth and optionally strain.',
       'A splash of brine keeps it pourable. Vinegar can be added post-ferment for extra tang.',
       '🔬 Starter-strain choice shapes aroma: L. plantarum → fruity aldehydes. L. pentosus → floral alcohols. L. lactis → complex esters. Wild ferment gets you all three.',
     ],
@@ -142,8 +149,9 @@ export const FERMENT_PRESETS: Record<string, FermentPreset> = {
     saltPctMin: 1.5,
     saltPctMax: 3.0,
     typicalVegWeight: 300,
-    // Beetroot is sugar-rich and fast; 4 days matches the 3–5 promised below.
+    // Beetroot is sugar-rich and fast; 4 days sits in the documentedDays range below.
     typicalDays: 4, // days to full sourness at 22 C with beetroot
+    documentedDays: [3, 5],
     defaultVegId: 'beetroot',
     referencePrep: 'chunks',
     waterContentPct: 88,
@@ -151,7 +159,7 @@ export const FERMENT_PRESETS: Record<string, FermentPreset> = {
     tips: [
       'Chop beets into 1-inch chunks — don\'t grate (too fast, too yeasty).',
       'Ginger and/or orange peel are nice additions.',
-      'Ready in just 3–5 days. Strain and refrigerate. Drink a small glass daily.',
+      'Strain and refrigerate. Drink a small glass daily.',
       '🔬 In a 2024 beetroot study, 1% salt retained the highest polyphenols & pigments. At 2% you trade some bioactives for a wider safety margin.',
     ],
   },
@@ -166,13 +174,14 @@ export const FERMENT_PRESETS: Record<string, FermentPreset> = {
     saltPctMax: 5.0,
     typicalVegWeight: 500,
     typicalDays: 9, // days to full sourness at 22 C with cauliflower
+    documentedDays: [7, 14],
     defaultVegId: 'cauliflower',
     referencePrep: 'chunks',
     waterContentPct: 90,
     brineStrength: 3.5,
     tips: [
       'Radishes, cauliflower, carrot, and green beans all work well at 3.5% brine.',
-      'These vegetables are slower to ferment — expect 7–14 days.',
+      'These are firm, low-sugar vegetables — slower to ferment than leafy ones.',
       'A mixed jar of cauliflower + carrot + radish makes a beautiful pickle platter.',
       '🔬 2024–2026 research: 3–5% NaCl is the sweet spot for L. plantarum dominance. Above 5% slows beneficial LAB without added safety benefit.',
     ],
@@ -188,6 +197,7 @@ export const FERMENT_PRESETS: Record<string, FermentPreset> = {
     saltPctMax: 8.0,
     typicalVegWeight: 500,
     typicalDays: 7, // days to full sourness at 22 C with green-cabbage
+    documentedDays: [5, 10],
     defaultVegId: 'green-cabbage',
     referencePrep: 'sliced',
     waterContentPct: 90,
@@ -228,6 +238,8 @@ export interface VegCombo {
    * range in `tips` (enforced by __tests__/fermentTiming.test.ts).
    */
   typicalDays: number;
+  /** Provenance of `typicalDays` — never shown to the user. See FermentPreset.documentedDays. */
+  documentedDays?: [number, number];
   /** Prep size `typicalDays` is written for — see FermentPreset.referencePrep. */
   referencePrep: PrepSize;
   tips: string[];
@@ -250,12 +262,13 @@ export const VEG_COMBOS: VegCombo[] = [
     saltPctMax: 5.0,
     typicalTotalGrams: 800,
     typicalDays: 7,
+    documentedDays: [5, 10],
     referencePrep: 'sliced',
     tips: [
       'Add a generous handful of fresh dill (stems and all), mustard seeds, and black peppercorns.',
       'Add a grape leaf, oak leaf, or ¼ tsp calcium chloride per kg for maximum crunch.',
       'Garlic cloves can be left whole — they mellow beautifully.',
-      'Ferment 5–10 days at room temp, then move to the fridge.',
+      'Move to the fridge when you like the sourness.',
     ],
     source: 'Katz, "The Art of Fermentation"; Shockey, "Fermented Vegetables"',
   },
@@ -277,11 +290,12 @@ export const VEG_COMBOS: VegCombo[] = [
     saltPctMax: 5.0,
     typicalTotalGrams: 1000,
     typicalDays: 8,
+    documentedDays: [7, 10],
     referencePrep: 'chunks',
     tips: [
       'Cut all vegetables to similar size for even fermentation.',
       'Jalapeños add a gentle heat — add more for spicier giardiniera.',
-      'Ready in 7–10 days. Keeps for months refrigerated.',
+      'Keeps for months refrigerated.',
       'Excellent on sandwiches, antipasto platters, or chopped into tuna salad.',
     ],
     source: 'Shockey, "Fermented Vegetables"; traditional Italian',
@@ -302,12 +316,13 @@ export const VEG_COMBOS: VegCombo[] = [
     saltPctMax: 4.0,
     typicalTotalGrams: 600,
     typicalDays: 6,
+    documentedDays: [5, 7],
     referencePrep: 'sliced',
     tips: [
       'Cut carrots into uniform sticks so they ferment evenly.',
       'Leave jalapeños whole (pierce once) for milder heat, or slice for spicier.',
       'Garlic turns blue/green — harmless enzymatic reaction with acid.',
-      'Ready in 5–7 days. A perfect snack straight from the jar.',
+      'A perfect snack straight from the jar.',
     ],
     source: 'Shockey, "Fermented Vegetables"',
   },
@@ -328,11 +343,12 @@ export const VEG_COMBOS: VegCombo[] = [
     saltPctMax: 4.0,
     typicalTotalGrams: 400,
     typicalDays: 10,
+    documentedDays: [7, 14],
     referencePrep: 'grated',
     tips: [
       'WEAR GLOVES when handling habaneros.',
       'Roughly chop everything, mix with salt, and pack into a jar.',
-      'Ferment 7–14 days. Blend smooth after fermenting — add brine to adjust consistency.',
+      'Blend smooth after fermenting — add brine to adjust consistency.',
       'The pineapple sugar drives fast fermentation — check daily.',
       'A splash of vinegar post-ferment adds brightness.',
     ],
@@ -342,7 +358,7 @@ export const VEG_COMBOS: VegCombo[] = [
     id: 'cucumber-onion-dill',
     name: 'Cucumber + Onion + Dill',
     emoji: '🥒',
-    description: 'Quick cucumber-onion pickle with fresh dill. Lighter and faster than full dill pickles — ready in days, not weeks.',
+    description: 'Quick cucumber-onion pickle with fresh dill. Lighter and faster than full dill pickles.',
     method: 'brine',
     vegetables: [
       { vegId: 'pickling-cucumber', label: 'Pickling cucumber', proportion: 0.65 },
@@ -354,11 +370,12 @@ export const VEG_COMBOS: VegCombo[] = [
     saltPctMax: 5.0,
     typicalTotalGrams: 700,
     typicalDays: 4,
+    documentedDays: [3, 5],
     referencePrep: 'sliced',
     tips: [
       'Slice cucumbers into spears or coins. Slice onion into thin rings.',
       'Dill goes in whole — stems and all.',
-      'Ready in 3–5 days. Onions ferment quickly and taste amazing.',
+      'Onions ferment quickly and taste amazing.',
       'Keep refrigerated — these are half-sours and will continue fermenting.',
     ],
     source: 'Katz, "The Art of Fermentation"; Eastern European tradition',
@@ -378,11 +395,12 @@ export const VEG_COMBOS: VegCombo[] = [
     saltPctMax: 3.0,
     typicalTotalGrams: 400,
     typicalDays: 4,
+    documentedDays: [3, 5],
     referencePrep: 'chunks',
     tips: [
       'Chop beets into 1-inch chunks — do not grate (too fast, too yeasty).',
       'Slice ginger thin — no need to peel if organic.',
-      'Ready in just 3–5 days. Strain and refrigerate.',
+      'Strain and refrigerate.',
       'Drink a small glass daily as a tonic. The brine is the point here.',
     ],
     source: 'Katz, "The Art of Fermentation"; traditional Russian',
@@ -403,11 +421,12 @@ export const VEG_COMBOS: VegCombo[] = [
     saltPctMax: 5.0,
     typicalTotalGrams: 500,
     typicalDays: 8,
+    documentedDays: [7, 10],
     referencePrep: 'whole',
     tips: [
       'Trim the stem ends. Pack beans vertically in a tall jar — they look beautiful.',
       'Add a grape leaf for extra crunch — green beans can go soft.',
-      'Ready in 7–10 days. They stay crisp for weeks in the fridge.',
+      'They stay crisp for weeks in the fridge.',
       'Perfect in a Bloody Mary, or just eaten straight from the jar.',
     ],
     source: 'Shockey, "Fermented Vegetables"; American tradition',
@@ -428,11 +447,12 @@ export const VEG_COMBOS: VegCombo[] = [
     saltPctMax: 2.5,
     typicalTotalGrams: 500,
     typicalDays: 3,
+    documentedDays: [2, 3],
     referencePrep: 'chunks',
     tips: [
       'Use firm, slightly underripe fruit. Dice into small cubes.',
       'Add a cinnamon stick and 2 cloves. A star anise is wonderful too.',
-      'Fruits ferment fast — check daily. Move to fridge after 2–3 days.',
+      'Fruits ferment fast — check daily.',
       'The ferment will be lightly effervescent and tangy-sweet.',
       'Serve chilled over yogurt, oatmeal, or vanilla ice cream.',
     ],

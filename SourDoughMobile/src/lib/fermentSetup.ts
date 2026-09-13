@@ -12,7 +12,7 @@
  * Keeping the mapping here (instead of inline in the hook) means it can be
  * unit-tested without a React runtime — see __tests__/fermentSetup.test.ts.
  */
-import { FermentMethod, FermentPreset, FermentType } from '../models/types';
+import { FermentMethod, FermentPreset, FermentType, PrepSize } from '../models/types';
 import { VegCombo } from '../data/fermentPresets';
 import { findVeg, VegEntry } from '../data/vegetables';
 
@@ -59,6 +59,23 @@ export function buildComboSetup(combo: VegCombo): ComboSetup {
  */
 export function recommendedSaltPct(veg: VegEntry, method: FermentMethod): number {
   return method === 'brine' ? veg.typicalBrineSaltPct : veg.typicalDrySaltPct;
+}
+
+/**
+ * The cut size that actually applies to a ferment.
+ *
+ * A mash is blended by definition, so a cut-size selection is meaningless
+ * there — and letting one through multiplied a pepper-mash estimate by 2.3×
+ * for a combination that cannot physically exist (the salt model already
+ * assumes every cell is ruptured, which is what blending does). For every
+ * other method the user's choice stands.
+ */
+export function effectivePrepSize(
+  method: FermentMethod,
+  referencePrep: PrepSize,
+  chosen: PrepSize,
+): PrepSize {
+  return method === 'mash' ? referencePrep : chosen;
 }
 
 // ── Timing anchors ──────────────────────────────────────────────────────

@@ -73,8 +73,8 @@ export default function FermentsScreen() {
           <TempForecastCard
             dailyTemps={calc.dailyTemps}
             title="🌡 Fermentation temperature"
-            summary={calc.tempResult?.summary ?? 'Using weather forecast for accurate timing'}
-            source={calc.tempResult?.source}
+            summary={calc.tempSummary}
+            source={calc.tempSource}
             locationEnabled={!!calc.locationData}
             dayColor={(avg) => avg > 24 ? colors.hot : avg > 20 ? colors.olive : avg > 16 ? colors.cool : colors.cold}
           />
@@ -192,6 +192,10 @@ export default function FermentsScreen() {
             );
           })}
 
+          <Text style={[styles.pickerHint, { color: colors.lightText }]}>
+            Tap to choose · long-press to add a second vegetable to a mix
+          </Text>
+
           {/* Clear mix button */}
           {calc.isMultiVeg && (
             <TouchableOpacity
@@ -293,7 +297,10 @@ export default function FermentsScreen() {
           </ScrollView>
 
           {/* Cut size — a first-order factor: sugar has to diffuse out of the
-              tissue before LAB can use it, so surface area sets the early pace. */}
+              tissue before LAB can use it, so surface area sets the early pace.
+              Hidden for mashes, which are blended by definition. */}
+          {calc.method !== 'mash' && (
+          <>
           <Text style={[styles.miniLabel, { color: colors.muted }]}>Cut size</Text>
           <ScrollView
             horizontal
@@ -318,14 +325,11 @@ export default function FermentsScreen() {
           </ScrollView>
           <View style={styles.hintRow}>
             <Text style={[styles.hintText, { color: colors.lightText }]}>
-              Tap to choose · long-press to add a second vegetable to a mix
-            </Text>
-          </View>
-          <View style={styles.hintRow}>
-            <Text style={[styles.hintText, { color: colors.lightText }]}>
               Finer cuts ferment faster — shredded cabbage is done in about half the time of whole heads
             </Text>
           </View>
+          </>
+          )}
 
           {/* Starter culture — acts on the lag phase, so it is modelled as a
               fixed saving rather than a percentage. */}
@@ -579,6 +583,11 @@ const styles = StyleSheet.create({
   comboName: { fontSize: FontSize.xs, fontWeight: '700' },
   comboVegs: { fontSize: 10, lineHeight: 14 },
   // Clear mix
+  pickerHint: {
+    fontSize: FontSize.xs,
+    marginTop: Spacing.xs,
+    paddingLeft: 2,
+  },
   clearMixBtn: { alignSelf: 'flex-end', paddingVertical: Spacing.xs, paddingHorizontal: Spacing.sm },
   clearMixText: { fontSize: FontSize.xs, fontWeight: '600' },
   // Mix weights

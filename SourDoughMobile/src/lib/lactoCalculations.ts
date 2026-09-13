@@ -1019,7 +1019,7 @@ export interface DailyTempSummary {
 export interface FermentTempResult {
   effectiveTemp: number;
   dailyTemps: DailyTempSummary[];
-  source: 'forecast' | 'current' | 'fallback';
+  source: 'forecast' | 'current' | 'fallback' | 'manual';
   summary: string;
 }
 

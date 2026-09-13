@@ -208,11 +208,13 @@ describe('prep size (first-order, measured)', () => {
     expect(PREP_TIME_FACTOR.whole / PREP_TIME_FACTOR.shredded).toBeCloseTo(28 / 15, 2);
   });
 
-  it('is monotonic — finer always ferments faster', () => {
+  it('is monotonic — a finer cut never ferments slower', () => {
+    // Non-decreasing rather than strictly increasing: grated and shredded tie.
     const ladder = PREP_SIZE_ORDER.map((p) => PREP_TIME_FACTOR[p]);
     for (let i = 1; i < ladder.length; i++) {
-      expect(ladder[i]).toBeGreaterThan(ladder[i - 1]);
+      expect(ladder[i]).toBeGreaterThanOrEqual(ladder[i - 1]);
     }
+    expect(ladder[ladder.length - 1]).toBeGreaterThan(ladder[0]);
   });
 
   it('is neutral when the user cuts it the way the recipe is written', () => {
@@ -238,6 +240,18 @@ describe('prep size (first-order, measured)', () => {
     expect(prep!.factor).toBeGreaterThan(1);
     expect(prep!.label).toContain('coarser');
     expect(prep!.detail).toContain('diffuse');
+  });
+
+  it('never extrapolates beyond the measured range', () => {
+    // The ladder is anchored on shredded vs whole = 28/15 (Niksic 2005). An
+    // earlier version invented 0.65 for "grated", which turned whole-vs-grated
+    // into a 2.3x penalty on a mash recipe — bigger than any measured effect.
+    const factors = PREP_SIZE_ORDER.map((p) => PREP_TIME_FACTOR[p]);
+    expect(Math.max(...factors) / Math.min(...factors)).toBeCloseTo(28 / 15, 3);
+  });
+
+  it('treats grated and shredded alike — no study separates them', () => {
+    expect(PREP_TIME_FACTOR.grated).toBe(PREP_TIME_FACTOR.shredded);
   });
 
   it('every recipe declares the prep its duration assumes', () => {

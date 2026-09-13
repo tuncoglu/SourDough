@@ -190,6 +190,25 @@ export default function SettingsScreen() {
         />
       </View>
 
+      <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={[sectionTitleStyle, { color: colors.muted }]}>FERMENTATION TEMPERATURE (OPTIONAL)</Text>
+        <Text style={[styles.description, { color: colors.muted }]}>
+          Leave at 0 to use your local weather forecast. Fermenting indoors? Enter the
+          temperature where the jar actually sits — the outdoor forecast can be several
+          degrees cooler, and temperature is the biggest single factor in the timing.
+        </Text>
+
+        <NumberInput
+          label="Temperature"
+          value={String(settings.fermTempOverride || 0)}
+          onChangeText={(v) => {
+            const n = parseFloat(v);
+            if (!isNaN(n)) setSettings({ ...settings, fermTempOverride: n });
+          }}
+          unit={unitSystem === 'imperial' ? '°F' : '°C'}
+        />
+      </View>
+
       {/* Theme */}
       <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <Text style={[sectionTitleStyle, { color: colors.muted }]}>APPEARANCE</Text>

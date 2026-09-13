@@ -181,6 +181,15 @@ export interface UserSettings {
   defaultStarterHydration: number; // starter hydration % (default 100)
   defaultSaltPct: number;
   waterHardnessOverride: number; // mg/L CaCO₃, 0 = auto-detect
+  /**
+   * Fermentation temperature in °C, 0 = use the local weather forecast.
+   *
+   * The forecast is the OUTDOOR temperature. Most people ferment indoors,
+   * where it can be 5-8 °C warmer, and since temperature is the dominant
+   * factor in the estimate that gap is worth several days — so it has to be
+   * overridable rather than assumed.
+   */
+  fermTempOverride: number;
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -190,6 +199,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   defaultStarterHydration: 100,
   defaultSaltPct: 2.0,
   waterHardnessOverride: 0,
+  fermTempOverride: 0,
 };
 
 // ── FDT Temperature Zone ──────────────────────────────────────────────
@@ -320,23 +330,26 @@ export const PREP_SIZE_LABELS: Record<PrepSize, string> = {
 /**
  * Time multiplier per prep size, relative to "sliced" = 1.
  *
- * Anchored on the two measured contrasts rather than invented wholesale:
- * shredded vs whole = 1.875× (Niksic 2005: 15 d vs 28 d), which fixes the two
- * ends of the ladder; the intermediate steps are interpolated, and "grated"
- * is an extrapolation beyond the measured range. As with salt, the factor is
- * normalised against the recipe's own reference prep, so a recipe used as
+ * Anchored on the one measured contrast — shredded vs whole-head = 28/15
+ * (Niksic et al. 2005) — with the middle steps interpolated. Nothing here is
+ * extrapolated beyond that range: "grated" and "shredded" are both finely
+ * comminuted, and no study distinguishes them, so they carry the same factor.
+ * An earlier version invented 0.65 for grated, which quietly turned
+ * whole-vs-grated into a 2.3× penalty on a recipe written for a blended mash.
+ *
+ * Normalised against the recipe's own reference prep, so a recipe used as
  * written is exactly 1.0 and only deviations move the estimate.
  */
-/** Shredded is the measured anchor the whole ladder hangs from. */
-const PREP_SHREDDED = 0.80;
+/** Fine cut — the measured anchor the whole ladder hangs from. */
+const PREP_FINE = 0.80;
 
 export const PREP_TIME_FACTOR: Record<PrepSize, number> = {
-  grated: 0.65, // extrapolated beyond the measured range
-  shredded: PREP_SHREDDED,
+  grated: PREP_FINE,
+  shredded: PREP_FINE,
   sliced: 1.00,
   chunks: 1.25, // interpolated
   // 28 d / 15 d, so the measured contrast is exact by construction.
-  whole: PREP_SHREDDED * (28 / 15),
+  whole: PREP_FINE * (28 / 15),
 };
 
 export type FermentType =
@@ -432,6 +445,17 @@ export interface FermentPreset {
    * swapping in other vegetables via the vegetable's own speed factor.
    */
   typicalDays: number;
+  /**
+   * Where `typicalDays` came from: the day range the source guidance quotes at
+   * room temperature.
+   *
+   * PROVENANCE, NOT COPY — deliberately never shown to the user. The app states
+   * a date computed from their own temperature, salt, prep and starter, so a
+   * flat range in the UI ("7–14 days") would contradict the estimate whenever
+   * their conditions differ from 22 °C, which is most of the time. It exists so
+   * the drift-guard test can hold the anchor to its source.
+   */
+  documentedDays?: [number, number];
   /**
    * The vegetable the preset is written around: the picker default *and*
    * the anchor for `typicalDays`, so swapping vegetables scales the
