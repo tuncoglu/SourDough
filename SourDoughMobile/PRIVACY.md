@@ -11,9 +11,11 @@ App handles and how it is used.
 **The App does not require an account, does not collect personal
 identifiers, and does not use analytics or tracking.**
 
-All your app data — starter feeding history, saved recipes, and settings —
-is stored **only on your device** using local storage. We do not have
-access to this data.
+All your app data — starter feeding history, saved recipes, fermentation
+history, and settings — is stored **only on your device** using local
+storage. Ferments you calculate are recorded automatically (there is no save
+button) and are rotated out after 12 months. We do not have access to this
+data.
 
 ### Optional waitlist email
 

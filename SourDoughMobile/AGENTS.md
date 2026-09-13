@@ -8,7 +8,7 @@
   NOTE: the tab screen is deliberately named "bread" — a group index at (tabs)/index.tsx would collide with the landing route "/".
 - **Yogurt** (yogurt.tsx) — Yogurt incubation calculator with 10 culture types, milk picker, yield & nutrition
 - **Lacto-ferment** (ferments.tsx) — Vegetable fermentation with salt calculator, 25+ vegetables, day-by-day timeline, and Google Calendar export
-- **History** (history.tsx) — Saved recipes with search, filter chips, edit, duplicate, delete
+- **History** (history.tsx) — Two segments. **Bread**: saved recipes with search, filter chips, edit, duplicate, delete. **Ferments**: every lacto calculation recorded automatically (no save button), with search, delete and "Calculate again" to load the inputs back into the calculator
 - **Settings** (settings.tsx) — Default values, water hardness override, theme (light/dark/system), units (metric/imperial)
 - **About** (about.tsx) — App overview, privacy notice, and acknowledgements
 
@@ -26,7 +26,7 @@
 ## State Management
 - **Hooks** (src/hooks/) — UI state and orchestration (useCalculatorInputs, useStarterTracker, useYogurtCalculator, etc.)
 - **useLocation** — shared context provider mounted in `app/_layout.tsx`; runs location detection once for all three calculator tabs (GPS, weather, water hardness, postcode refinement)
-- **Stores** (src/store/) — AsyncStorage persistence (recipeStore, settingsStore, starterStore)
+- **Stores** (src/store/) — AsyncStorage persistence (recipeStore, fermentHistoryStore, settingsStore, starterStore). `fermentHistoryStore` keeps a rolling 12 months (`FERMENT_RETENTION_DAYS`), merges repeat calculations of the same jar by input signature, and caps at 200; the rotation/merge rules are pure and live in lib/fermentHistory.ts
 - **settingsCache.ts** — In-memory cache for settings with 60s TTL to avoid re-reading AsyncStorage
 
 ## Theme (src/theme/)

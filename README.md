@@ -73,6 +73,7 @@ pick bread, yogurt, or lacto-fermentation — then dive into the full calculator
 - **Conditions-aware timing** — the duration starts from the recipe's own documented baseline and is adjusted to your kitchen: forecast temperature (a cardinal-temperature curve, not a flat Q10), salt level, water chemistry, vegetable mix and how finely you cut it — with the arithmetic shown in the app and carried into the calendar event
 - **Fermentation ceiling** — measured acid-demand vs sugar data flags vegetables that cannot reach full sourness (broccoli stops near pH 4.3) instead of pretending they will
 - **Cut size, starter culture** — the two levers that matter most after salt, modelled from trial data rather than guesswork
+- **Automatic history** — every ferment you calculate is recorded (no save button) and kept for 12 months, with one tap to load the inputs back into the calculator
 - **Add to Google Calendar** — one tap drops the ready day, the first taste check, or the whole ferment into your calendar, with batch, salt and the day-by-day schedule filled in
 
 ---

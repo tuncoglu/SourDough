@@ -15,12 +15,15 @@ import { Seo } from '../../src/components/Seo';
 import { Icon } from '../../src/components/Icon';
 import { useFeedback } from '../../src/lib/feedback';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
-import { SavedRecipe, BreadType } from '../../src/models/types';
+import { SavedRecipe, BreadType, FermentHistoryEntry } from '../../src/models/types';
 import { loadRecipes, deleteRecipe, saveRecipe, generateRecipeId } from '../../src/store/recipeStore';
 import { RecipeCard } from '../../src/components/RecipeCard';
 import { EmptyState } from '../../src/components/EmptyState';
 import { Chip } from '../../src/components/Chip';
 import { RECIPE_PRESETS, getPreset } from '../../src/data/recipePresets';
+import { FermentHistoryCard } from '../../src/components/FermentHistoryCard';
+import { deleteFerment, loadFerments } from '../../src/store/fermentHistoryStore';
+import { FERMENT_RETENTION_DAYS } from '../../src/lib/fermentHistory';
 
 const FILTER_CHIPS: { key: string; label: string; match: (r: SavedRecipe) => boolean }[] = [
   { key: 'all', label: 'All', match: () => true },
@@ -33,6 +36,9 @@ const FILTER_CHIPS: { key: string; label: string; match: (r: SavedRecipe) => boo
 
 export default function HistoryScreen() {
   const [recipes, setRecipes] = useState<SavedRecipe[]>([]);
+  const [ferments, setFerments] = useState<FermentHistoryEntry[]>([]);
+  /** Bread is saved deliberately; ferments are recorded automatically. */
+  const [segment, setSegment] = useState<'bread' | 'ferments'>('bread');
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
@@ -42,8 +48,9 @@ export default function HistoryScreen() {
   const { colors } = useAppTheme();
 
   const fetchRecipes = useCallback(async () => {
-    const data = await loadRecipes();
+    const [data, fermentData] = await Promise.all([loadRecipes(), loadFerments()]);
     setRecipes(data);
+    setFerments(fermentData);
   }, []);
 
   useFocusEffect(
@@ -69,6 +76,23 @@ export default function HistoryScreen() {
     await deleteRecipe(recipe.id);
     setRecipes((prev) => prev.filter((r) => r.id !== recipe.id));
     showToast('Recipe deleted.', 'success');
+  };
+
+  const handleDeleteFerment = async (entry: FermentHistoryEntry) => {
+    const ok = await confirm({
+      title: 'Delete from history',
+      message: `Remove this ${entry.presetName} calculation? Ferments are recorded automatically and rotate out after ${FERMENT_RETENTION_DAYS} days anyway.`,
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!ok) return;
+    await deleteFerment(entry.id);
+    setFerments((prev) => prev.filter((e) => e.id !== entry.id));
+    showToast('Removed from history.', 'success');
+  };
+
+  const handleLoadFerment = (entry: FermentHistoryEntry) => {
+    router.push({ pathname: '/ferments', params: { historyId: entry.id } } as any);
   };
 
   const handleDuplicate = async (recipe: SavedRecipe) => {
@@ -118,25 +142,59 @@ export default function HistoryScreen() {
     return result;
   }, [recipes, search, activeFilter]);
 
+  // Search over the ferments as well as the recipes.
+  const filteredFerments = useMemo(() => {
+    if (!search.trim()) return ferments;
+    const q = search.toLowerCase();
+    return ferments.filter(
+      (e) =>
+        e.presetName.toLowerCase().includes(q) ||
+        e.vegName.toLowerCase().includes(q) ||
+        e.method.toLowerCase().includes(q),
+    );
+  }, [ferments, search]);
+
   const numColumns = isDesktop ? 2 : 1;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.cream }]} edges={['top']}>
       <Seo
-        title="Saved Recipes — Just Dough It"
-        description="Your saved sourdough recipes, stored locally on your device — private by design."
+        title="History — Just Dough It"
+        description="Your saved sourdough recipes and every ferment you have calculated, stored locally on your device — private by design."
         path="/history"
       />
       <View style={styles.headerRow}>
         <Icon name="history" size={24} color={colors.espresso} />
-        <Text style={[styles.header, { color: colors.espresso }]}>Recipe History</Text>
+        <Text style={[styles.header, { color: colors.espresso }]}>History</Text>
+      </View>
+
+      {/* Bread is saved by hand; ferments are recorded automatically. */}
+      <View style={styles.chipRow}>
+        {([
+          { key: 'bread', label: `🥖 Bread${recipes.length ? ` (${recipes.length})` : ''}` },
+          { key: 'ferments', label: `🥬 Ferments${ferments.length ? ` (${ferments.length})` : ''}` },
+        ] as const).map((seg) => (
+          <Chip
+            key={seg.key}
+            selected={segment === seg.key}
+            onPress={() => setSegment(seg.key)}
+            label={seg.label}
+            colorScheme="terracotta"
+            role="button"
+            style={styles.chip}
+          >
+            <Text style={[styles.chipText, { color: segment === seg.key ? colors.white : colors.muted }]}>
+              {seg.label}
+            </Text>
+          </Chip>
+        ))}
       </View>
 
       {/* Search bar */}
       <View style={styles.searchRow}>
         <TextInput
           style={[styles.searchInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.espresso }]}
-          placeholder="Search recipes…"
+          placeholder={segment === 'bread' ? 'Search recipes…' : 'Search ferments…'}
           placeholderTextColor={colors.lightText}
           value={search}
           onChangeText={setSearch}
@@ -147,7 +205,8 @@ export default function HistoryScreen() {
         />
       </View>
 
-      {/* Filter chips */}
+      {/* Bread filter chips — ferments have no sub-types to filter on */}
+      {segment === 'bread' && (
       <View style={styles.chipRow}>
         {FILTER_CHIPS.map((chip) => (
           <Chip
@@ -165,9 +224,37 @@ export default function HistoryScreen() {
           </Chip>
         ))}
       </View>
+      )}
+
+      {/* Ferment history */}
+      {segment === 'ferments' && (
+        filteredFerments.length === 0 ? (
+          <EmptyState
+            icon={search.trim() ? '🔍' : '🥬'}
+            title={search.trim() ? 'No matches' : 'No ferments yet'}
+            subtitle={search.trim()
+              ? 'Try a different search.'
+              : 'Every ferment you calculate is recorded here automatically — no save button. Entries rotate out after a year.'}
+          />
+        ) : (
+          <FlatList
+            data={filteredFerments}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <FermentHistoryCard
+                entry={item}
+                onLoad={() => handleLoadFerment(item)}
+                onDelete={() => handleDeleteFerment(item)}
+              />
+            )}
+            contentContainerStyle={styles.listContent}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.terracotta} />}
+          />
+        )
+      )}
 
       {/* Results */}
-      {filteredRecipes.length === 0 ? (
+      {segment === 'bread' && (filteredRecipes.length === 0 ? (
         <EmptyState
           icon={search.trim() ? '🔍' : '🥖'}
           title={search.trim() ? 'No matches' : 'No recipes yet'}
@@ -222,7 +309,7 @@ export default function HistoryScreen() {
           columnWrapperStyle={numColumns > 1 ? { gap: Spacing.md } : undefined}
           showsVerticalScrollIndicator={false}
         />
-      )}
+      ))}
     </SafeAreaView>
   );
 }

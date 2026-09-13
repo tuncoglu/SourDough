@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect } from 'react';
-import { useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   View,
   Text,
@@ -30,10 +30,24 @@ import { FermentType, SALT_LABELS, SALT_TYPE_ORDER, PREP_SIZE_LABELS, PREP_SIZE_
 import { gramsToOz, ozToGrams, formatWeight, weightUnit } from '@/src/lib/unitConversion';
 import { summaryWithHardnessOverride } from '@/src/lib/location';
 import { Seo } from '@/src/components/Seo';
+import { loadFerments } from '@/src/store/fermentHistoryStore';
 
 export default function FermentsScreen() {
   const router = useRouter();
   const calc = useLactoCalculator();
+  // "Calculate again" from the history tab arrives as ?historyId=…
+  const { historyId } = useLocalSearchParams<{ historyId?: string }>();
+  const [loadedHistoryId, setLoadedHistoryId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!historyId || historyId === loadedHistoryId) return;
+    loadFerments().then((entries) => {
+      const entry = entries.find((e) => e.id === historyId);
+      if (!entry) return;
+      calc.restoreFrom(entry);
+      setLoadedHistoryId(historyId);
+    });
+  }, [historyId, loadedHistoryId, calc.restoreFrom]);
   const { colors, unitSystem } = useAppTheme();
   const { isDesktop } = useBreakpoint();
 

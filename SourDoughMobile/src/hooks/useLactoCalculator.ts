@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { FermentType, FermentMethod, SaltCrystal, FermentInputs, FermentResults, LactoDayPoint, PrepSize, WaterHardness } from '../models/types';
+import { FermentType, FermentMethod, SaltCrystal, FermentInputs, FermentResults, FermentHistoryEntry, LactoDayPoint, PrepSize, WaterHardness } from '../models/types';
 import { FERMENT_PRESETS, PRESET_DEFAULT_VEG, VEG_COMBOS, VegCombo } from '../data/fermentPresets';
 import { VEGETABLES, findVeg, VEG_RELEASE_FACTOR, VegEntry } from '../data/vegetables';
 import {
@@ -22,6 +22,8 @@ import { useStaleResults, dirtySetter } from './useStaleResults';
 import { isValidDecimalInput } from '../lib/inputValidation';
 import { buildComboSetup, comboReferenceSpeed, effectivePrepSize, presetReferenceSpeed, recommendedSaltPct, relativeVegSpeed, DEFAULT_BRINE_WATER_G } from '../lib/fermentSetup';
 import { getSettings } from '../store/settingsCache';
+import { recordFerment } from '../store/fermentHistoryStore';
+import { fermentSignature, generateFermentHistoryId } from '../lib/fermentHistory';
 import { classifyHardness } from '../data/ukWaterHardness';
 import { FALLBACK_HARDNESS } from '../lib/hardnessUtils';
 import { useAppTheme } from '../theme';
@@ -106,6 +108,8 @@ export interface LactoCalculatorState {
   setPrepSize: (p: PrepSize) => void;
   setUseStarter: (v: boolean) => void;
   calculate: () => void;
+  /** Load a history entry back into the calculator. */
+  restoreFrom: (entry: FermentHistoryEntry) => void;
 }
 
 export function useLactoCalculator(): LactoCalculatorState {
@@ -353,6 +357,31 @@ export function useLactoCalculator(): LactoCalculatorState {
     setWaterAmount(method === 'brine' ? String(DEFAULT_BRINE_WATER_G) : '0');
   }, [method]);
 
+  /**
+   * Load a past ferment back into the calculator.
+   *
+   * One action rather than ten setters at the call site, so the method
+   * override and the combo identity are restored together with the numbers —
+   * restoring a pepper mash must not leave it looking like a brine ferment.
+   */
+  const restoreFrom = useCallback((entry: FermentHistoryEntry) => {
+    const presetForType = FERMENT_PRESETS[entry.fermentType]!;
+    const combo = entry.comboId ? VEG_COMBOS.find((c) => c.id === entry.comboId) ?? null : null;
+    setFermentType(entry.fermentType);
+    setMethodOverride(entry.method === presetForType.method ? null : entry.method);
+    setActiveCombo(combo);
+    setVegId(entry.vegId);
+    setVegWeight(entry.vegWeight);
+    setVegMix(entry.vegMix ?? []);
+    setWaterAmount(entry.waterAmount);
+    setSaltPct(entry.saltPct);
+    setSaltType(entry.saltType);
+    setPrepSize(entry.prepSize);
+    setUseStarter(entry.useStarter);
+    setValidationError(null);
+    setShowResults(false);
+  }, [setValidationError]);
+
   const calculate = useCallback(() => {
     const vegW = isMultiVeg ? totalMixGrams : (parseFloat(vegWeight) || 0);
     const waterW = parseFloat(waterAmount) || 0;
@@ -440,6 +469,47 @@ export function useLactoCalculator(): LactoCalculatorState {
 
     setTiming(timing);
 
+    // History has no save button: a ferment you calculated is a ferment you
+    // made. Recording is fire-and-forget so storage can never block or break
+    // the calculation, and the signature merges repeat calculations of the
+    // same jar instead of padding the list.
+    const historyEntry: FermentHistoryEntry = {
+      id: generateFermentHistoryId(),
+      createdAt: new Date().toISOString(),
+      presetName: activeCombo?.name ?? preset.name,
+      presetEmoji: activeCombo?.emoji ?? preset.emoji,
+      method,
+      vegName: effectiveVeg.name,
+      fermentType,
+      comboId: activeCombo?.id,
+      vegId,
+      vegWeight: isMultiVeg ? String(totalMixGrams) : vegWeight,
+      waterAmount,
+      saltPct,
+      saltType,
+      prepSize: effectivePrepSize(method, referencePrep, prepSize),
+      useStarter,
+      vegMix,
+      results: {
+        saltGrams: finalResults.saltGrams,
+        estimatedDays: finalResults.estimatedDays,
+        tempC: Math.round(temp * 10) / 10,
+      },
+      signature: fermentSignature({
+        fermentType,
+        method,
+        vegId,
+        vegWeight: isMultiVeg ? String(Math.round(totalMixGrams)) : vegWeight,
+        waterAmount,
+        saltPct,
+        saltType,
+        prepSize: effectivePrepSize(method, referencePrep, prepSize),
+        useStarter,
+        vegMix,
+      }),
+    };
+    recordFerment(historyEntry).catch(() => {});
+
     setResults(finalResults);
     setTimeline(buildLactoTimeline(finalResults.estimatedDays, method));
     const style = activeCombo ?? preset;
@@ -517,5 +587,6 @@ export function useLactoCalculator(): LactoCalculatorState {
     setPrepSize: dirtySetter(markInputsChanged, setPrepSize),
     setUseStarter: dirtySetter(markInputsChanged, setUseStarter),
     calculate,
+    restoreFrom,
   };
 }

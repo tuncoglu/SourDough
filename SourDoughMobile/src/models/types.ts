@@ -135,6 +135,45 @@ export interface CalculationResults {
 }
 
 // ── Saved Recipe ───────────────────────────────────────────────────────
+/**
+ * One entry in the ferment history.
+ *
+ * Recorded automatically on every successful calculation — there is no save
+ * button, because a ferment is something you did rather than something you
+ * chose to keep. Entries rotate out after a year (see fermentHistory.ts).
+ */
+export interface FermentHistoryEntry {
+  id: string;
+  /** ISO timestamp of the most recent calculation of this exact ferment. */
+  createdAt: string;
+  /** What was fermented. */
+  presetName: string;
+  presetEmoji: string;
+  method: FermentMethod;
+  vegName: string;
+  /** Inputs, stored so the entry can be loaded back into the calculator. */
+  fermentType: FermentType;
+  /** Curated combo it came from, when it was one. */
+  comboId?: string;
+  vegId: string;
+  vegWeight: string;
+  waterAmount: string;
+  saltPct: string;
+  saltType: SaltCrystal;
+  prepSize: PrepSize;
+  useStarter: boolean;
+  vegMix: { vegId: string; grams: string }[];
+  /** Outcome snapshot, so the list renders without recalculating. */
+  results: {
+    saltGrams: number;
+    estimatedDays: number;
+    /** Effective temperature the estimate was made at (°C). */
+    tempC: number;
+  };
+  /** Hash of the ferment-defining inputs — consecutive duplicates are merged. */
+  signature: string;
+}
+
 export interface SavedRecipe {
   id: string;
   createdAt: string;          // ISO timestamp
