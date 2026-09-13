@@ -50,6 +50,18 @@ Location is only accessed when you explicitly trigger detection or
 manually enter a postcode to geocode. You can decline location
 permission at any time and enter temperature values manually.
 
+## Google Calendar links (optional)
+
+The lacto-fermentation calculator can add a ferment to your calendar. This
+is not a background integration: nothing is sent anywhere until you tap the
+button. Tapping it opens a `calendar.google.com` link in your browser or the
+Google Calendar app, with the event details (ferment style, batch, salt,
+timings) encoded in that URL. Google therefore receives those details, and
+whatever your Google account does with them is governed by
+[Google's Privacy Policy](https://policies.google.com/privacy). The App
+itself does not connect to Google — it only hands the link to your device's
+browser. Skip the button and nothing is transmitted.
+
 ## Data sharing
 
 Beyond the API calls described above, the App **does not share, sell, or

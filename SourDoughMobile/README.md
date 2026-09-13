@@ -66,7 +66,10 @@ Built for bakers who want predictable results without the guesswork.
 - 🥒 **25+ vegetables** — density and water-release data for common ferments
 - 🧂 **Salt calculator** — converts between grams, percentage, and volume measures
 - 📅 **Day-by-day timeline** — LAB succession from Leuconostoc to Lactobacillus
-- 🌡️ **Temperature-adjusted Q10 model** — duration and pH timeline adapt to ambient temperature
+- 🌡️ **Conditions-aware timing** — duration starts from the recipe's documented baseline and is adjusted for your forecast temperature (cardinal-temperature curve), salt level, water chemistry, vegetable mix and cut size — with the arithmetic shown, not just the number
+- 🥦 **Fermentation ceiling** — measured acid-demand vs sugar data warns when a vegetable cannot reach full sourness at all (broccoli stalls near pH 4.3)
+- 🥄 **Starter culture & cut size** — the two levers a fermenter controls most, modelled from trial data (a starter skips the lag; shredded cabbage is done in about half the time of whole heads)
+- 🗓️ **Add to Google Calendar** — ready-day reminder, first taste check, or the whole ferment as one multi-day event, pre-filled with the batch, salt and schedule
 
 ---
 

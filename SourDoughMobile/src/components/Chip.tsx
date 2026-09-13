@@ -5,6 +5,8 @@ import { BorderRadius, Spacing, useAppTheme } from '../theme';
 interface Props {
   selected: boolean;
   onPress: () => void;
+  /** Optional long-press action (e.g. "add to the mix" instead of replace). */
+  onLongPress?: () => void;
   /** Screen-reader label and fallback text. */
   label: string;
   /** Color scheme for the selected state. Default: 'terracotta'. */
@@ -26,6 +28,7 @@ interface Props {
 export function Chip({
   selected,
   onPress,
+  onLongPress,
   label,
   colorScheme = 'terracotta',
   inactiveBg: inactiveBgProp,
@@ -51,6 +54,8 @@ export function Chip({
         style,
       ]}
       onPress={onPress}
+      onLongPress={onLongPress}
+      delayLongPress={350}
       activeOpacity={0.7}
       accessibilityRole={role}
       accessibilityState={{ selected }}

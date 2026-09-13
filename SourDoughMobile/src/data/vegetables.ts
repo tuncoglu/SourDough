@@ -22,7 +22,19 @@ export interface VegEntry {
   typicalBrineSaltPct: number;
   /** Recommended salt % for dry/mash method (relative to veg weight). */
   typicalDrySaltPct: number;
-  /** Fermentation speed relative to cabbage baseline (1.0). */
+  /**
+   * Fermentation speed relative to a cabbage baseline (1.0).
+   *
+   * ⚠️ UNVERIFIED HEURISTIC. An evidence review (2026) traced these ratios to
+   * a non-peer-reviewed recipe site and found no study measuring
+   * time-to-target-pH across these vegetables under a common protocol; direct
+   * measurements contradict at least two (cauliflower reached pH < 4.0 in
+   * ~2 days at 25–30 °C, beetroot took ~96 h to pH 4.0). They are retained
+   * only to give a *relative* nudge when a user swaps vegetables away from
+   * the recipe's reference, and the ±40% estimate band carries the real
+   * uncertainty. Re-derive from buffer capacity × fermentable sugar before
+   * treating these as data.
+   */
   speedFactor: number;
   /** Firmness affects brine strength: firmer veg needs stronger brine. */
   firmness: 'soft' | 'medium' | 'firm';
@@ -31,6 +43,43 @@ export interface VegEntry {
   notes?: string;
   /** Research-backed note (2024–2026 findings). Shown when relevant. */
   researchNote?: string;
+  /**
+   * Measured acid demand vs intrinsic sugar — i.e. can this vegetable's own
+   * sugar take it all the way down?
+   *
+   * From Little, Cruz-Martínez, St Fort, Pagán-Medina, Page, Perez-Perez,
+   * Taveirne, Lee, Arroyo-González, Santiago-Ortiz & Pérez-Díaz (2022),
+   * "Vegetable fermentations brined with low salt for reclaiming food waste",
+   * J. Food Sci. 87(5):2121–2132 — titration of fresh slurries (3 lots each)
+   * plus controlled 2% NaCl fermentations at 30 °C for 21 days.
+   *
+   * Only vegetables actually measured carry this. Everything else is
+   * UNKNOWN and must not be presented as if it completes — no buffer
+   * capacity has ever been published for cabbage, napa, beetroot or
+   * cauliflower (confirmed against all 462 entries of the ARS Fermented &
+   * Acidified Vegetables bibliography).
+   */
+  /**
+   * Cucumber-family vegetables are prone to "bloater" damage — hollow pockets
+   * formed by CO₂ trapped under the skin. Measured in controlled pickle
+   * fermentations: 24.5% of cucumbers bloated at 27 °C against 48.0% at 32 °C
+   * (same endpoint acidity, 1.30 vs 1.32%), and deeper brine makes it worse
+   * (12% at 9 in vs 48% at 27 in at 32 °C) — Etchells, Fleming, Hontz, Bell &
+   * Monroe (1975), J. Food Sci. 40(3):569–575.
+   */
+  bloaterProne?: boolean;
+  acidBalance?: {
+    /** mM lactic acid needed to bring the slurry to pH 3.0 (buffer capacity). */
+    acidDemandMmolL: number;
+    /** mM lactic acid obtainable from the vegetable's own sugars. */
+    sugarSupplyMmolL: number;
+    /** pH actually reached once the sugar ran out (measured, 2% brine, 30 °C).
+     *  Absent on a composed MIX, where the endpoint has not been measured. */
+    measuredEndPH?: number;
+    /** mM acetic acid needed for the same pH drop — usually ≫ the lactic figure,
+     *  because acetic acid (pK 4.76) is a far weaker acidifier near pH 3–4. */
+    aceticDemandMmolL?: number;
+  };
 }
 
 // ── Ordered for display ─────────────────────────────────────────────────
@@ -147,6 +196,7 @@ export const VEGETABLES: VegEntry[] = [
     speedFactor: 0.9,
     firmness: 'firm',
     typicalWeight: 400,
+    acidBalance: { acidDemandMmolL: 173, sugarSupplyMmolL: 157, measuredEndPH: 4.3, aceticDemandMmolL: 225 },
     notes: 'Stems ferment better than florets. Peel tough outer skin.',
     researchNote: 'Some research suggests fermentation may increase sulforaphane availability in broccoli, though results vary by method and temperature.',
   },
@@ -255,6 +305,7 @@ export const VEGETABLES: VegEntry[] = [
     speedFactor: 1.5,
     firmness: 'firm',
     typicalWeight: 400,
+    acidBalance: { acidDemandMmolL: 72.3, sugarSupplyMmolL: 502, measuredEndPH: 3.4, aceticDemandMmolL: 699 },
     notes: 'High sugar = fast ferment. Slice thin for quicker results. Grated is great for fermented slaws.',
   },
 
@@ -269,6 +320,7 @@ export const VEGETABLES: VegEntry[] = [
     typicalDrySaltPct: 3.0,
     speedFactor: 1.0,
     firmness: 'medium',
+    bloaterProne: true,
     typicalWeight: 500,
     notes: 'Kirby or gherkin varieties. A tannin leaf (grape/oak/horseradish) preserves crunch.',
     researchNote: '2025 Zeng et al.: variable-temperature (25°C × 3 days → 5°C × 15 days) = better crunch, colour & aroma than constant warm ferment. CaCl₂: ¼ tsp per kg.',
@@ -284,6 +336,7 @@ export const VEGETABLES: VegEntry[] = [
     speedFactor: 0.8,
     firmness: 'firm',
     typicalWeight: 400,
+    acidBalance: { acidDemandMmolL: 57.6, sugarSupplyMmolL: 351, measuredEndPH: 3.1, aceticDemandMmolL: 463 },
     notes: 'Trim ends. Dilly beans are a classic. 4% brine is the sweet spot.',
   },
   {
@@ -335,6 +388,7 @@ export const VEGETABLES: VegEntry[] = [
     typicalDrySaltPct: 3.0,
     speedFactor: 1.0,
     firmness: 'soft',
+    bloaterProne: true,
     typicalWeight: 400,
     notes: 'High water content — slice thick or it goes soft. Better in mixed ferments.',
   },
@@ -510,6 +564,7 @@ export const VEGETABLES: VegEntry[] = [
     speedFactor: 1.1,
     firmness: 'medium',
     typicalWeight: 300,
+    acidBalance: { acidDemandMmolL: 64.8, sugarSupplyMmolL: 276, measuredEndPH: 3.1, aceticDemandMmolL: 189 },
     notes: 'Sweet, mild. Slice into strips. Mixed colours look beautiful.',
   },
 
@@ -632,6 +687,7 @@ export const VEGETABLES: VegEntry[] = [
     speedFactor: 1.2,
     firmness: 'firm',
     typicalWeight: 300,
+    acidBalance: { acidDemandMmolL: 210, sugarSupplyMmolL: 700, measuredEndPH: 3.4, aceticDemandMmolL: 90 },
     notes: 'Use fresh kernels cut from the cob. Smoky, sweet result.',
   },
 ];

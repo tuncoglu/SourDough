@@ -18,6 +18,7 @@ import { ValidationMessage } from '@/src/components/ValidationMessage';
 import { Chip } from '@/src/components/Chip';
 import { LactoResultCard } from '@/src/components/LactoResultCard';
 import { LactoTimeline } from '@/src/components/LactoTimeline';
+import { AddToCalendarCard } from '@/src/components/AddToCalendarCard';
 import { LactoAdvice } from '@/src/components/LactoAdvice';
 import { LactoScience } from '@/src/components/LactoScience';
 import { LocationBar } from '@/src/components/LocationBar';
@@ -25,7 +26,7 @@ import { NumberInput } from '@/src/components/NumberInput';
 import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyleLg } from '@/src/theme';
 import { FERMENT_TYPE_ORDER } from '@/src/data/fermentPresets';
 import { VEGETABLES, VEG_CATEGORIES } from '@/src/data/vegetables';
-import { FermentType, SALT_LABELS, SALT_TYPE_ORDER } from '@/src/models/types';
+import { FermentType, SALT_LABELS, SALT_TYPE_ORDER, PREP_SIZE_LABELS, PREP_SIZE_ORDER } from '@/src/models/types';
 import { gramsToOz, ozToGrams, formatWeight, weightUnit } from '@/src/lib/unitConversion';
 import { summaryWithHardnessOverride } from '@/src/lib/location';
 import { Seo } from '@/src/components/Seo';
@@ -141,6 +142,11 @@ export default function FermentsScreen() {
               <Text style={[styles.currentVegMeta, { color: colors.lightText }]}>
                 ~{calc.veg.waterContentPct}% water · {calc.veg.firmness} · salt:{' '}
                 {calc.method === 'brine' ? calc.veg.typicalBrineSaltPct : calc.veg.typicalDrySaltPct}%
+                {calc.acidBalance.acidLimited
+                  ? calc.acidBalance.measuredEndPH != null
+                    ? ` · stops near pH ${calc.acidBalance.measuredEndPH.toFixed(1)}`
+                    : ' · may not fully sour'
+                  : ''}
               </Text>
             </View>
           </View>
@@ -160,7 +166,15 @@ export default function FermentsScreen() {
                       <Chip
                         key={veg.id}
                         selected={isSelected}
-                        onPress={() => calc.toggleVegInMix(veg.id)}
+                        // Tap REPLACES the single selection (or edits an
+                        // existing mix); long-press ADDS to a mix. Tapping used
+                        // to always start a mix, which left no way to choose a
+                        // different vegetable at all — a 43-vegetable picker
+                        // where the vegetable could not be changed.
+                        onPress={() => (calc.isMultiVeg
+                          ? calc.toggleVegInMix(veg.id)
+                          : calc.selectVeg(veg.id))}
+                        onLongPress={() => calc.toggleVegInMix(veg.id)}
                         label={veg.name}
                         colorScheme="olive"
                         inactiveBg={colors.white}
@@ -277,6 +291,70 @@ export default function FermentsScreen() {
                 </Chip>
               ))}
           </ScrollView>
+
+          {/* Cut size — a first-order factor: sugar has to diffuse out of the
+              tissue before LAB can use it, so surface area sets the early pace. */}
+          <Text style={[styles.miniLabel, { color: colors.muted }]}>Cut size</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={isDesktop}
+            style={styles.chipScroll}
+          >
+            {PREP_SIZE_ORDER.map((prep) => (
+              <Chip
+                key={prep}
+                selected={calc.prepSize === prep}
+                onPress={() => calc.setPrepSize(prep)}
+                label={PREP_SIZE_LABELS[prep]}
+                colorScheme="olive"
+                inactiveBg={colors.white}
+                style={styles.saltChip}
+              >
+                <Text style={[styles.saltChipText, { color: calc.prepSize === prep ? colors.white : colors.muted }]}>
+                  {PREP_SIZE_LABELS[prep]}
+                </Text>
+              </Chip>
+            ))}
+          </ScrollView>
+          <View style={styles.hintRow}>
+            <Text style={[styles.hintText, { color: colors.lightText }]}>
+              Tap to choose · long-press to add a second vegetable to a mix
+            </Text>
+          </View>
+          <View style={styles.hintRow}>
+            <Text style={[styles.hintText, { color: colors.lightText }]}>
+              Finer cuts ferment faster — shredded cabbage is done in about half the time of whole heads
+            </Text>
+          </View>
+
+          {/* Starter culture — acts on the lag phase, so it is modelled as a
+              fixed saving rather than a percentage. */}
+          <TouchableOpacity
+            style={styles.starterRow}
+            onPress={() => calc.setUseStarter(!calc.useStarter)}
+            activeOpacity={0.7}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: calc.useStarter }}
+            accessibilityLabel="I used a starter culture"
+          >
+            <View
+              style={[
+                styles.starterBox,
+                {
+                  borderColor: calc.useStarter ? colors.olive : colors.border,
+                  backgroundColor: calc.useStarter ? colors.olive : colors.white,
+                },
+              ]}
+            >
+              {calc.useStarter && <Text style={styles.starterTick}>✓</Text>}
+            </View>
+            <View style={styles.starterText}>
+              <Text style={[styles.starterLabel, { color: colors.espresso }]}>Starter culture</Text>
+              <Text style={[styles.starterHint, { color: colors.lightText }]}>
+                Commercial sachet or fresh mild brine — skips most of the slow start
+              </Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* ── Validation message ── */}
@@ -298,7 +376,22 @@ export default function FermentsScreen() {
     <View style={styles.results}>
       {calc.inputsDirty && <StaleResultsBanner onRecalculate={handleCalculate} />}
       <LactoResultCard results={calc.results} method={calc.method} />
-      <LactoTimeline timeline={calc.timeline} results={calc.results} />
+      <LactoTimeline timeline={calc.timeline} results={calc.results} timing={calc.timing} />
+      <AddToCalendarCard
+        presetName={calc.presetName}
+        presetEmoji={calc.presetEmoji}
+        vegName={calc.veg.name}
+        method={calc.method}
+        vegWeightG={calc.isMultiVeg ? calc.totalMixGrams : parseFloat(calc.vegWeight) || 0}
+        waterG={calc.method === 'brine' ? parseFloat(calc.waterAmount) || 0 : 0}
+        saltG={calc.results.saltGrams}
+        saltPct={parseFloat(calc.saltPct) || 0}
+        saltLabel={calc.results.saltLabel}
+        tempC={calc.effectiveTemp}
+        results={calc.results}
+        timeline={calc.timeline}
+        timing={calc.timing}
+      />
       <LactoAdvice
         advice={calc.advice}
         tips={calc.tips}
@@ -512,6 +605,38 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
+  starterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+    minHeight: 44,
+  },
+  starterBox: {
+    width: 22,
+    height: 22,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  starterTick: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+    lineHeight: 18,
+  },
+  starterText: {
+    flex: 1,
+  },
+  starterLabel: {
+    fontSize: FontSize.sm,
+    fontWeight: '600',
+  },
+  starterHint: {
+    fontSize: FontSize.xs,
+    lineHeight: 16,
+  },
   // Calculate
   calcBtn: {
     marginVertical: Spacing.lg,

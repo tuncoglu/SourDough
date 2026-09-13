@@ -3,12 +3,14 @@
  */
 import {
   calculateFermentSalt,
-  estimateFermentDuration,
+  estimateFermentTiming,
   buildLactoTimeline,
   runLactoCalculations,
   computeFermentTemp,
+  labRelativeRate,
   estimateWaterForJar,
   estimatePHAt,
+  REFERENCE_DAYS,
   TARGET_PH,
   SAFETY_PH,
   FINAL_PH,
@@ -109,35 +111,36 @@ describe('calculateFermentSalt', () => {
 // ── estimateFermentDuration ───────────────────────────────────────────────
 
 describe('estimateFermentDuration', () => {
-  it('returns ~7 days at baseline 22°C with speed factor 1.0', () => {
-    const d = estimateFermentDuration(22, 1.0);
-    expect(d.days).toBeCloseTo(7.0, 1);
+  it('returns the recipe duration exactly at the 22°C reference', () => {
+    expect(estimateFermentTiming(22, { typicalDays: REFERENCE_DAYS }).days).toBeCloseTo(7.0, 1);
+    expect(estimateFermentTiming(22, { typicalDays: 10 }).days).toBeCloseTo(10.0, 1);
+    expect(estimateFermentTiming(22, { typicalDays: 3 }).days).toBeCloseTo(3.0, 1);
   });
 
   it('warmer temperature speeds up fermentation', () => {
-    const cool = estimateFermentDuration(18, 1.0);
-    const warm = estimateFermentDuration(28, 1.0);
+    const cool = estimateFermentTiming(18, { typicalDays: REFERENCE_DAYS });
+    const warm = estimateFermentTiming(28, { typicalDays: REFERENCE_DAYS });
     expect(warm.days).toBeLessThan(cool.days);
   });
 
-  it('speed factor > 1 reduces fermentation time', () => {
-    const baseline = estimateFermentDuration(22, 1.0);
-    const fast = estimateFermentDuration(22, 1.8);
+  it('a faster-than-reference vegetable mix shortens the ferment', () => {
+    const baseline = estimateFermentTiming(22, { typicalDays: REFERENCE_DAYS, vegSpeedRatio: 1.0 });
+    const fast = estimateFermentTiming(22, { typicalDays: REFERENCE_DAYS, vegSpeedRatio: 1.8 });
     expect(fast.days).toBeLessThan(baseline.days);
   });
 
   it('caps at MAX_DAYS for very cold temperatures', () => {
-    const d = estimateFermentDuration(0, 1.0);
+    const d = estimateFermentTiming(0, { typicalDays: REFERENCE_DAYS });
     expect(d.days).toBeLessThanOrEqual(60);
   });
 
   it('floors at MIN_DAYS for very hot temperatures', () => {
-    const d = estimateFermentDuration(40, 1.8);
+    const d = estimateFermentTiming(40, { typicalDays: REFERENCE_DAYS, vegSpeedRatio: 1.8 });
     expect(d.days).toBeGreaterThanOrEqual(1.0);
   });
 
   it('returns min/max range around estimate', () => {
-    const d = estimateFermentDuration(22, 1.0);
+    const d = estimateFermentTiming(22, { typicalDays: REFERENCE_DAYS });
     expect(d.daysMin).toBeLessThan(d.days);
     expect(d.daysMax).toBeGreaterThan(d.days);
   });
@@ -241,7 +244,7 @@ describe('runLactoCalculations', () => {
   };
 
   it('returns all result fields', () => {
-    const r = runLactoCalculations(baseInputs, 92, 1.0);
+    const r = runLactoCalculations(baseInputs, 92, { typicalDays: REFERENCE_DAYS });
     expect(r.saltGrams).toBeGreaterThan(0);
     expect(r.estimatedDays).toBeGreaterThan(0);
     expect(r.targetPH).toBe(TARGET_PH);
@@ -251,12 +254,12 @@ describe('runLactoCalculations', () => {
 
   it('brine method shows brine strength', () => {
     const inputs: FermentInputs = { ...baseInputs, method: 'brine', waterAmount: 500, saltPct: 3.5 };
-    const r = runLactoCalculations(inputs, 92, 1.0);
+    const r = runLactoCalculations(inputs, 92, { typicalDays: REFERENCE_DAYS });
     expect(r.brineStrengthDisplay).toContain('3.5% brine');
   });
 
   it('dry method shows self-brining label', () => {
-    const r = runLactoCalculations(baseInputs, 92, 1.0);
+    const r = runLactoCalculations(baseInputs, 92, { typicalDays: REFERENCE_DAYS });
     expect(r.brineStrengthDisplay).toContain('self-brining');
   });
 });
@@ -292,18 +295,24 @@ describe('computeFermentTemp', () => {
     expect(r.source).toBe('forecast');
   });
 
-  it('integrates the Q10 rate curve instead of a biased arithmetic mean', () => {
-    // 12h at 10°C + 12h at 34°C: arithmetic mean is 22°C, but the
-    // integrated rate is (2.5^−1.2 + 2.5^1.2)/2 ≈ 1.67 → ~27.7°C effective.
+  it('integrates the rate law instead of using a biased arithmetic mean', () => {
+    // 12h at 10°C + 12h at 30°C averages 20°C arithmetically, but the rate
+    // curve is convex over that span, so the integrated rate is higher than
+    // the rate at the mean — the effective temperature must exceed 20°C.
     // Start at local midnight so all 24 points fall inside one local day.
     const start = new Date();
     start.setHours(0, 0, 0, 0);
     const forecast: HourlyPoint[] = Array.from({ length: 24 }, (_, i) => ({
       datetime: new Date(start.getTime() + i * 3600000).toISOString(),
-      tempC: i < 12 ? 10 : 34,
+      tempC: i < 12 ? 10 : 30,
     }));
     const r = computeFermentTemp(forecast, null, 1);
-    expect(r.effectiveTemp).toBeCloseTo(27.7, 0);
+    expect(r.effectiveTemp).toBeGreaterThan(20);
+    expect(r.effectiveTemp).toBeLessThan(25);
+
+    // And it must be exactly the temperature whose rate equals the mean rate.
+    const meanRate = (12 * labRelativeRate(10) + 12 * labRelativeRate(30)) / 24;
+    expect(labRelativeRate(r.effectiveTemp)).toBeCloseTo(meanRate, 2);
     expect(r.source).toBe('forecast');
   });
 

@@ -293,6 +293,52 @@ export interface RecipePreset {
 
 export type FermentMethod = 'dry' | 'brine' | 'mash';
 
+/**
+ * How finely the vegetables are cut. This is a first-order factor, not a
+ * detail: sugar has to diffuse out of the tissue before LAB can use it, so
+ * surface area sets the pace of the early phase.
+ *
+ * Measured: shredded vs whole-head cabbage finishes in 15 vs 28 days
+ * (Niksic et al. 2005, J. Food Prot. 68:1367 — salt and temperature were NOT
+ * significant within a cabbage type in the same factorial); 2 mm shred vs a
+ * 6×8 cm leaf puts LAB at 8 log by ~day 5 vs ~day 13 (Valence et al. 2025,
+ * Peer Community J. 5:e49); peeling a cucumber speeds solute loss 7–11×
+ * (Potts et al. 1986, ARS).
+ */
+export type PrepSize = 'grated' | 'shredded' | 'sliced' | 'chunks' | 'whole';
+
+export const PREP_SIZE_ORDER: PrepSize[] = ['grated', 'shredded', 'sliced', 'chunks', 'whole'];
+
+export const PREP_SIZE_LABELS: Record<PrepSize, string> = {
+  grated: 'Grated',
+  shredded: 'Shredded',
+  sliced: 'Sliced / spears',
+  chunks: 'Chunks',
+  whole: 'Whole',
+};
+
+/**
+ * Time multiplier per prep size, relative to "sliced" = 1.
+ *
+ * Anchored on the two measured contrasts rather than invented wholesale:
+ * shredded vs whole = 1.875× (Niksic 2005: 15 d vs 28 d), which fixes the two
+ * ends of the ladder; the intermediate steps are interpolated, and "grated"
+ * is an extrapolation beyond the measured range. As with salt, the factor is
+ * normalised against the recipe's own reference prep, so a recipe used as
+ * written is exactly 1.0 and only deviations move the estimate.
+ */
+/** Shredded is the measured anchor the whole ladder hangs from. */
+const PREP_SHREDDED = 0.80;
+
+export const PREP_TIME_FACTOR: Record<PrepSize, number> = {
+  grated: 0.65, // extrapolated beyond the measured range
+  shredded: PREP_SHREDDED,
+  sliced: 1.00,
+  chunks: 1.25, // interpolated
+  // 28 d / 15 d, so the measured contrast is exact by construction.
+  whole: PREP_SHREDDED * (28 / 15),
+};
+
 export type FermentType =
   | 'sauerkraut'
   | 'kimchi'
@@ -370,11 +416,34 @@ export interface FermentPreset {
   emoji: string;
   description: string;
   method: FermentMethod;
-  typicalSaltPct: number;       // 2–5%
+  /** Salt % range this style is normally made with (drives the advice copy).
+   *  The level we *recommend* is per-vegetable — see recommendedSaltPct. */
   saltPctMin: number;
   saltPctMax: number;
   typicalVegWeight: number;     // grams — typical batch size
-  speedFactor: number;          // 1.0 = baseline (sauerkraut); higher = faster
+  /**
+   * Days to full sourness at the 22 °C reference temperature, using the
+   * preset's own `defaultVegId`.
+   *
+   * This — not a dimensionless multiplier — is the timing source of truth,
+   * and it must sit inside the day range quoted in `tips` (enforced by
+   * __tests__/fermentTiming.test.ts). Everything else is a relative
+   * adjustment around this anchor: temperature via the Q10 model, and
+   * swapping in other vegetables via the vegetable's own speed factor.
+   */
+  typicalDays: number;
+  /**
+   * The vegetable the preset is written around: the picker default *and*
+   * the anchor for `typicalDays`, so swapping vegetables scales the
+   * estimate instead of silently keeping the preset's number.
+   */
+  defaultVegId: string;
+  /**
+   * The prep size `typicalDays` was written for (shredded for kraut, spears
+   * for pickles, blended for a mash). The prep adjustment is measured
+   * against this, so "as written" is exactly the documented duration.
+   */
+  referencePrep: PrepSize;
   /** Vegetables with high water content release their own brine in dry salting. */
   waterContentPct: number;      // typical water content of the vegetable
   tips?: string[];
@@ -403,7 +472,7 @@ export interface FermentResults {
   estimatedDays: number;        // days to completion at current temp
   estimatedDaysMin: number;     // range: early taste
   estimatedDaysMax: number;     // range: fully sour
-  tempCapped: boolean;          // true when ambient temp exceeds reliable Q10 range
+  tempCapped: boolean;          // true when ambient temp is outside the LAB growth band
   targetPH: number;             // 4.0
   brineStrengthDisplay: string; // e.g. "3.5% brine"
   saltLabel: string;

@@ -1,4 +1,13 @@
-import { FermentPreset } from '../models/types';
+import { FermentPreset, PrepSize } from '../models/types';
+
+/**
+ * TIMING: `typicalDays` is days to full sourness at 22 °C with `defaultVegId`,
+ * and it must agree with the day range a preset promises in its own `tips` —
+ * __tests__/fermentTiming.test.ts parses those tips and fails if they drift
+ * apart. Temperature and vegetable swaps are relative adjustments on top of
+ * that anchor (see estimateFermentDuration); nothing here is a bare
+ * multiplier that no one can check against the copy the user reads.
+ */
 
 /**
  * Lacto-fermentation presets.
@@ -14,17 +23,18 @@ export const FERMENT_PRESETS: Record<string, FermentPreset> = {
     emoji: '🥬',
     description: 'Shredded cabbage with salt — the classic lacto-ferment. Natural brine forms as salt draws water from the leaves.',
     method: 'dry',
-    typicalSaltPct: 2.0,
     saltPctMin: 1.5,
     saltPctMax: 3.0,
     typicalVegWeight: 1000,
-    speedFactor: 1.0,
+    typicalDays: 7, // days to full sourness at 22 C with green-cabbage
+    defaultVegId: 'green-cabbage',
+    referencePrep: 'shredded',
     waterContentPct: 92,
     tips: [
       'Massage salt into shredded cabbage until it feels wet and brine pools at the bottom when squeezed.',
       'Pack tightly — eliminate air pockets. Use a weight to keep cabbage submerged.',
       'Caraway seeds and juniper berries are traditional additions.',
-      '🔬 Save a spoonful of brine from your best batch (fully sour, no off-odours) to kickstart the next — backslopping can accelerate LAB dominance.',
+      '🔬 A commercial starter culture reliably speeds the start (pH below 4.0 within a day vs ~3 days spontaneous — Müller et al. 2018). Backslopping with fully sour brine is a different thing and often a downgrade: above ~0.3% acidity it suppresses Leuconostoc mesenteroides, the initiator that builds kraut aroma, and gives poorer quality (FAO). If you backslop, use a fresh, mild brine.',
       '🔬 LAB succession: Enterobacteriaceae (hrs 0–24) → Leuconostoc mesenteroides (days 1–3) → L. plantarum (day 4+).',
     ],
     healthNote: 'Fermented cabbage produces indole-3-lactic acid, phenyl-lactic acid & GABA — bioactive compounds linked to gut barrier integrity and anti-inflammatory effects (Wei et al. 2025).',
@@ -36,17 +46,18 @@ export const FERMENT_PRESETS: Record<string, FermentPreset> = {
     emoji: '🌶️',
     description: 'Napa cabbage with a spicy gochugaru paste. Faster ferment than sauerkraut due to the paste\'s surface area and higher ambient activity.',
     method: 'dry',
-    typicalSaltPct: 2.5,
     saltPctMin: 2.0,
     saltPctMax: 4.0,
     typicalVegWeight: 800,
-    speedFactor: 1.6,
+    typicalDays: 3, // days to full sourness at 22 C with napa-cabbage
+    defaultVegId: 'napa-cabbage',
+    referencePrep: 'chunks',
     waterContentPct: 95, // matches napa cabbage in vegetables.ts
     tips: [
       'Salt cabbage leaves first, let wilt 1–2h, then rinse and mix with paste.',
       'Kimchi is usually ready in 2–5 days at room temp, then moved to fridge.',
       'The paste includes gochugaru, garlic, ginger, fish sauce (or soy sauce for vegan).',
-      '🔬 Save a spoonful of ripe kimchi juice to inoculate your next batch — backslopping can stabilise the ecosystem from day one.',
+      '🔬 Reusing ripe kimchi juice is not a free speed-up: mature brine is acidic enough to suppress the Leuconostoc that should start the ferment, and it carries the previous batch\'s yeasts with it. A fresh starter culture is the reliable way to shorten the lag.',
       '🔬 Garlic selectively shapes LAB communities — it favours Leuconostoc and Lactiplantibacillus over Weissella (recent kimchi model studies).',
     ],
     healthNote: 'Most-studied fermented vegetable globally: 11 clinical trials. Benefits include reduced body weight, alleviated IBS, lower LDL cholesterol & fasting glucose. Active UC Davis trial (NCT07435831, 2026).',
@@ -58,11 +69,12 @@ export const FERMENT_PRESETS: Record<string, FermentPreset> = {
     emoji: '🥒',
     description: 'Cucumber spears in a salt brine with dill and garlic. A tannin-rich leaf (grape, oak, or horseradish) keeps them crisp.',
     method: 'brine',
-    typicalSaltPct: 3.5,
     saltPctMin: 3.0,
     saltPctMax: 5.0,
     typicalVegWeight: 500,
-    speedFactor: 1.0,
+    typicalDays: 7, // days to full sourness at 22 C with pickling-cucumber
+    defaultVegId: 'pickling-cucumber',
+    referencePrep: 'whole',
     waterContentPct: 96,
     brineStrength: 3.5,
     tips: [
@@ -80,11 +92,12 @@ export const FERMENT_PRESETS: Record<string, FermentPreset> = {
     emoji: '🥕',
     description: 'Carrot sticks or coins in brine with garlic and dill. Quick, reliable, and kid-friendly.',
     method: 'brine',
-    typicalSaltPct: 3.0,
     saltPctMin: 2.5,
     saltPctMax: 5.0,
     typicalVegWeight: 400,
-    speedFactor: 1.1,
+    typicalDays: 6, // days to full sourness at 22 C with carrot
+    defaultVegId: 'carrot',
+    referencePrep: 'sliced',
     waterContentPct: 88,
     brineStrength: 3.0,
     tips: [
@@ -101,11 +114,15 @@ export const FERMENT_PRESETS: Record<string, FermentPreset> = {
     emoji: '🌶️',
     description: 'Fermented pepper mash — blend peppers, garlic, and salt, then let lactobacillus work. No water added.',
     method: 'mash',
-    typicalSaltPct: 3.0,
     saltPctMin: 2.5,
     saltPctMax: 5.0,
     typicalVegWeight: 300,
-    speedFactor: 1.3,
+    // Mash is a genuinely slow ferment — no brine cover, lower water
+    // activity, capsaicin inhibition — hence 10 days, not the 5–6 the
+    // peppers would take in brine. Matches the 7–14 days promised below.
+    typicalDays: 10, // days to full sourness at 22 C with jalapeno
+    defaultVegId: 'jalapeno',
+    referencePrep: 'grated',
     waterContentPct: 88,
     tips: [
       'Use a mix of hot chillies (habanero, bird\'s eye, Scotch bonnet, jalapeño) for complexity.',
@@ -122,11 +139,13 @@ export const FERMENT_PRESETS: Record<string, FermentPreset> = {
     emoji: '🫙',
     description: 'Earthy, salty, and vibrant — a traditional tonic. Quick ferment with beets, salt, and water.',
     method: 'brine',
-    typicalSaltPct: 2.0,
     saltPctMin: 1.5,
     saltPctMax: 3.0,
     typicalVegWeight: 300,
-    speedFactor: 1.8,
+    // Beetroot is sugar-rich and fast; 4 days matches the 3–5 promised below.
+    typicalDays: 4, // days to full sourness at 22 C with beetroot
+    defaultVegId: 'beetroot',
+    referencePrep: 'chunks',
     waterContentPct: 88,
     brineStrength: 2.0,
     tips: [
@@ -143,11 +162,12 @@ export const FERMENT_PRESETS: Record<string, FermentPreset> = {
     emoji: '🥗',
     description: 'Firm, low-sugar vegetables. 3.5% brine is the sweet spot — strong enough to kickstart fermentation without being overly salty.',
     method: 'brine',
-    typicalSaltPct: 3.5,
     saltPctMin: 3.0,
     saltPctMax: 5.0,
     typicalVegWeight: 500,
-    speedFactor: 0.85,
+    typicalDays: 9, // days to full sourness at 22 C with cauliflower
+    defaultVegId: 'cauliflower',
+    referencePrep: 'chunks',
     waterContentPct: 90,
     brineStrength: 3.5,
     tips: [
@@ -164,14 +184,26 @@ export const FERMENT_PRESETS: Record<string, FermentPreset> = {
     emoji: '⚗️',
     description: 'Your own ferment — set the method, salt percentage, and vegetable weight manually.',
     method: 'brine',
-    typicalSaltPct: 3.0,
     saltPctMin: 1.5,
     saltPctMax: 8.0,
     typicalVegWeight: 500,
-    speedFactor: 1.0,
+    typicalDays: 7, // days to full sourness at 22 C with green-cabbage
+    defaultVegId: 'green-cabbage',
+    referencePrep: 'sliced',
     waterContentPct: 90,
   },
 };
+
+/**
+ * Which vegetable each preset defaults to when it is selected.
+ *
+ * Derived from the presets themselves — this used to be a hand-maintained
+ * parallel map, which is exactly the kind of duplicated truth that let the
+ * timing copy and the timing maths drift apart.
+ */
+export const PRESET_DEFAULT_VEG: Record<string, string> = Object.fromEntries(
+  Object.entries(FERMENT_PRESETS).map(([id, preset]) => [id, preset.defaultVegId]),
+);
 
 // ── Multi-Vegetable Combinations ─────────────────────────────────────────
 // Curated from authoritative fermentation literature:
@@ -189,6 +221,15 @@ export interface VegCombo {
   saltPctMin: number;
   saltPctMax: number;
   typicalTotalGrams: number;
+  /**
+   * Days to full sourness at 22 °C for this exact mix. Combos have no preset
+   * of their own, so without this they inherited the neutral `custom` rate
+   * and only landed in the right window by accident. Must agree with the day
+   * range in `tips` (enforced by __tests__/fermentTiming.test.ts).
+   */
+  typicalDays: number;
+  /** Prep size `typicalDays` is written for — see FermentPreset.referencePrep. */
+  referencePrep: PrepSize;
   tips: string[];
   source: string; // citation
 }
@@ -208,6 +249,8 @@ export const VEG_COMBOS: VegCombo[] = [
     saltPctMin: 3.0,
     saltPctMax: 5.0,
     typicalTotalGrams: 800,
+    typicalDays: 7,
+    referencePrep: 'sliced',
     tips: [
       'Add a generous handful of fresh dill (stems and all), mustard seeds, and black peppercorns.',
       'Add a grape leaf, oak leaf, or ¼ tsp calcium chloride per kg for maximum crunch.',
@@ -233,6 +276,8 @@ export const VEG_COMBOS: VegCombo[] = [
     saltPctMin: 3.0,
     saltPctMax: 5.0,
     typicalTotalGrams: 1000,
+    typicalDays: 8,
+    referencePrep: 'chunks',
     tips: [
       'Cut all vegetables to similar size for even fermentation.',
       'Jalapeños add a gentle heat — add more for spicier giardiniera.',
@@ -256,6 +301,8 @@ export const VEG_COMBOS: VegCombo[] = [
     saltPctMin: 2.5,
     saltPctMax: 4.0,
     typicalTotalGrams: 600,
+    typicalDays: 6,
+    referencePrep: 'sliced',
     tips: [
       'Cut carrots into uniform sticks so they ferment evenly.',
       'Leave jalapeños whole (pierce once) for milder heat, or slice for spicier.',
@@ -280,6 +327,8 @@ export const VEG_COMBOS: VegCombo[] = [
     saltPctMin: 2.5,
     saltPctMax: 4.0,
     typicalTotalGrams: 400,
+    typicalDays: 10,
+    referencePrep: 'grated',
     tips: [
       'WEAR GLOVES when handling habaneros.',
       'Roughly chop everything, mix with salt, and pack into a jar.',
@@ -304,6 +353,8 @@ export const VEG_COMBOS: VegCombo[] = [
     saltPctMin: 3.0,
     saltPctMax: 5.0,
     typicalTotalGrams: 700,
+    typicalDays: 4,
+    referencePrep: 'sliced',
     tips: [
       'Slice cucumbers into spears or coins. Slice onion into thin rings.',
       'Dill goes in whole — stems and all.',
@@ -326,6 +377,8 @@ export const VEG_COMBOS: VegCombo[] = [
     saltPctMin: 1.5,
     saltPctMax: 3.0,
     typicalTotalGrams: 400,
+    typicalDays: 4,
+    referencePrep: 'chunks',
     tips: [
       'Chop beets into 1-inch chunks — do not grate (too fast, too yeasty).',
       'Slice ginger thin — no need to peel if organic.',
@@ -349,6 +402,8 @@ export const VEG_COMBOS: VegCombo[] = [
     saltPctMin: 3.5,
     saltPctMax: 5.0,
     typicalTotalGrams: 500,
+    typicalDays: 8,
+    referencePrep: 'whole',
     tips: [
       'Trim the stem ends. Pack beans vertically in a tall jar — they look beautiful.',
       'Add a grape leaf for extra crunch — green beans can go soft.',
@@ -372,6 +427,8 @@ export const VEG_COMBOS: VegCombo[] = [
     saltPctMin: 1.5,
     saltPctMax: 2.5,
     typicalTotalGrams: 500,
+    typicalDays: 3,
+    referencePrep: 'chunks',
     tips: [
       'Use firm, slightly underripe fruit. Dice into small cubes.',
       'Add a cinnamon stick and 2 cloves. A star anise is wonderful too.',

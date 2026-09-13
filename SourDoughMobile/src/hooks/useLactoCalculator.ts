@@ -1,38 +1,31 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { FermentType, FermentMethod, SaltCrystal, FermentInputs, FermentResults, LactoDayPoint, WaterHardness } from '../models/types';
-import { FERMENT_PRESETS, VEG_COMBOS } from '../data/fermentPresets';
+import { FermentType, FermentMethod, SaltCrystal, FermentInputs, FermentResults, LactoDayPoint, PrepSize, WaterHardness } from '../models/types';
+import { FERMENT_PRESETS, PRESET_DEFAULT_VEG, VEG_COMBOS, VegCombo } from '../data/fermentPresets';
 import { VEGETABLES, findVeg, VEG_RELEASE_FACTOR, VegEntry } from '../data/vegetables';
 import {
   runLactoCalculations,
   buildLactoTimeline,
   lactoAdvice,
-  estimateFermentDuration,
+  estimateFermentTiming,
   waterHardnessFermentAdvice,
   computeFermentTemp,
+  acidBalanceVerdict,
+  AcidBalanceVerdict,
   DailyTempSummary,
   FermentTempResult,
+  FermentTiming,
+  FermentTimingInput,
 } from '../lib/lactoCalculations';
 import { useLocation } from './useLocation';
 import { useStaleResults, dirtySetter } from './useStaleResults';
 import { isValidDecimalInput } from '../lib/inputValidation';
+import { buildComboSetup, comboReferenceSpeed, presetReferenceSpeed, recommendedSaltPct, relativeVegSpeed, DEFAULT_BRINE_WATER_G } from '../lib/fermentSetup';
 import { getSettings } from '../store/settingsCache';
 import { classifyHardness } from '../data/ukWaterHardness';
 import { FALLBACK_HARDNESS } from '../lib/hardnessUtils';
 import { useAppTheme } from '../theme';
 import type { LocationData } from '../lib/location';
-
-/** Which vegetable each preset defaults to. */
-const PRESET_DEFAULT_VEG: Record<string, string> = {
-  sauerkraut: 'green-cabbage',
-  kimchi: 'napa-cabbage',
-  'dill-pickles': 'pickling-cucumber',
-  'carrot-sticks': 'carrot',
-  'hot-sauce': 'jalapeno',
-  'beet-kvass': 'beetroot',
-  'radish-cauliflower': 'cauliflower',
-  custom: 'green-cabbage',
-};
 
 export interface LactoCalculatorState {
   // Inputs
@@ -44,6 +37,12 @@ export interface LactoCalculatorState {
   waterAmount: string;
   saltPct: string;
   saltType: SaltCrystal;
+  /** Cut size — drives the prep timing factor. */
+  prepSize: PrepSize;
+  /** Whether this vegetable's own sugar can reach full sourness. */
+  acidBalance: AcidBalanceVerdict;
+  /** True when a starter culture is being modelled. */
+  useStarter: boolean;
 
   // Temperature (auto-detected from weather)
   effectiveTemp: number;
@@ -75,6 +74,8 @@ export interface LactoCalculatorState {
 
   // Results
   results: FermentResults | null;
+  /** What moved the duration: recipe anchor + each applied adjustment. */
+  timing: FermentTiming | null;
   timeline: LactoDayPoint[];
   advice: string[];
   waterAdvice: string[];
@@ -90,11 +91,13 @@ export interface LactoCalculatorState {
   toggleVegInMix: (id: string) => void;
   clearMix: () => void;
   updateMixGrams: (id: string, grams: string) => void;
-  applyCombo: (combo: typeof VEG_COMBOS[number]) => void;
+  applyCombo: (combo: VegCombo) => void;
   setVegWeight: (v: string) => void;
   setWaterAmount: (v: string) => void;
   setSaltPct: (v: string) => void;
   setSaltType: (t: SaltCrystal) => void;
+  setPrepSize: (p: PrepSize) => void;
+  setUseStarter: (v: boolean) => void;
   calculate: () => void;
 }
 
@@ -111,8 +114,25 @@ export function useLactoCalculator(): LactoCalculatorState {
   const [saltType, setSaltType] = useState<SaltCrystal>('maldon-flake');
   const [showResults, setShowResults] = useState(false);
   const [waterHardnessOverride, setWaterHardnessOverride] = useState(0);
+  /**
+   * Method override for curated combos, which carry their own method.
+   * `null` = follow the selected preset (see `method` below).
+   */
+  const [methodOverride, setMethodOverride] = useState<FermentMethod | null>(null);
+  /** How the user cut the vegetables; reset to the recipe's own prep on apply. */
+  const [prepSize, setPrepSize] = useState<PrepSize>('shredded');
+  /** Starter culture used — shortens the lag phase (additive, not a ratio). */
+  const [useStarter, setUseStarter] = useState(false);
+  /**
+   * The curated combo currently loaded, if any. Combos run as the `custom`
+   * preset, so without this they lose their identity and every label falls
+   * back to "Custom" (see `presetName` / `presetEmoji` below).
+   */
+  const [activeCombo, setActiveCombo] = useState<VegCombo | null>(null);
 
   const [results, setResults] = useState<FermentResults | null>(null);
+  /** Timing breakdown behind the current estimate (see the timeline card). */
+  const [timing, setTiming] = useState<FermentTiming | null>(null);
   const [timeline, setTimeline] = useState<LactoDayPoint[]>([]);
   const [advice, setAdvice] = useState<string[]>([]);
   const [waterAdvice, setWaterAdvice] = useState<string[]>([]);
@@ -121,7 +141,8 @@ export function useLactoCalculator(): LactoCalculatorState {
   // Derived
   const veg = useMemo(() => findVeg(vegId), [vegId]);
   const preset = FERMENT_PRESETS[fermentType]!;
-  const method = preset.method;
+  /** The preset's method, unless a curated combo overrode it. */
+  const method = methodOverride ?? preset.method;
 
   // Multi-veg mix: derived array with full VegEntry data
   const vegMixEntries = useMemo(() =>
@@ -154,8 +175,23 @@ export function useLactoCalculator(): LactoCalculatorState {
     vegMixEntries.forEach(m => { firmnessCounts[m.veg.firmness]++; });
     const firmness = firmnessCounts.firm >= firmnessCounts.soft && firmnessCounts.firm >= firmnessCounts.medium
       ? 'firm' : firmnessCounts.medium >= firmnessCounts.soft ? 'medium' : 'soft';
+    // Compose the acid balance across the mix, by mass. Only possible when
+    // EVERY component has been titrated — otherwise the verdict stays unknown
+    // rather than extrapolating from a partial picture.
+    const measured = vegMixEntries.filter(m => m.veg.acidBalance);
+    const acidBalance = measured.length === vegMixEntries.length && measured.length > 0
+      ? {
+          acidDemandMmolL: vegMixEntries.reduce((s, m) => s + m.veg.acidBalance!.acidDemandMmolL * (parseFloat(m.grams) || 0), 0) / total,
+          sugarSupplyMmolL: vegMixEntries.reduce((s, m) => s + m.veg.acidBalance!.sugarSupplyMmolL * (parseFloat(m.grams) || 0), 0) / total,
+          // The endpoint of a novel mix has not been measured — omit it.
+          measuredEndPH: undefined,
+        }
+      : undefined;
+
     return {
       ...veg,
+      acidBalance,
+      bloaterProne: vegMixEntries.some(m => m.veg.bloaterProne),
       waterContentPct: Math.round(waterContentPct),
       speedFactor: Math.round(speedFactor * 100) / 100,
       typicalBrineSaltPct: Math.round(typicalBrineSaltPct * 10) / 10,
@@ -194,6 +230,8 @@ export function useLactoCalculator(): LactoCalculatorState {
       }
       return [...prev, { vegId: id, grams: String(entry.typicalWeight) }];
     });
+    // Hand-editing the mix means it is no longer the curated combo.
+    setActiveCombo(null);
     setShowResults(false);
   }, [vegId, vegWeight]);
 
@@ -209,17 +247,23 @@ export function useLactoCalculator(): LactoCalculatorState {
    *  side effects and left the last veg selected.) */
   const clearMix = useCallback(() => {
     setVegMix([]);
+    setActiveCombo(null);
     setShowResults(false);
   }, []);
 
-  const applyCombo = useCallback((combo: typeof VEG_COMBOS[number]) => {
-    setFermentType('custom');
-    setVegId(combo.vegetables[0].vegId); // set primary veg
-    setVegMix(combo.vegetables.map(v => ({
-      vegId: v.vegId,
-      grams: String(Math.round(combo.typicalTotalGrams * v.proportion)),
-    })));
-    setSaltPct(String(combo.typicalSaltPct));
+  const applyCombo = useCallback((combo: VegCombo) => {
+    // A combo brings its own method — a mash combo must not inherit the
+    // custom preset's brine, and a brine combo must not inherit the 0 g
+    // water left behind by a mash preset.
+    const setup = buildComboSetup(combo);
+    setFermentType(setup.fermentType);
+    setMethodOverride(setup.method);
+    setActiveCombo(combo);
+    setVegId(setup.vegId);
+    setVegMix(setup.vegMix);
+    setSaltPct(setup.saltPct);
+    setPrepSize(combo.referencePrep);
+    setWaterAmount(setup.waterAmount);
     setShowResults(false);
   }, []);
 
@@ -257,6 +301,8 @@ export function useLactoCalculator(): LactoCalculatorState {
   const selectPreset = useCallback((type: FermentType) => {
     const p = FERMENT_PRESETS[type]!;
     setFermentType(type);
+    setMethodOverride(null); // back to the preset's own method
+    setActiveCombo(null); // a preset is not a curated combo
     setShowResults(false);
     setVegMix([]); // reset multi-veg mix when switching presets
 
@@ -264,14 +310,12 @@ export function useLactoCalculator(): LactoCalculatorState {
     const defaultVeg = findVeg(defaultVegId);
     setVegId(defaultVegId);
 
-    const recommendedSalt = p.method === 'brine'
-      ? defaultVeg.typicalBrineSaltPct
-      : defaultVeg.typicalDrySaltPct;
-    setSaltPct(String(recommendedSalt));
+    setSaltPct(String(recommendedSaltPct(defaultVeg, p.method)));
+    setPrepSize(p.referencePrep);
     setVegWeight(String(defaultVeg.typicalWeight));
 
     if (p.method === 'brine') {
-      setWaterAmount('500');
+      setWaterAmount(String(DEFAULT_BRINE_WATER_G));
     } else {
       setWaterAmount('0');
     }
@@ -284,11 +328,8 @@ export function useLactoCalculator(): LactoCalculatorState {
     setShowResults(false);
     setVegWeight(String(v.typicalWeight));
 
-    const recommendedSalt = method === 'brine'
-      ? v.typicalBrineSaltPct
-      : v.typicalDrySaltPct;
-    setSaltPct(String(recommendedSalt));
-    setWaterAmount(method === 'brine' ? '500' : '0');
+    setSaltPct(String(recommendedSaltPct(v, method)));
+    setWaterAmount(method === 'brine' ? String(DEFAULT_BRINE_WATER_G) : '0');
   }, [method]);
 
   const calculate = useCallback(() => {
@@ -323,10 +364,34 @@ export function useLactoCalculator(): LactoCalculatorState {
       ambientTemp: effectiveTemp,
     };
 
+    // Timing: the recipe's own documented duration is the anchor; the user's
+    // kitchen moves it. Temperature comes from the weather forecast, salt
+    // from the input, water hardness from detection/settings (only for
+    // ferments that actually use added water), vegetables from the mix.
+    const h = getHardness();
+    const typicalDays = activeCombo?.typicalDays ?? preset.typicalDays;
+    const referenceSpeed = activeCombo
+      ? comboReferenceSpeed(activeCombo)
+      : presetReferenceSpeed(preset);
+    const timingInput: FermentTimingInput = {
+      typicalDays,
+      vegSpeedRatio: relativeVegSpeed(effectiveVeg.speedFactor, referenceSpeed),
+      saltPct: salt,
+      // The recipe's own salt level: a combo's, or what we recommend for
+      // these vegetables. Keeps "as written" exactly on its documented days.
+      recipeSaltPct: activeCombo?.typicalSaltPct ?? recommendedSaltPct(effectiveVeg, method),
+      prepSize,
+      referencePrep: activeCombo?.referencePrep ?? preset.referencePrep,
+      starter: useStarter,
+      hardnessMgL: h.mgL,
+      usesAddedWater: method === 'brine' && waterW > 0,
+      unitSystem,
+    };
+
     const baseResults = runLactoCalculations(
       baseInputs,
       effectiveVeg.waterContentPct,
-      effectiveVeg.speedFactor,
+      timingInput,
       effectiveVeg.releaseFactor,
     );
 
@@ -340,23 +405,36 @@ export function useLactoCalculator(): LactoCalculatorState {
     const temp = accurateTemp.effectiveTemp;
 
     // Recalculate with accurate temp (salinity unchanged — already correct from baseResults)
-    const duration = estimateFermentDuration(temp, effectiveVeg.speedFactor);
+    const timing = estimateFermentTiming(temp, timingInput);
     const finalResults: FermentResults = {
       ...baseResults,
-      estimatedDays: duration.days,
-      estimatedDaysMin: duration.daysMin,
-      estimatedDaysMax: duration.daysMax,
+      estimatedDays: timing.days,
+      estimatedDaysMin: timing.daysMin,
+      estimatedDaysMax: timing.daysMax,
+      tempCapped: timing.stalled,
     };
 
-    const h = getHardness();
+    setTiming(timing);
 
     setResults(finalResults);
     setTimeline(buildLactoTimeline(finalResults.estimatedDays, method));
-    setAdvice(lactoAdvice(method, salt, temp, finalResults.estimatedDays, unitSystem));
+    const style = activeCombo ?? preset;
+    setAdvice(
+      lactoAdvice(
+        method, salt, temp, finalResults.estimatedDays, unitSystem,
+        effectiveVeg.name,
+        { min: style.saltPctMin, max: style.saltPctMax },
+        prepSize,
+        style.referencePrep,
+        acidBalanceVerdict(effectiveVeg),
+        useStarter,
+        !!effectiveVeg.bloaterProne,
+      ),
+    );
     setWaterAdvice(waterHardnessFermentAdvice(h));
     setShowResults(true);
     markCalculated();
-  }, [vegWeight, waterAmount, saltPct, saltType, fermentType, method, effectiveVeg, effectiveTemp, locationData, getHardness, isMultiVeg, totalMixGrams, markCalculated]);
+  }, [vegWeight, waterAmount, saltPct, saltType, prepSize, useStarter, fermentType, method, preset, activeCombo, effectiveVeg, effectiveTemp, locationData, getHardness, isMultiVeg, totalMixGrams, markCalculated]);
 
   return {
     fermentType,
@@ -364,6 +442,9 @@ export function useLactoCalculator(): LactoCalculatorState {
     vegId,
     veg: effectiveVeg,
     vegWeight,
+    prepSize,
+    useStarter,
+    acidBalance: acidBalanceVerdict(effectiveVeg),
     vegMix,
     vegMixEntries,
     isMultiVeg,
@@ -374,8 +455,8 @@ export function useLactoCalculator(): LactoCalculatorState {
     effectiveTemp,
     tempResult,
     dailyTemps,
-    presetName: preset.name,
-    presetEmoji: preset.emoji,
+    presetName: activeCombo?.name ?? preset.name,
+    presetEmoji: activeCombo?.emoji ?? preset.emoji,
     tips: preset.tips ?? [],
     presetHealthNote: preset.healthNote,
     locationData,
@@ -386,6 +467,7 @@ export function useLactoCalculator(): LactoCalculatorState {
     hardness: getHardness(),
     waterHardnessOverride,
     results,
+    timing,
     timeline,
     advice,
     waterAdvice,
@@ -405,6 +487,8 @@ export function useLactoCalculator(): LactoCalculatorState {
     setWaterAmount: dirtySetter(markInputsChanged, setWaterAmount),
     setSaltPct: dirtySetter(markInputsChanged, setSaltPct),
     setSaltType: dirtySetter(markInputsChanged, setSaltType),
+    setPrepSize: dirtySetter(markInputsChanged, setPrepSize),
+    setUseStarter: dirtySetter(markInputsChanged, setUseStarter),
     calculate,
   };
 }

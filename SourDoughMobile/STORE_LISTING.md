@@ -18,7 +18,7 @@ Most recipes assume a fixed temperature and water profile. Just Dough It uses yo
 - **Fermentation timeline** — See a step-by-step schedule: autolyse, stretch-and-folds, bulk fermentation, shaping, proofing, and bake — all adjusted to your conditions.
 - **Flour database** — Built-in profiles for 60+ Shipton Mill flours plus generics: bread flour, whole wheat, rye, spelt, einkorn, and more — with protein percentages and category data.
 - **Yogurt calculator** — 10 starter cultures (thermophilic & mesophilic), milk picker, incubation timeline with min/max range, yield & nutrition, and previous-batch starter.
-- **Lacto-fermentation calculator** — 7+ ferment styles, 25+ vegetables, salt calculator with volume conversion, day-by-day LAB succession timeline, and temperature-adjusted Q10 model.
+- **Lacto-fermentation calculator** — 7+ ferment styles, 25+ vegetables, salt calculator with volume conversion, a day-by-day LAB succession timeline, and timing adjusted to your actual conditions (forecast temperature, salt level, water chemistry, vegetable mix and cut size) with the reasoning shown. Flags vegetables whose sugar cannot reach full sourness, and adds one-tap "add to Google Calendar" reminders for the ready day, a taste check, or the whole ferment.
 
 ### Private by design
 No accounts. No analytics. No tracking. Your recipes and starter logs stay on your device. When you enable location, only your coordinates are sent (to Open-Meteo for weather and OpenStreetMap for geocoding) — nothing else. See the privacy policy linked below for full details.

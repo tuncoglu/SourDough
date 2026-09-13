@@ -3,3 +3,13 @@
 
 # Local npm cache used when the sandbox's default cache is read-only
 .npm-cache/
+
+# Downloaded primary sources and OCR working files from the 2026 fermentation
+# literature review (~157 MB of third-party PDFs, scans and raw text). The
+# written-up evidence dossiers live in research/fermentation/.
+sk_sources/
+research_pdfs/
+kimchi_refs/
+refs/
+salt-evidence/
+ferment_vessel_research/
