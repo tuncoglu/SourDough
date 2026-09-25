@@ -31,6 +31,7 @@ import { ResultsSection } from '../../src/components/ResultsSection';
 import { Seo } from '../../src/components/Seo';
 import { CalculatorShell } from '../../src/components/CalculatorShell';
 import { StaleResultsBanner } from '../../src/components/StaleResultsBanner';
+import { LazyBakeFlow } from '../../src/components/LazyBakeFlow';
 
 import { useCalculatorInputs } from '../../src/hooks/useCalculatorInputs';
 import { useRecipePreset } from '../../src/hooks/useRecipePreset';
@@ -45,6 +46,11 @@ export default function CalculatorScreen() {
   const { colors, unitSystem } = useAppTheme();
   const { editRecipeId } = useLocalSearchParams<{ editRecipeId?: string }>();
   const router = useRouter();
+  const [mode, setMode] = React.useState<'easy' | 'detailed'>(editRecipeId ? 'detailed' : 'easy');
+  const [lastCalcMode, setLastCalcMode] = React.useState<'easy' | 'detailed' | null>(null);
+  const easyScrollRef = React.useRef<ScrollView>(null);
+
+  useEffect(() => { if (editRecipeId) setMode('detailed'); }, [editRecipeId]);
 
   // ── Hooks ──────────────────────────────────────────────────────────────
   const inputs = useCalculatorInputs();
@@ -137,7 +143,9 @@ export default function CalculatorScreen() {
     : summaryWithHardnessOverride(inputs.locationData, inputs.settings.waterHardnessOverride, unitSystem);
 
   // ── Calculate ─────────────────────────────────────────────────────────
-  const doCalculate = useCallback(() => {
+  const doCalculate = useCallback((easy?: boolean) => {
+    const isEasy = easy === true;
+    setLastCalcMode(isEasy ? 'easy' : 'detailed');
     calculatedSignature.current = inputSignature;
     calc.doCalculate({
       blend: inputs.blend,
@@ -146,21 +154,21 @@ export default function CalculatorScreen() {
       starterWeight: inputs.starterWeight,
       saltPct: inputs.saltPct,
       starterHydrationStr: inputs.starterHydrationStr,
-      oilPct: preset.oilPct,
+      oilPct: isEasy ? '0' : preset.oilPct,
       ambientTemp: inputs.ambientTemp,
       flourTemp: inputs.flourTemp,
       waterTemp: inputs.waterTemp,
       starterTemp: inputs.starterTemp,
       starterFlourLabel: starter.starterFlourLabel,
-      prefermentEnabled: preset.prefermentEnabled,
+      prefermentEnabled: isEasy ? false : preset.prefermentEnabled,
       prefermentFlourPct: preset.prefermentFlourPct,
       prefermentType: prefermentType,
-      breadType: preset.breadType,
+      breadType: isEasy ? 'custom' : preset.breadType,
       locationData: inputs.locationData,
       waterHardnessOverride: inputs.settings.waterHardnessOverride || 0,
       coldProofHours,
       coldProofTemp,
-      coldProofEnabled,
+      coldProofEnabled: isEasy ? false : coldProofEnabled,
       starterHoursSinceFed: starter.status?.effectiveHours,
     }, isDesktop);
   }, [inputs, preset, starter.starterFlourLabel, isDesktop, calc]);
@@ -557,7 +565,7 @@ export default function CalculatorScreen() {
       />
 
       {/* Calculate */}
-      <TouchableOpacity style={[styles.calcBtn, { backgroundColor: colors.terracotta }]} onPress={doCalculate} disabled={calc.calculating} activeOpacity={0.8}>
+      <TouchableOpacity style={[styles.calcBtn, { backgroundColor: colors.terracotta }]} onPress={() => doCalculate()} disabled={calc.calculating} activeOpacity={0.8}>
         {calc.calculating ? (
           <ActivityIndicator color={colors.white} />
         ) : (
@@ -646,6 +654,38 @@ export default function CalculatorScreen() {
     />
   );
 
+  if (mode === 'easy') {
+    return (
+      <SafeAreaView style={[layoutStyles.container, { backgroundColor: colors.cream }]} edges={['top']}>
+        <Seo
+          title="Easy Sourdough Bread — Just Dough It"
+          description="A simple one-bowl sourdough method with a temperature-aware forecast for when to check the rise."
+          path="/bread"
+        />
+        <LazyBakeFlow
+          scrollRef={easyScrollRef}
+          flourGrams={inputs.mixRows.length === 1 ? inputs.mixRows[0].grams : String(inputs.totalFlourWeight)}
+          waterGrams={inputs.waterGrams}
+          starterGrams={inputs.starterWeight}
+          starterHydration={inputs.starterHydrationStr}
+          saltPct={inputs.saltPct}
+          ambientTemp={inputs.ambientTemp}
+          onFlourChange={(value) => inputs.setMixRows((rows) => [{ ...rows[0], grams: value }])}
+          onWaterChange={inputs.setWaterGrams}
+          onStarterChange={inputs.setStarterWeight}
+          onSaltChange={inputs.setSaltPct}
+          onAmbientChange={inputs.setAmbientTemp}
+          onCalculate={() => doCalculate(true)}
+          onDetailed={() => setMode('detailed')}
+          results={lastCalcMode === 'easy' ? calc.results : null}
+          calculatedAt={lastCalcMode === 'easy' ? calc.calculatedAt : null}
+          dirty={inputsDirty}
+          calculating={calc.calculating}
+        />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={[layoutStyles.container, { backgroundColor: colors.cream }]} edges={['top']}>
       <Seo
@@ -656,7 +696,7 @@ export default function CalculatorScreen() {
       <CalculatorShell
         leftRef={calc.scrollRef}
         rightRef={calc.rightScrollRef}
-        header={<>{header}{locationBar}</>}
+        header={<>{header}<TouchableOpacity onPress={() => setMode('easy')} accessibilityRole="button" style={{ alignSelf: 'center', marginBottom: Spacing.md }}><Text style={{ color: colors.terracotta, fontWeight: '700' }}>← Easy one-bowl bake</Text></TouchableOpacity>{locationBar}</>}
         bottomPad={40}
         right={resultsPanel}
       >
@@ -740,4 +780,3 @@ const coldStyles = StyleSheet.create({
   },
   unit: { fontSize: FontSize.xs },
 });
-

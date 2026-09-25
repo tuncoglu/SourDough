@@ -23,9 +23,9 @@ interface LandingCard {
 const CARDS: LandingCard[] = [
   {
     icon: 'bread-slice-outline',
-    title: 'Sourdough Bread',
+    title: 'Easy Sourdough Bread',
     description:
-      'Recipe builder with flour blends, hydration targets, and temperature-adjusted fermentation timelines.',
+      'One bowl, a few hands-on steps, and a forecast for when to check the rise.',
     route: '/bread',
   },
   {
@@ -52,8 +52,8 @@ export default function LandingScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.cream }]} edges={['top', 'bottom']}>
       <Seo
-        title="Just Dough It — Sourdough, Yogurt & Ferment Calculators"
-        description="Location-aware sourdough bread, yogurt and lacto-fermentation calculators. Recipes adjusted to your kitchen's temperature and water — private, open source, no tracking."
+        title="Just Dough It — Easy Sourdough, Yogurt & Ferments"
+        description="Make low-effort sourdough with a forecast for when to check the rise. Yogurt and lacto-fermentation calculators too. Private, open source, no tracking."
         path="/"
       />
       <ScrollView
@@ -67,13 +67,13 @@ export default function LandingScreen() {
             🥖  Just Dough It
           </Text>
           <Text style={[styles.subtitle, isDesktop && styles.subtitleDesktop, { color: colors.muted }]}>
-            Perfect bread, less guesswork
+            Great bread. Less doing.
           </Text>
           <Text style={[styles.heroBody, isDesktop && styles.heroBodyDesktop, { color: colors.muted }]}>
-            Location-aware sourdough, yogurt and lacto-fermentation calculators that adapt to your kitchen.
+            Take starter from the fridge, mix one bowl, and let the dough rise. We’ll help you know when to check it.
           </Text>
           <Link href="/bread" style={[styles.cta, { backgroundColor: colors.terracotta }]}>
-            <Text style={[styles.ctaText, { color: colors.white }]}>Start calculating →</Text>
+            <Text style={[styles.ctaText, { color: colors.white }]}>Make easy bread →</Text>
           </Link>
         </View>
 
