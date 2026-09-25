@@ -248,7 +248,8 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (e: unknown) {
       if (requestId === requestIdRef.current) {
-        setError(getErrorMessage(e) || 'Location detection failed.');
+        const message = getErrorMessage(e);
+        setError(message === 'An unknown error occurred' ? 'Location unavailable. Enter temperatures manually.' : message);
       }
     } finally {
       if (requestId === requestIdRef.current) {

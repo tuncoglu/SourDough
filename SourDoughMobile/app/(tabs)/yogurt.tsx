@@ -49,10 +49,11 @@ export default function YogurtScreen() {
       {/* Header — tap to return home */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.push('/')} activeOpacity={0.7}>
-          <Text style={[styles.heading, { color: colors.espresso }]}>🥖  Just Dough It</Text>
+          <Text style={[styles.brand, { color: colors.terracotta }]}>JUST DOUGH IT  /  CULTURES</Text>
         </TouchableOpacity>
+        <Text style={[styles.heading, { color: colors.espresso }]}>Yogurt, your way.</Text>
         <Text style={[styles.subtitle, { color: colors.muted }]}>
-          Cultured at home, your way
+          Choose your culture and milk. We'll help with the wait.
         </Text>
       </View>
 
@@ -91,10 +92,11 @@ export default function YogurtScreen() {
           🌡 Thermophilic (40–45°C) — needs a heat source
         </Text>
         <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={isDesktop}
-          style={styles.chipScroll}
-          contentContainerStyle={styles.chipRow}
+          horizontal={!isDesktop}
+          scrollEnabled={!isDesktop}
+          showsHorizontalScrollIndicator={false}
+          style={[styles.chipScroll, isDesktop && styles.chipScrollDesktop]}
+          contentContainerStyle={[styles.chipRow, isDesktop && styles.chipRowDesktop]}
         >
           {calc.thermophilicCultures.map(({ id, preset }) => (
               <Chip
@@ -117,10 +119,11 @@ export default function YogurtScreen() {
           🏠 Mesophilic (20–25°C) — ferments at room temperature
         </Text>
         <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={isDesktop}
-          style={styles.chipScroll}
-          contentContainerStyle={styles.chipRow}
+          horizontal={!isDesktop}
+          scrollEnabled={!isDesktop}
+          showsHorizontalScrollIndicator={false}
+          style={[styles.chipScroll, isDesktop && styles.chipScrollDesktop]}
+          contentContainerStyle={[styles.chipRow, isDesktop && styles.chipRowDesktop]}
         >
           {calc.mesophilicCultures.map(({ id, preset }) => (
               <Chip
@@ -151,10 +154,11 @@ export default function YogurtScreen() {
         {/* ── Milk Type Picker ── */}
         <Text style={[styles.sectionLabel, { color: colors.espresso }]}>Milk</Text>
         <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={isDesktop}
-          style={styles.chipScroll}
-          contentContainerStyle={styles.chipRow}
+          horizontal={!isDesktop}
+          scrollEnabled={!isDesktop}
+          showsHorizontalScrollIndicator={false}
+          style={[styles.chipScroll, isDesktop && styles.chipScrollDesktop]}
+          contentContainerStyle={[styles.chipRow, isDesktop && styles.chipRowDesktop]}
         >
           {MILK_TYPES.filter((m) =>
               calc.yogurtType === 'vegan-soya' ? m.source === 'plant' : m.source !== 'plant'
@@ -336,21 +340,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.xl,
   },
+  brand: { fontSize: FontSize.xs, fontWeight: '800', letterSpacing: 1.4, marginBottom: Spacing.sm },
   heading: {
-    fontSize: FontSize.title,
-    fontWeight: '800',
+    fontFamily: 'Georgia',
+    fontSize: FontSize.title + 7,
+    fontWeight: '700',
   },
   subtitle: {
-    fontSize: FontSize.md,
-    marginTop: 2,
+    fontSize: FontSize.sm,
+    lineHeight: 21,
+    marginTop: Spacing.xs,
   },
   sectionLabel: {
-    fontSize: FontSize.sm,
+    fontFamily: 'Georgia',
+    fontSize: FontSize.xl,
     fontWeight: '700',
-    marginBottom: Spacing.sm,
-    marginTop: Spacing.sm,
+    marginBottom: Spacing.md,
+    marginTop: Spacing.lg,
   },
   groupLabel: {
     fontSize: FontSize.xs,
@@ -365,10 +373,12 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
     maxHeight: 60,
   },
+  chipScrollDesktop: { maxHeight: 160 },
   chipRow: {
     gap: Spacing.sm,
     paddingRight: Spacing.lg,
   },
+  chipRowDesktop: { flexDirection: 'row', flexWrap: 'wrap', paddingRight: 0 },
   presetChip: {
     flexDirection: 'row',
     alignItems: 'center',

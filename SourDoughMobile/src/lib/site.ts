@@ -8,4 +8,4 @@
 export const SITE_URL = process.env.EXPO_PUBLIC_SITE_URL || 'https://sourdoughcalculator.uk';
 export const SITE_NAME = 'Just Dough It';
 export const SITE_DESCRIPTION =
-  'Location-aware sourdough, yogurt and lacto-fermentation calculators — private by design, no accounts, no tracking.';
+  'Easy sourdough, yogurt and lacto-fermentation tools with timing estimates tailored to your kitchen. No account required.';

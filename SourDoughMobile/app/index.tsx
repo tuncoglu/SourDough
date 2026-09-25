@@ -4,9 +4,10 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAppTheme, Spacing, FontSize, BorderRadius, cardStyleLg, MaxWidth } from '../src/theme';
+import { useAppTheme, Spacing, FontSize, BorderRadius, MaxWidth } from '../src/theme';
 import { useBreakpoint } from '../src/hooks/useBreakpoint';
 import { Seo } from '../src/components/Seo';
 import { InstallAppCard, useInstallPrompt } from '../src/components/InstallAppCard';
@@ -30,22 +31,22 @@ const CARDS: LandingCard[] = [
   },
   {
     icon: 'cup-outline',
-    title: 'Yogurt',
+    title: 'Yogurt at home',
     description:
-      'Starter culture calculator with 10 cultures, milk types, incubation timeline, and yield estimates.',
+      'Choose your culture and milk. Get a helpful window for when it will set.',
     route: '/yogurt',
   },
   {
     icon: 'barrel-outline',
-    title: 'Lacto-Fermentation',
+    title: 'Vegetable ferments',
     description:
-      'Salt calculator for sauerkraut, kimchi, pickles, hot sauce, and more — with day-by-day pH timeline.',
+      'From sauerkraut to hot sauce, find the right salt and know when to check your jar.',
     route: '/ferments',
   },
 ];
 
 export default function LandingScreen() {
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const { isDesktop } = useBreakpoint();
   const { canInstall } = useInstallPrompt();
 
@@ -53,7 +54,7 @@ export default function LandingScreen() {
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.cream }]} edges={['top', 'bottom']}>
       <Seo
         title="Just Dough It — Easy Sourdough, Yogurt & Ferments"
-        description="Make low-effort sourdough with a forecast for when to check the rise. Yogurt and lacto-fermentation calculators too. Private, open source, no tracking."
+        description="Make low-effort sourdough with a forecast for when to check the rise. Yogurt and lacto-fermentation calculators too. Private, open source, no account required."
         path="/"
       />
       <ScrollView
@@ -61,30 +62,41 @@ export default function LandingScreen() {
         contentContainerStyle={[styles.content, isDesktop && styles.contentDesktop]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={[styles.header, isDesktop && styles.headerDesktop]}>
-          <Text style={[styles.title, isDesktop && styles.titleDesktop, { color: colors.espresso }]}>
-            🥖  Just Dough It
-          </Text>
-          <Text style={[styles.subtitle, isDesktop && styles.subtitleDesktop, { color: colors.muted }]}>
-            Great bread. Less doing.
-          </Text>
-          <Text style={[styles.heroBody, isDesktop && styles.heroBodyDesktop, { color: colors.muted }]}>
-            Take starter from the fridge, mix one bowl, and let the dough rise. We’ll help you know when to check it.
-          </Text>
-          <Link href="/bread" style={[styles.cta, { backgroundColor: colors.terracotta }]}>
-            <Text style={[styles.ctaText, { color: colors.white }]}>Make easy bread →</Text>
-          </Link>
+        <View style={[styles.masthead, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.brand, { color: colors.espresso }]}>JUST DOUGH IT <Text style={{ color: colors.terracotta }}>✳</Text></Text>
+          <Text style={[styles.mastheadAside, { color: colors.muted }]}>GOOD THINGS TAKE TIME. YOU DON'T HAVE TO.</Text>
+        </View>
+
+        {/* Editorial hero */}
+        <View style={[styles.hero, isDesktop && styles.heroDesktop]}>
+          <View style={styles.heroCopy}>
+            <Text style={[styles.heroKicker, { color: colors.olive }]}>SOURDOUGH FOR REAL LIFE</Text>
+            <Text style={[styles.heroTitle, isDesktop && styles.heroTitleDesktop, { color: colors.espresso }]}>Great bread.{"\n"}<Text style={{ color: colors.terracotta }}>Less doing.</Text></Text>
+            <Text style={[styles.heroBody, { color: colors.muted }]}>Take starter from the fridge, mix one bowl, and let the dough rise. We’ll help you know when to check it.</Text>
+            <Link href="/bread" style={[styles.cta, { backgroundColor: isDark ? colors.terracottaDark : colors.terracotta }]}>
+              <Text style={[styles.ctaText, { color: colors.white }]}>Start your loaf   →</Text>
+            </Link>
+            <Text style={[styles.heroFootnote, { color: colors.muted }]}>One bowl  ·  No kneading schedule  ·  Your pace</Text>
+          </View>
+          <View style={[styles.heroImageFrame, isDesktop && styles.heroImageFrameDesktop, { backgroundColor: colors.badgeBg }]}>
+            <Image source={require('../assets/images/bread-editorial.png')} style={styles.heroImage} resizeMode="cover" accessibilityLabel="Freshly baked sourdough loaf on a warm kitchen table" />
+            <View style={[styles.imageCaption, { backgroundColor: isDark ? colors.card : '#FFF8EC' }]}>
+              <Text style={[styles.captionText, { color: colors.espresso }]}>A loaf worth waiting for.</Text>
+            </View>
+          </View>
         </View>
 
         {/* Cards */}
+        <View style={styles.sectionLead}>
+          <Text style={[styles.sectionLabel, { color: colors.terracotta }]}>FROM OUR KITCHEN</Text>
+          <Text style={[styles.sectionTitle, { color: colors.espresso }]}>What are we making today?</Text>
+        </View>
         <View style={[styles.cards, isDesktop && styles.cardsDesktop]}>
           {CARDS.map((card) => (
             <Link
               key={card.route}
               href={card.route}
               style={[
-                cardStyleLg,
                 styles.card,
                 isDesktop && styles.cardDesktop,
                 { backgroundColor: colors.card, borderColor: colors.border },
@@ -138,62 +150,50 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   content: {
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.xxl + Spacing.md,
-    paddingBottom: Spacing.xxl,
-    maxWidth: 480,
+    paddingBottom: Spacing.xxl + Spacing.xl,
+    maxWidth: 720,
     width: '100%',
     alignSelf: 'center' as any,
   },
   contentDesktop: {
     maxWidth: MaxWidth.content,
-    paddingTop: Spacing.xxl + Spacing.lg,
+    paddingHorizontal: Spacing.xxl,
   },
-  header: {
-    marginBottom: Spacing.xxl + Spacing.md,
-    alignItems: 'center',
-  },
-  headerDesktop: {
-    marginBottom: Spacing.xxl + Spacing.lg,
-  },
-  title: {
-    fontSize: FontSize.title + 4,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  titleDesktop: {
-    fontSize: FontSize.title + 10,
-  },
-  subtitle: {
-    fontSize: FontSize.lg,
-    marginTop: Spacing.sm,
-    textAlign: 'center',
-  },
-  subtitleDesktop: {
-    fontSize: FontSize.xl,
-    marginTop: Spacing.md,
-  },
+  masthead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: Spacing.sm, paddingVertical: Spacing.lg, borderBottomWidth: 1 },
+  brand: { fontSize: FontSize.sm, fontWeight: '900', letterSpacing: 1.4 },
+  mastheadAside: { fontSize: 10, fontWeight: '700', letterSpacing: 1.1 },
+  hero: { gap: Spacing.xl, paddingTop: Spacing.xxl + Spacing.sm, paddingBottom: 58 },
+  heroDesktop: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xxl, paddingTop: 60, paddingBottom: 78 },
+  heroCopy: { flex: 1 },
+  heroKicker: { fontSize: FontSize.xs, fontWeight: '800', letterSpacing: 1.8 },
+  heroTitle: { fontFamily: 'Georgia', fontSize: 47, lineHeight: 51, fontWeight: '700', letterSpacing: -1.5, marginTop: Spacing.lg },
+  heroTitleDesktop: { fontSize: 61, lineHeight: 65 },
   heroBody: {
-    fontSize: FontSize.sm,
-    lineHeight: 20,
-    textAlign: 'center',
-    marginTop: Spacing.md,
-    maxWidth: 420,
-  },
-  heroBodyDesktop: {
     fontSize: FontSize.md,
-    lineHeight: 24,
+    lineHeight: 26,
     marginTop: Spacing.lg,
+    maxWidth: 430,
   },
   cta: {
-    marginTop: Spacing.lg + Spacing.sm,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.xl + Spacing.sm,
+    marginTop: Spacing.xxl,
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.xxl,
     borderRadius: BorderRadius.md,
+    alignSelf: 'flex-start',
   },
   ctaText: {
     fontSize: FontSize.md,
-    fontWeight: '700',
+    fontWeight: '800',
   },
+  heroFootnote: { fontSize: FontSize.xs, marginTop: Spacing.lg, lineHeight: 18 },
+  heroImageFrame: { height: 290, overflow: 'hidden', borderRadius: 18, position: 'relative' },
+  heroImageFrameDesktop: { flex: 1.1, height: 430 },
+  heroImage: { width: '100%', height: '100%' },
+  imageCaption: { position: 'absolute', bottom: 16, left: 16, borderRadius: 4, paddingHorizontal: 14, paddingVertical: 10 },
+  captionText: { fontFamily: 'Georgia', fontSize: FontSize.sm, fontStyle: 'italic' },
+  sectionLead: { marginBottom: Spacing.xl },
+  sectionLabel: { fontSize: FontSize.xs, fontWeight: '800', letterSpacing: 2, marginBottom: Spacing.xs },
+  sectionTitle: { fontFamily: 'Georgia', fontSize: 29, lineHeight: 35 },
   cards: {
     gap: Spacing.md,
   },
@@ -206,18 +206,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: Spacing.lg,
+    minHeight: 100,
   },
   cardDesktop: {
     flexDirection: 'column' as any,
     alignItems: 'flex-start',
-    flexBasis: '30%',
+    flexBasis: '29%',
     flexGrow: 1,
     minWidth: 240,
+    minHeight: 190,
+    padding: Spacing.xl,
   },
   cardIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 52,
+    height: 52,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -225,20 +231,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   cardTitle: {
-    fontSize: FontSize.md,
+    fontFamily: 'Georgia',
+    fontSize: FontSize.lg,
     fontWeight: '700',
   },
   cardDesc: {
     fontSize: FontSize.sm,
-    lineHeight: 18,
-    marginTop: 2,
+    lineHeight: 21,
+    marginTop: Spacing.xs,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: Spacing.xl,
-    marginTop: Spacing.xxl + Spacing.md,
-    paddingTop: Spacing.lg,
+    marginTop: Spacing.xxl + Spacing.xl,
+    paddingTop: Spacing.xl,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   footerLink: {

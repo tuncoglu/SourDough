@@ -49,8 +49,8 @@ pick bread, yogurt, or lacto-fermentation — then dive into the full calculator
 
 ### 📦 Data & Privacy
 - **Private by design** — no accounts, all data stored locally via AsyncStorage (weather and water-hardness detection need network; manual mode works offline)
-- **No tracking** — no analytics, no telemetry, no cloud storage
-- **Location is transient** — coordinates are sent only to fetch weather and geocode your city; never stored or shared
+- **Local recipe data** — no account or cloud recipe storage; optional cookieless website analytics are described in the privacy policy
+- **Location is transient** — with permission, coordinates are sent to fetch weather and geocode your city; they are not saved with recipes
 
 ### 🌐 Web
 - **Installable PWA** — add to home screen; works offline once loaded
@@ -183,9 +183,9 @@ the copyright notice and don't hold us liable.
 SourDough takes your privacy seriously:
 
 - ❌ **No accounts required** — no sign-up, no login
-- ❌ **No tracking** — no analytics, no telemetry
+- ✅ **Privacy-minded analytics** — optional Cloudflare Web Analytics measures site use without cookies; no account or recipe data is sent
 - ❌ **No cloud storage** — your recipes stay on your device
-- ✅ **Location is transient** — coordinates are sent only to fetch weather and geocode your city; never stored or shared
+- ✅ **Location is transient** — if you allow location access, coordinates are used to fetch weather and identify your area; they are not saved with recipes
 - 📬 **Optional waitlist** — if you join the iOS/Android launch list, only your email is used for launch updates; see the privacy policy
 
 See [SourDoughMobile/PRIVACY.md](SourDoughMobile/PRIVACY.md) for details.

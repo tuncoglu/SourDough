@@ -13,9 +13,9 @@ const UNIT_SYSTEM_KEY = 'sourdough_unit_system';
 
 export const LightColors = {
   // Base
-  cream: '#FFF5ED',
+  cream: '#F7F1E8',
   white: '#FFFFFF',
-  card: '#FFFCF7',
+  card: '#FFFBF5',
 
   // Text — well above WCAG AA 4.5:1 for readability at small sizes
   espresso: '#2D1B17',
@@ -36,14 +36,14 @@ export const LightColors = {
   hot: '#9E3528',
 
   // Semantic backgrounds
-  tipBg: '#FFF8F0',
+  tipBg: '#F8F0E5',
   warningBg: '#FFF5F2',
   coldBg: '#F0F4FA',
   successBg: '#F0F6EC',
-  badgeBg: '#F5EDE4',
+  badgeBg: '#EFE5D8',
 
   // Misc
-  border: '#CFC0B4',
+  border: '#D8CBBE',
   disabled: '#82776E',
   disabledBg: '#F0EBE5',
   error: '#9E3528',
@@ -226,16 +226,16 @@ export const Breakpoints = {
 /** Standard card — used across the bread calculator and settings. */
 export const cardStyle = {
   borderWidth: 1,
-  borderRadius: BorderRadius.md,
-  padding: Spacing.md,
-  marginBottom: Spacing.md,
+  borderRadius: BorderRadius.lg,
+  padding: Spacing.lg,
+  marginBottom: Spacing.lg,
 } as const;
 
 /** Spacious card — used in yogurt and lacto-fermentation screens. */
 export const cardStyleLg = {
   borderWidth: 1,
   borderRadius: BorderRadius.lg,
-  padding: Spacing.lg,
+  padding: Spacing.xl,
   marginBottom: Spacing.lg,
 } as const;
 
@@ -244,6 +244,6 @@ export const sectionTitleStyle = {
   fontSize: FontSize.xs,
   fontWeight: '700' as const,
   textTransform: 'uppercase' as const,
-  letterSpacing: 0.5,
+  letterSpacing: 1.1,
   marginBottom: Spacing.sm,
 } as const;

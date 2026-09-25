@@ -16,7 +16,6 @@ import { UserSettings, DEFAULT_SETTINGS, ThemeMode, UnitSystem } from '../../src
 import { getSettings, updateSettings } from '../../src/store/settingsCache';
 import { NumberInput } from '../../src/components/NumberInput';
 import { FlourPicker } from '../../src/components/FlourPicker';
-import { Icon } from '../../src/components/Icon';
 
 const THEME_OPTIONS: { key: ThemeMode; label: string }[] = [
   { key: 'system', label: '🌓  System' },
@@ -314,11 +313,12 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerRow}>
-          <Icon name="cog-outline" size={24} color={colors.espresso} />
-          <Text style={[styles.header, { color: colors.espresso }]}>Settings</Text>
+          <Text style={[styles.kicker, { color: colors.terracotta }]}>MAKE IT YOURS</Text>
+          <Text style={[styles.header, { color: colors.espresso }]}>Your kitchen settings.</Text>
+          <Text style={[styles.headerHint, { color: colors.muted }]}>Set your defaults once; adjust any loaf or jar as you go.</Text>
         </View>
         {isDesktop ? (
-          <View style={{ maxWidth: MaxWidth.form, alignSelf: 'center', width: '100%' }}>
+          <View style={{ maxWidth: MaxWidth.form + 80, alignSelf: 'center', width: '100%' }}>
             {content}
           </View>
         ) : (
@@ -350,17 +350,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-    marginBottom: Spacing.lg,
+    alignItems: 'flex-start',
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: MaxWidth.form + 80,
+    gap: Spacing.xs,
+    marginBottom: Spacing.xl,
+    paddingTop: Spacing.lg,
   },
+  kicker: { fontSize: FontSize.xs, fontWeight: '800', letterSpacing: 1.5 },
   header: {
-    fontSize: FontSize.xl,
-    fontWeight: '800',
-    textAlign: 'center',
+    fontFamily: 'Georgia',
+    fontSize: FontSize.title + 3,
+    fontWeight: '700',
   },
+  headerHint: { fontSize: FontSize.sm, lineHeight: 21 },
   description: {
     fontSize: FontSize.sm,
     marginBottom: Spacing.md,

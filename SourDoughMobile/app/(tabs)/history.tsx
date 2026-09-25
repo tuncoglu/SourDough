@@ -164,8 +164,8 @@ export default function HistoryScreen() {
         path="/history"
       />
       <View style={styles.headerRow}>
-        <Icon name="history" size={24} color={colors.espresso} />
-        <Text style={[styles.header, { color: colors.espresso }]}>History</Text>
+        <Text style={[styles.kicker, { color: colors.terracotta }]}>YOUR KITCHEN NOTEBOOK</Text>
+        <Text style={[styles.header, { color: colors.espresso }]}>The loaves & jars so far.</Text>
       </View>
 
       {/* Bread is saved by hand; ferments are recorded automatically. */}
@@ -235,6 +235,8 @@ export default function HistoryScreen() {
             subtitle={search.trim()
               ? 'Try a different search.'
               : 'Every ferment you calculate is recorded here automatically — no save button. Entries rotate out after a year.'}
+            actionLabel={!search.trim() ? 'Plan a ferment' : undefined}
+            onAction={!search.trim() ? () => router.push('/ferments') : undefined}
           />
         ) : (
           <FlatList
@@ -260,7 +262,9 @@ export default function HistoryScreen() {
           title={search.trim() ? 'No matches' : 'No recipes yet'}
           subtitle={search.trim()
             ? 'Try a different search or filter.'
-            : 'Your saved sourdough recipes will appear here. Calculate and save one to get started!'}
+            : 'Your saved sourdough loaves will live here. Start with one bowl and save the recipe when the forecast is ready.'}
+          actionLabel={!search.trim() ? 'Make a loaf' : undefined}
+          onAction={!search.trim() ? () => router.push('/bread') : undefined}
         />
       ) : (
         <FlatList
@@ -317,15 +321,14 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, width: '100%', maxWidth: MaxWidth.content, alignSelf: 'center' },
   headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-    marginVertical: Spacing.md,
+    alignItems: 'flex-start',
+    gap: Spacing.xs,
+    marginVertical: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
   },
+  kicker: { fontSize: FontSize.xs, fontWeight: '800', letterSpacing: 1.5 },
   header: {
-    fontSize: FontSize.xl, fontWeight: '800',
-    textAlign: 'center',
+    fontFamily: 'Georgia', fontSize: FontSize.title + 3, fontWeight: '700',
   },
   searchRow: {
     paddingHorizontal: Spacing.lg,

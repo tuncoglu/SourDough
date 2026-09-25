@@ -16,7 +16,7 @@ const beaconToken = process.env.EXPO_PUBLIC_CF_BEACON_TOKEN;
 
 const responsiveBackground = `
 body {
-  background-color: #fff5ed;
+  background-color: #f7f1e8;
 }
 @media (prefers-color-scheme: dark) {
   body { background-color: #1a1412; }

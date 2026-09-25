@@ -34,9 +34,9 @@ export function Sidebar() {
     <View style={[styles.sidebar, { backgroundColor: colors.card, borderRightColor: colors.border }]}>
       {/* Brand */}
       <View style={[styles.brand, { borderBottomColor: colors.border }]}>
-        <Text style={styles.brandIcon}>🥖</Text>
+        <Text style={[styles.brandMark, { color: colors.terracotta }]}>✳</Text>
         <Text style={[styles.brandName, { color: colors.espresso }]}>Just Dough It</Text>
-        <Text style={[styles.brandSub, { color: colors.muted }]}>Perfect bread, less guesswork</Text>
+        <Text style={[styles.brandSub, { color: colors.muted }]}>Good things take time.</Text>
       </View>
 
       {/* Nav links */}
@@ -66,8 +66,7 @@ export function Sidebar() {
 
       {/* Footer */}
       <View style={[styles.footer, { borderTopColor: colors.border }]}>
-        <Text style={[styles.footerText, { color: colors.lightText }]}>v3.0</Text>
-        <Text style={[styles.footerText, { color: colors.lightText }]}>MIT License</Text>
+        <Text style={[styles.footerText, { color: colors.lightText }]}>MADE FOR SLOW GOOD THINGS</Text>
       </View>
     </View>
   );
@@ -78,27 +77,25 @@ const styles = StyleSheet.create({
     width: MaxWidth.sidebar,
     borderRightWidth: 1,
     height: '100%',
-    paddingTop: Spacing.xl,
+    paddingTop: Spacing.xxl,
   },
   brand: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.xl,
     borderBottomWidth: 1,
     marginBottom: Spacing.md,
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
-  brandIcon: {
-    fontSize: 36,
-    marginBottom: Spacing.sm,
-  },
+  brandMark: { fontSize: 32, lineHeight: 34, marginBottom: Spacing.xs },
   brandName: {
-    fontSize: FontSize.xl,
-    fontWeight: '800',
+    fontFamily: 'Georgia',
+    fontSize: FontSize.xl + 2,
+    fontWeight: '700',
   },
   brandSub: {
     fontSize: FontSize.xs,
     fontWeight: '500',
-    marginTop: 2,
+    marginTop: Spacing.xs,
   },
   navScroll: {
     flex: 1,
@@ -128,6 +125,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    fontSize: FontSize.xs,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1,
   },
 });

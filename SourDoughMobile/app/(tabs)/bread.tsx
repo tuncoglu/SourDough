@@ -158,7 +158,7 @@ export default function CalculatorScreen() {
       ambientTemp: inputs.ambientTemp,
       flourTemp: inputs.flourTemp,
       waterTemp: inputs.waterTemp,
-      starterTemp: inputs.starterTemp,
+      starterTemp: isEasy ? '4' : inputs.starterTemp,
       starterFlourLabel: starter.starterFlourLabel,
       prefermentEnabled: isEasy ? false : preset.prefermentEnabled,
       prefermentFlourPct: preset.prefermentFlourPct,
@@ -174,8 +174,9 @@ export default function CalculatorScreen() {
   }, [inputs, preset, starter.starterFlourLabel, isDesktop, calc]);
 
   // ── Save ──────────────────────────────────────────────────────────────
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback((easy?: boolean) => {
     if (!calc.results) return;
+    const isEasy = easy === true;
     actions.handleSave({
       blend: inputs.blend,
       totalFlourWeight: inputs.totalFlourWeight,
@@ -183,19 +184,19 @@ export default function CalculatorScreen() {
       starterWeight: inputs.starterWeight,
       saltPct: inputs.saltPct,
       starterHydrationStr: inputs.starterHydrationStr,
-      oilPct: preset.oilPct,
+      oilPct: isEasy ? '0' : preset.oilPct,
       ambientTemp: inputs.ambientTemp,
       flourTemp: inputs.flourTemp,
       waterTemp: inputs.waterTemp,
-      starterTemp: inputs.starterTemp,
+      starterTemp: isEasy ? '4' : inputs.starterTemp,
       starterFlourLabel: starter.starterFlourLabel,
-      prefermentEnabled: preset.prefermentEnabled,
+      prefermentEnabled: isEasy ? false : preset.prefermentEnabled,
       prefermentFlourPct: preset.prefermentFlourPct,
       prefermentType: prefermentType,
-      breadType: preset.breadType,
+      breadType: isEasy ? 'custom' : preset.breadType,
       results: calc.results,
       locationSummary: inputs.locationData?.summary ?? '📍 Unknown location',
-      coldProofEnabled,
+      coldProofEnabled: isEasy ? false : coldProofEnabled,
       coldProofHours,
       coldProofTemp,
       editId: editRecipeId,
@@ -634,10 +635,11 @@ export default function CalculatorScreen() {
   const header = (
     <>
       <TouchableOpacity onPress={() => router.push('/')} activeOpacity={0.7}>
-        <Text style={[layoutStyles.header, { color: colors.espresso }]}>🥖  Just Dough It</Text>
+        <Text style={[layoutStyles.brand, { color: colors.terracotta }]}>JUST DOUGH IT  /  BREAD</Text>
       </TouchableOpacity>
+      <Text style={[layoutStyles.header, { color: colors.espresso }]}>The recipe studio.</Text>
       <Text style={[layoutStyles.tagline, { color: colors.muted }]}>
-        Perfect bread, less guesswork
+        Flour blends, temperatures and timing for the loaf you have in mind.
       </Text>
     </>
   );
@@ -681,6 +683,8 @@ export default function CalculatorScreen() {
           calculatedAt={lastCalcMode === 'easy' ? calc.calculatedAt : null}
           dirty={inputsDirty}
           calculating={calc.calculating}
+          saving={actions.saving}
+          onSave={() => handleSave(true)}
         />
       </SafeAreaView>
     );
@@ -712,8 +716,9 @@ export default function CalculatorScreen() {
 
 const layoutStyles = StyleSheet.create({
   container: { flex: 1 },
-  header: { fontSize: FontSize.xl, fontWeight: '800', textAlign: 'center', marginBottom: Spacing.xs, marginTop: Spacing.md },
-  tagline: { fontSize: FontSize.sm, textAlign: 'center', marginBottom: Spacing.md, paddingHorizontal: Spacing.lg, lineHeight: 20 },
+  brand: { fontSize: FontSize.xs, fontWeight: '800', letterSpacing: 1.4, marginTop: Spacing.md, textAlign: 'center' },
+  header: { fontFamily: 'Georgia', fontSize: FontSize.title + 5, fontWeight: '700', textAlign: 'center', marginBottom: Spacing.xs, marginTop: Spacing.sm },
+  tagline: { fontSize: FontSize.sm, textAlign: 'center', marginBottom: Spacing.lg, paddingHorizontal: Spacing.lg, lineHeight: 21 },
 });
 
 const styles = StyleSheet.create({

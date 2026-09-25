@@ -1,6 +1,6 @@
 # Privacy Policy for Just Dough It
 
-**Last updated:** August 20, 2026
+**Last updated:** September 25, 2026
 
 Just Dough It ("the App") is a baking tool with calculators for sourdough
 bread, yogurt, and lacto-fermentation. This policy explains what data the
@@ -8,8 +8,10 @@ App handles and how it is used.
 
 ## Data we collect
 
-**The App does not require an account, does not collect personal
-identifiers, and does not use analytics or tracking.**
+**The App does not require an account and does not collect personal
+identifiers for the calculators.** The native apps do not include an
+analytics SDK. The website may use optional Cloudflare Web Analytics;
+see below.
 
 All your app data — starter feeding history, saved recipes, fermentation
 history, and settings — is stored **only on your device** using local
@@ -48,9 +50,18 @@ These requests contain **only** your coordinates and a user-agent string
 identifying the App. No account information, device identifiers, or
 other personal data is attached.
 
-Location is only accessed when you explicitly trigger detection or
-manually enter a postcode to geocode. You can decline location
-permission at any time and enter temperature values manually.
+The App may request location permission when you open a calculator, or
+when you tap its location refresh control. You can decline permission
+and enter temperature values manually. Entering a postcode uses
+geocoding to refine the local conditions.
+
+## Optional website analytics
+
+If enabled for the website, Cloudflare Web Analytics receives page-view
+and performance data from a browser beacon. Cloudflare says this feature
+does not use cookies or local storage to measure visits and does not
+track individual visitors across customer sites. It does not receive
+your saved recipes or starter logs.
 
 ## Google Calendar links (optional)
 
@@ -66,9 +77,10 @@ browser. Skip the button and nothing is transmitted.
 
 ## Data sharing
 
-Beyond the API calls described above, the App **does not share, sell, or
-transmit** any data to third parties. There are no advertising networks,
-analytics SDKs, or tracking frameworks in the App.
+Beyond the location, optional calendar, waitlist, and website analytics
+flows described above, the App does not sell your data or transmit your
+saved recipes and starter logs to third parties. There are no advertising
+networks or analytics SDKs in the native apps.
 
 ## Data retention
 

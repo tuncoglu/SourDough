@@ -64,10 +64,11 @@ export default function FermentsScreen() {
       {/* Header — tap to return home */}
       <View style={styles.header}>
           <TouchableOpacity onPress={() => router.push('/')} activeOpacity={0.7}>
-            <Text style={[styles.heading, { color: colors.espresso }]}>🥖  Just Dough It</Text>
+            <Text style={[styles.brand, { color: colors.terracotta }]}>JUST DOUGH IT  /  FERMENTS</Text>
           </TouchableOpacity>
+          <Text style={[styles.heading, { color: colors.espresso }]}>A little jar of magic.</Text>
           <Text style={[styles.subtitle, { color: colors.muted }]}>
-            Live-culture ferments, by the jar
+            Choose what goes in. We'll help with salt and timing.
           </Text>
         </View>
 
@@ -97,10 +98,11 @@ export default function FermentsScreen() {
         {/* ── Ferment Type Picker ── */}
         <Text style={[styles.sectionLabel, { color: colors.espresso }]}>Style</Text>
         <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={isDesktop}
-          style={styles.chipScroll}
-          contentContainerStyle={styles.chipRow}
+          horizontal={!isDesktop}
+          scrollEnabled={!isDesktop}
+          showsHorizontalScrollIndicator={false}
+          style={[styles.chipScroll, isDesktop && styles.chipScrollDesktop]}
+          contentContainerStyle={[styles.chipRow, isDesktop && styles.chipRowDesktop]}
         >
           {FERMENT_TYPE_ORDER.map(({ id, preset }) => (
               <Chip
@@ -463,21 +465,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.xl,
   },
+  brand: { fontSize: FontSize.xs, fontWeight: '800', letterSpacing: 1.4, marginBottom: Spacing.sm },
   heading: {
-    fontSize: FontSize.title,
-    fontWeight: '800',
+    fontFamily: 'Georgia',
+    fontSize: FontSize.title + 7,
+    fontWeight: '700',
   },
   subtitle: {
-    fontSize: FontSize.md,
-    marginTop: 2,
+    fontSize: FontSize.sm,
+    lineHeight: 21,
+    marginTop: Spacing.xs,
   },
   sectionLabel: {
-    fontSize: FontSize.sm,
+    fontFamily: 'Georgia',
+    fontSize: FontSize.xl,
     fontWeight: '700',
-    marginBottom: Spacing.sm,
-    marginTop: Spacing.sm,
+    marginBottom: Spacing.md,
+    marginTop: Spacing.lg,
   },
 
   // Style chips
@@ -485,10 +491,12 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
     maxHeight: 60,
   },
+  chipScrollDesktop: { maxHeight: 160 },
   chipRow: {
     gap: Spacing.sm,
     paddingRight: Spacing.lg,
   },
+  chipRowDesktop: { flexDirection: 'row', flexWrap: 'wrap', paddingRight: 0 },
   presetChip: {
     flexDirection: 'row',
     alignItems: 'center',

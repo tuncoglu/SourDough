@@ -33,10 +33,11 @@ export default function AboutScreen() {
         >
           {/* Header */}
           <View style={aboutStyles.header}>
-            <Text style={[aboutStyles.appName, { color: colors.espresso }]}>🥖  Just Dough It</Text>
+            <Text style={[aboutStyles.kicker, { color: colors.terracotta }]}>A LITTLE MORE ABOUT US</Text>
+            <Text style={[aboutStyles.appName, { color: colors.espresso }]}>Just Dough It.</Text>
             <Text style={[aboutStyles.version, { color: colors.muted }]}>v3.0</Text>
             <Text style={[aboutStyles.tagline, { color: colors.muted }]}>
-              Science-driven fermentation, adjusted to your kitchen.
+              Good bread and good ferments, with room for the rest of your life.
             </Text>
           </View>
 
@@ -47,9 +48,9 @@ export default function AboutScreen() {
             <View style={[aboutStyles.featureItem, { borderTopColor: colors.border }]}>
               <Icon name="bread-slice-outline" size={24} color={colors.terracotta} />
               <View style={aboutStyles.featureBody}>
-                <Text style={[aboutStyles.featureTitle, { color: colors.espresso }]}>Sourdough Bread Calculator</Text>
+                <Text style={[aboutStyles.featureTitle, { color: colors.espresso }]}>Sourdough Bread</Text>
                 <Text style={[aboutStyles.featureDesc, { color: colors.muted }]}>
-                  Recipe builder with flour blends, hydration targets, and temperature-adjusted fermentation timelines. Auto-detects your local weather and water hardness.
+                  A simple one-bowl bake with a forecast for when to check the rise. A detailed calculator is there when you want flour blends and more control.
                 </Text>
               </View>
             </View>
@@ -79,7 +80,7 @@ export default function AboutScreen() {
           <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[sectionTitleStyle, { color: colors.muted }]}>HOW IT WORKS</Text>
             <Text style={[aboutStyles.body, { color: colors.espresso }]}>
-              Just Dough It uses your location to detect ambient temperature (via Open-Meteo) and water hardness (by region), then adjusts fermentation timelines accordingly. All calculations use Q10 kinetics — the same model used in food science — to predict how temperature affects fermentation rate.
+              Just Dough It uses temperature, ingredients and your settings to estimate fermentation timing. If you enable location, local weather can inform the forecast. Estimates are a guide; look at the dough or ferment before moving to the next step.
             </Text>
             <Text style={[aboutStyles.body, { color: colors.espresso, marginTop: Spacing.sm }]}>
               The calculation engine is pure TypeScript — no server, no API calls for the math. Everything happens on your device.
@@ -90,10 +91,10 @@ export default function AboutScreen() {
           <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[sectionTitleStyle, { color: colors.muted }]}>PRIVACY</Text>
             <Text style={[aboutStyles.body, { color: colors.espresso }]}>
-              No accounts. No tracking. No cloud storage.
+              No accounts. No cloud recipe storage.
             </Text>
             <Text style={[aboutStyles.body, { color: colors.espresso, marginTop: Spacing.sm }]}>
-              Your recipes and starter logs stay on your device. Location coordinates are sent only to fetch weather (Open-Meteo) and geocode your city (OpenStreetMap) — never stored or shared.
+              Your recipes and starter logs stay on your device. If you use location features, your coordinates are sent to weather and geocoding services to fetch local conditions.
             </Text>
             <TouchableOpacity
               onPress={() => Linking.openURL('https://github.com/tuncoglu/SourDough/blob/main/SourDoughMobile/PRIVACY.md')}
@@ -163,12 +164,14 @@ const aboutStyles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: Spacing.lg,
-    paddingTop: Spacing.md,
+    marginBottom: Spacing.xxl,
+    paddingTop: Spacing.xxl,
   },
+  kicker: { fontSize: FontSize.xs, fontWeight: '800', letterSpacing: 1.6, marginBottom: Spacing.sm },
   appName: {
-    fontSize: FontSize.title,
-    fontWeight: '800',
+    fontFamily: 'Georgia',
+    fontSize: FontSize.title + 9,
+    fontWeight: '700',
   },
   version: {
     fontSize: FontSize.sm,

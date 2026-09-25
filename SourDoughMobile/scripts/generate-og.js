@@ -12,7 +12,7 @@ const { PNG } = require('pngjs');
 
 const W = 1200;
 const H = 630;
-const CREAM = { r: 0xff, g: 0xf5, b: 0xed };
+const CREAM = { r: 0xf7, g: 0xf1, b: 0xe8 };
 const ESPRESSO = { r: 0x2d, g: 0x1b, b: 0x17 };
 const TERRACOTTA = { r: 0x95, g: 0x4d, b: 0x28 };
 const OLIVE = { r: 0x4a, g: 0x67, b: 0x2f };
@@ -178,7 +178,7 @@ for (let py = 0; py < H; py++) {
 
 blit(canvas, textBitmap('JUST DOUGH IT', 4, ESPRESSO), 72, 130);
 blit(canvas, textBitmap('Sourdough · Yogurt · Lacto-ferment', 3, TERRACOTTA), 72, 208);
-blit(canvas, textBitmap('free · open source · no tracking', 2, OLIVE), 72, 258);
+blit(canvas, textBitmap('free · open source · no account', 2, OLIVE), 72, 258);
 blit(canvas, loafBitmap(8, ESPRESSO), 900, 240);
 fillRect(canvas, 0, 545, W, 85, TERRACOTTA);
 const bandText = textBitmap('adapted to your kitchen — not a textbook', 2, CREAM);
@@ -219,7 +219,7 @@ for (const size of [512, 192]) {
 // ── Previews for verification ──────────────────────────────────────────
 console.log('\n=== TITLE ===\n' + previewText('JUST DOUGH IT'));
 console.log('\n=== SUBTITLE ===\n' + previewText('Sourdough · Yogurt · Lacto-ferment'));
-console.log('\n=== TAG ===\n' + previewText('free · open source · no tracking'));
+console.log('\n=== TAG ===\n' + previewText('free · open source · no account'));
 console.log('\n=== BAND ===\n' + previewText('adapted to your kitchen — not a textbook'));
 console.log('\n=== LOAF ===\n' + previewLoaf());
 console.log('\nDone.');

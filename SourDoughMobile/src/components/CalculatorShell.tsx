@@ -36,7 +36,7 @@ export function CalculatorShell({
   bottomPad = 60,
 }: Props) {
   const { isDesktop } = useBreakpoint();
-  const hasResults = right != null;
+  const hasResults = right !== false && right != null;
   const prevHasResultsRef = useRef(hasResults);
 
   // On mobile, when results first appear below the inputs, scroll them into
@@ -54,24 +54,24 @@ export function CalculatorShell({
     <KeyboardScreen>
       {isDesktop && header}
       {isDesktop ? (
-        <View style={shellStyles.twoCol}>
+        <View style={[shellStyles.twoCol, !hasResults && shellStyles.oneCol]}>
           <ScrollView
             ref={leftRef}
-            style={shellStyles.leftCol}
+            style={[shellStyles.leftCol, !hasResults && shellStyles.leftColWide]}
             contentContainerStyle={shellStyles.leftContent}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
             {children}
           </ScrollView>
-          <ScrollView
+          {hasResults && <ScrollView
             ref={rightRef}
             style={shellStyles.rightCol}
             contentContainerStyle={shellStyles.rightContent}
             showsVerticalScrollIndicator={false}
           >
             {right}
-          </ScrollView>
+          </ScrollView>}
         </View>
       ) : (
         <ScrollView
@@ -99,7 +99,9 @@ const shellStyles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.lg,
   },
+  oneCol: { justifyContent: 'center' },
   leftCol: { flex: 1, maxWidth: 420 },
+  leftColWide: { maxWidth: 720 },
   leftContent: { paddingBottom: 40, paddingTop: Spacing.md },
   rightCol: { flex: 1.3 },
   rightContent: { paddingBottom: 40, paddingTop: Spacing.md },
