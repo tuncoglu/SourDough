@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "include": ["/redcard-7c4f/api/*"],
+  "exclude": []
+}

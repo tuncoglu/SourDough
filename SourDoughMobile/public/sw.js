@@ -5,7 +5,7 @@
  * and provides a basic offline fallback for the app shell after the first
  * visit.
  */
-const CACHE_NAME = 'just-dough-it-v1';
+const CACHE_NAME = 'just-dough-it-v2';
 const PRECACHE_URLS = [
   '/',
   '/manifest.webmanifest',
@@ -39,7 +39,7 @@ self.addEventListener('activate', (event) => {
     const keys = await caches.keys();
     await Promise.all(
       keys
-        .filter((key) => key !== CACHE_NAME)
+        .filter((key) => key.startsWith('just-dough-it-') && key !== CACHE_NAME)
         .map((key) => caches.delete(key)),
     );
     await self.clients.claim();
@@ -52,6 +52,9 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+
+  // RedCard owns its own scoped worker; never cache its API or app shell here.
+  if (url.pathname === '/redcard-7c4f' || url.pathname.startsWith('/redcard-7c4f/')) return;
 
   // For navigations, try the network first so users always get the latest
   // app shell when online, and fall back to the cached shell when offline.

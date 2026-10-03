@@ -12,3 +12,13 @@
 
 /manifest.webmanifest
   Cache-Control: no-cache
+
+/redcard-7c4f/*
+  X-Robots-Tag: noindex, nofollow
+
+/redcard-7c4f/sw.js
+  Cache-Control: no-cache
+  Service-Worker-Allowed: /redcard-7c4f/
+
+/redcard-7c4f/manifest.webmanifest
+  Cache-Control: no-cache

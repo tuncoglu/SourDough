@@ -15,7 +15,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: SourDoughMobile/package-lock.json
+          cache-dependency-path: |
+            SourDoughMobile/package-lock.json
+            RedCard/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -39,9 +41,45 @@ jobs:
       - name: Ensure Cloudflare _headers is present
         run: cp -f SourDoughMobile/public/_headers SourDoughMobile/dist/_headers 2>/dev/null || true
 
-      - name: Deploy to Cloudflare Pages
-        run: npx wrangler pages deploy SourDoughMobile/dist --project-name=sourdough --branch=main
+      - name: Install RedCard dependencies
+        run: npm ci
+        working-directory: RedCard
+
+      - name: Check and build isolated RedCard page
+        run: npm run check
+        working-directory: RedCard
+
+      - name: Validate RedCard Worker bundle
+        run: npm run worker:check
+        working-directory: RedCard
+
+      - name: Deploy shared RedCard poller
+        run: npx wrangler deploy --config wrangler.jsonc --var POLL_INTERVAL_SECONDS:$POLL_INTERVAL_SECONDS --var DAILY_REQUEST_LIMIT:$DAILY_REQUEST_LIMIT
+        working-directory: RedCard
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          POLL_INTERVAL_SECONDS: ${{ vars.REDCARD_POLL_INTERVAL_SECONDS || '1200' }}
+          DAILY_REQUEST_LIMIT: ${{ vars.REDCARD_DAILY_REQUEST_LIMIT || '85' }}
+
+      - name: Configure private football API key
+        run: printf '%s' "$API_FOOTBALL_KEY" | npx wrangler secret put API_FOOTBALL_KEY --config wrangler.jsonc
+        working-directory: RedCard
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Preserve Pages settings and add RedCard binding
+        run: |
+          RedCard/node_modules/.bin/wrangler pages download config sourdough --force
+          python3 RedCard/scripts/configure-pages.py
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
+      - name: Deploy to Cloudflare Pages
+        run: RedCard/node_modules/.bin/wrangler pages deploy SourDoughMobile/dist --project-name=sourdough --branch=main
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

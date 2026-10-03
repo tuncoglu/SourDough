@@ -1,0 +1,32 @@
+# RedCard.Live on sourdoughcalculator.uk
+
+An unlinked football PWA at `/redcard-7c4f/`. The HTML and response headers request `noindex, nofollow`; the address is obscure but does not require authentication.
+
+The React interface and API-Football normalizer come from RedCard.Live. All covered live competitions are requested in one bulk call, including women's competitions when supplied. Only straight-red and second-yellow dismissals appear in the default view; ordinary yellows are ignored.
+
+## Deployment and shared state
+
+The existing Expo site still builds normally. Vite adds this independent page to `SourDoughMobile/dist/redcard-7c4f/` afterwards. Pages Functions proxy only that path's read-only API to the `sourdough-redcard` Worker through a service binding. The Worker has no public workers.dev URL. One globally named SQLite Durable Object stores live state, the next scheduled poll, a daily request reservation counter, and dismissal IDs for deduplication.
+
+Durable Object alarms refresh upstream even when no browser is open. Concurrent visitors and repeated alarms share the same in-flight request. Each attempt reserves quota and the next due time durably before making the network call; failures preserve the last good data and back off. The frontend checks cached state every ten seconds while visible, without creating an upstream request per visitor. This Cloudflare deployment uses short cached requests instead of the original Node application's SSE stream.
+
+The free API-Football plan permits 100 requests/day. Production defaults to one request every 1,200 seconds (about 72/day), with an independent hard cap of 85 attempts per UTC day. The remaining quota is available for manual checks. The cap applies to this Worker; any other program using the same key also spends the provider's quota. A match can change or finish between these snapshots; update age and cadence appear visibly.
+
+After upgrading the same key to the 7,500/day tier, set GitHub repository variables `REDCARD_POLL_INTERVAL_SECONDS=20` and `REDCARD_DAILY_REQUEST_LIMIT=7000`, then rerun the Deploy workflow. Twenty-second polling uses about 4,320 requests/day. Do not enable this cadence before the paid plan is active.
+
+## Secrets and permissions
+
+GitHub Actions requires the existing `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`, plus the encrypted `API_FOOTBALL_KEY` secret. The Cloudflare token must permit Pages deployment and Workers Scripts editing on that account, including Durable Object deployment. SQLite Durable Objects work on Cloudflare's Free plan. The provider key is uploaded as a Worker secret, never a frontend environment variable or committed file.
+
+The root site's service worker ignores this subtree and deletes only its own old caches. RedCard's scoped worker never caches the API and shows an offline fallback when disconnected. Its manifest, icons and launch URL stay inside this subtree.
+
+## Local checks
+
+```sh
+cd RedCard
+npm ci
+npm run check
+npm run worker:check
+```
+
+Tests cover normalization, women's fixtures, UI dismissal/status rendering, simultaneous visitors, restart persistence, reservation ordering, daily cap/reset, failure retention and notification deduplication. To run the backend locally, put `API_FOOTBALL_KEY` in an ignored `.dev.vars` and use `npm run worker:dev`. Keep the free-tier limits and avoid running a second automatic poller against the same key.
