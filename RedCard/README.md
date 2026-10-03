@@ -14,6 +14,12 @@ The free API-Football plan permits 100 requests/day. Production defaults to one 
 
 After upgrading the same key to the 7,500/day tier, set GitHub repository variables `REDCARD_POLL_INTERVAL_SECONDS=20` and `REDCARD_DAILY_REQUEST_LIMIT=7000`, then rerun the Deploy workflow. Twenty-second polling uses about 4,320 requests/day. Do not enable this cadence before the paid plan is active.
 
+## Provider networking
+
+The deployed native-fetch adapter passes a mocked Cloudflare workerd regression test. Production calls currently receive API-Football's per-minute rate-limit response even with daily quota remaining. [API-Football documents that shared source IPs can combine unrelated traffic and specifically cautions about Cloudflare Workers](https://www.api-football.com/news/post/how-ratelimit-works). Shared Cloudflare egress is the likely cause. A provider-side resolution or a dedicated-IP relay is needed for reliable access; a higher daily allowance alone does not guarantee a fix. Do not rotate deployment locations or API keys to evade the provider's network protections.
+
+Provider error bodies and rate-limit headers are recorded in private Worker logs with the configured key redacted. The public interface shows an outage and keeps the daily reservation cap and progressive backoff. No sample matches are substituted for failed production requests.
+
 ## Secrets and permissions
 
 GitHub Actions requires the existing `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`, plus the encrypted `API_FOOTBALL_KEY` secret. The Cloudflare token uses Pages Edit and Workers Admin, scoped to the account hosting the hobby site. Workers Admin permits creation of the new Worker and its Durable Object. SQLite Durable Objects work on Cloudflare's Free plan. The provider key is uploaded as a Worker secret, never a frontend environment variable or committed file.
