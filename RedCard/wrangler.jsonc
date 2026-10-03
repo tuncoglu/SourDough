@@ -3,6 +3,7 @@
   "name": "sourdough-redcard",
   "main": "worker/index.ts",
   "compatibility_date": "2026-10-03",
+  "observability": { "enabled": true, "head_sampling_rate": 1 },
   "workers_dev": false,
   "preview_urls": false,
   "vars": { "POLL_INTERVAL_SECONDS": "1200", "DAILY_REQUEST_LIMIT": "85" },

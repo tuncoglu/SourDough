@@ -64,10 +64,13 @@ describe("API-Football transport", () => {
     expect(request).not.toHaveBeenCalled();
   });
   it("handles rate limits including provider errors inside HTTP 200", async () => {
+    const diagnostic = vi.spyOn(console, "warn").mockImplementation(() => {});
     const request = vi.fn<typeof fetch>().mockResolvedValueOnce(new Response(null, { status: 429, headers: { "Retry-After": "300" } })).mockResolvedValueOnce(Response.json({ errors: { requests: "Daily quota reached" }, response: [] }));
     const provider = new ApiFootballProvider("key", 1000, request);
     await expect(provider.getLiveMatches()).rejects.toMatchObject({ retryAfterMs: 300_000 });
     await expect(provider.getLiveMatches()).rejects.toMatchObject({ retryAfterMs: 900_000 });
+    expect(diagnostic).toHaveBeenCalledWith(expect.stringContaining("provider-error"));
+    diagnostic.mockRestore();
   });
   it("handles timeout and malformed payloads without treating them as empty live state", async () => {
     const request = vi.fn<typeof fetch>().mockRejectedValueOnce(new DOMException("timeout", "TimeoutError")).mockResolvedValueOnce(Response.json({ response: null })).mockResolvedValueOnce(Response.json({ response: [null] })).mockResolvedValueOnce(Response.json({ response: [] }));

@@ -93,6 +93,14 @@ export class ApiFootballProvider implements FootballProvider {
     const errors = body.errors;
     const hasErrors = Array.isArray(errors) ? errors.length > 0 : Object.keys(object(errors)).length > 0 || (typeof errors === "string" && errors.length > 0);
     if (hasErrors) {
+      // Keep provider diagnostics in private Worker logs; never log credentials or fixtures.
+      const diagnostic = JSON.stringify(errors).split(this.key).join("[redacted]").slice(0, 1000);
+      console.warn(JSON.stringify({ type: "provider-error", status: response.status, errors: diagnostic,
+        dailyLimit: response.headers.get("x-ratelimit-requests-limit"),
+        dailyRemaining: response.headers.get("x-ratelimit-requests-remaining"),
+        minuteLimit: response.headers.get("x-ratelimit-limit"),
+        minuteRemaining: response.headers.get("x-ratelimit-remaining"),
+      }));
       const quotaError = /rate|quota|limit|requests/i.test(JSON.stringify(errors));
       throw new ProviderError(quotaError ? "API-Football quota or rate limit reached" : "API-Football rejected the request", quotaError ? 900_000 : undefined);
     }

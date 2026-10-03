@@ -21,7 +21,7 @@ export class RedCardState {
       setting(env.POLL_INTERVAL_SECONDS, 1200, 20, 3600) * 1000,
       setting(env.DAILY_REQUEST_LIMIT, 85, 1, 7000), Date.now,
       event => console.info(JSON.stringify({ type: "new-dismissal", matchId: event.matchId, eventId: event.dismissal.id, detectedAt: event.detectedAt })),
-      "native-fetch-v2",
+      "provider-diagnostics-v3",
     );
   }
   async alarm(): Promise<void> { await this.coordinator.pollIfDue(); }
