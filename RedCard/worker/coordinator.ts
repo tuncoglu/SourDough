@@ -8,6 +8,7 @@ export interface StateStorage {
   setAlarm(time: number): Promise<void>;
 }
 type StoredState = {
+  revision?: string;
   snapshot: Omit<LiveSnapshot, "nextPollAt">;
   nextPollAt: number;
   quota: { day: string; used: number };
@@ -26,6 +27,7 @@ export class LiveCoordinator {
     private dailyLimit: number,
     private now: () => number = Date.now,
     private onDismissal: (event: NewDismissalEvent) => void = () => {},
+    private revision = "1",
   ) {}
 
   pollIfDue(): Promise<LiveSnapshot> {
@@ -38,11 +40,18 @@ export class LiveCoordinator {
     const now = this.now();
     const day = new Date(now).toISOString().slice(0, 10);
     const state = await this.storage.get<StoredState>("state") ?? {
+      revision: this.revision,
       snapshot: { matches: [], provider: this.provider.name, lastSuccessfulPoll: null, lastAttemptAt: null, error: null, staleAfterMs: this.intervalMs + 90_000, pollIntervalMs: this.intervalMs },
       nextPollAt: 0, quota: { day, used: 0 }, failures: 0, seen: {},
     };
     state.snapshot.pollIntervalMs = this.intervalMs;
     state.snapshot.staleAfterMs = this.intervalMs + 90_000;
+    if (state.revision !== this.revision) {
+      state.revision = this.revision;
+      // A repaired deployment can recover once from a failed snapshot. Keep its budget.
+      if (state.snapshot.error) state.nextPollAt = now;
+      await this.storage.put("state", state);
+    }
     const snapshot = (): LiveSnapshot => ({ ...state.snapshot, nextPollAt: new Date(state.nextPollAt).toISOString() });
     if (state.nextPollAt > now) {
       // Repair a missing alarm after a restart without making an extra upstream request.

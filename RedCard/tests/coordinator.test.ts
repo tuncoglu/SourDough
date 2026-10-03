@@ -17,7 +17,7 @@ function setup(limit = 85) {
   const getLiveMatches = vi.fn().mockResolvedValue(mockMatches());
   const notify = vi.fn();
   const provider = { name: "test", getLiveMatches };
-  const create = () => new LiveCoordinator(storage, provider, interval, limit, () => now, notify);
+  const create = (revision = "1") => new LiveCoordinator(storage, provider, interval, limit, () => now, notify, revision);
   return { storage, getLiveMatches, notify, create, advance: (ms = interval) => { now += ms; } };
 }
 
@@ -83,5 +83,16 @@ describe("shared durable polling and quota", () => {
     s.advance();
     await s.create().pollIfDue();
     expect(s.notify).toHaveBeenCalledTimes(count);
+  });
+  it("recovers once after a repaired deployment without resetting the budget", async () => {
+    const s = setup(2);
+    s.getLiveMatches.mockRejectedValueOnce(new ProviderError("Connection failed"));
+    await s.create().pollIfDue();
+    expect((await s.create("2").pollIfDue()).error).toBeNull();
+    await s.create("2").pollIfDue();
+    expect(s.getLiveMatches).toHaveBeenCalledTimes(2);
+    s.advance();
+    expect((await s.create("3").pollIfDue()).error).toContain("budget reached");
+    expect(s.getLiveMatches).toHaveBeenCalledTimes(2);
   });
 });

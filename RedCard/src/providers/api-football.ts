@@ -64,7 +64,8 @@ export function normalizeFixture(raw: unknown, now = new Date()): LiveMatch | nu
 
 export class ApiFootballProvider implements FootballProvider {
   readonly name = "api-football";
-  constructor(private key: string | undefined, private timeoutMs = 10_000, private request: typeof fetch = fetch) {}
+  // Workers' native fetch requires its global receiver, so do not store it unbound.
+  constructor(private key: string | undefined, private timeoutMs = 10_000, private request: typeof fetch = (input, init) => fetch(input, init)) {}
 
   async getLiveMatches(): Promise<LiveMatch[]> {
     if (!this.key?.trim()) throw new ProviderError("API_FOOTBALL_KEY is not configured", 120_000);
