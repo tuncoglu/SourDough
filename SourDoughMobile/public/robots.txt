@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /redcard-7c4f/
+
+Sitemap: https://sourdoughcalculator.uk/sitemap.xml
