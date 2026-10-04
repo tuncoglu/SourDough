@@ -1,6 +1,7 @@
 import { ApiFootballProvider } from "../src/providers/api-football";
 import { hasDismissals } from "../src/domain/match";
 import { LiveCoordinator } from "./coordinator";
+import { FixtureCatalogue } from "./fixture-catalogue";
 
 interface Env {
   API_FOOTBALL_KEY?: string;
@@ -16,7 +17,9 @@ function setting(value: string | undefined, fallback: number, min: number, max: 
 
 export class RedCardState {
   private coordinator: LiveCoordinator;
+  private catalogue: FixtureCatalogue;
   constructor(ctx: DurableObjectState, env: Env) {
+    this.catalogue = new FixtureCatalogue(ctx.storage);
     this.coordinator = new LiveCoordinator(ctx.storage, new ApiFootballProvider(env.API_FOOTBALL_KEY),
       setting(env.POLL_INTERVAL_SECONDS, 1200, 20, 3600) * 1000,
       setting(env.DAILY_REQUEST_LIMIT, 85, 1, 7000), Date.now,
@@ -35,7 +38,8 @@ export class RedCardState {
       const match = snapshot.matches.find(match => match.id === decodeURIComponent(url.pathname.slice(13)));
       return Response.json(match ?? { error: "Match not found" }, { status: match ? 200 : 404, headers });
     }
-    return Response.json({ ...snapshot, matches: url.searchParams.get("red") === "true" ? snapshot.matches.filter(hasDismissals) : snapshot.matches }, { headers });
+    const iddaa = await this.catalogue.getListing(snapshot.matches);
+    return Response.json({ ...snapshot, iddaa, matches: url.searchParams.get("red") === "true" ? snapshot.matches.filter(hasDismissals) : snapshot.matches }, { headers });
   }
 }
 

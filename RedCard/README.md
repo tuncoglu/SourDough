@@ -4,6 +4,14 @@ An unlinked football PWA at `/redcard-7c4f/`. The HTML and response headers requ
 
 The React interface and API-Football normalizer come from RedCard.Live. All covered live competitions are requested in one bulk call, including women's competitions when supplied. Only straight-red and second-yellow dismissals appear in the default view; ordinary yellows are ignored.
 
+## Fixture-list filter
+
+The optional **Fixture list → İddaa · Turkey** filter uses the public football programme feed used by iddaa.com, including women's fixtures. Turkey identifies the catalogue's country, not the countries where matches are played. The filter composes with Red cards / All live and updates the dismissal counts for the selected list.
+
+The server retains only fixture IDs, home/away names and kick-off timestamps from this feed. No odds or markets are stored or exposed. Matching requires both ordered team names and kick-off within five minutes, with conservative spelling normalization. Women's and youth markers and reserve-team distinctions are retained. Ambiguous identities and fixtures missing kick-off are excluded; differing abbreviations can leave listed matches unmatched, which the interface explains. This is a matched subset, not a guarantee of complete catalogue coverage.
+
+One independent Durable Object cache refreshes the catalogue at most once every five minutes when visitors request live state. The catalogue does not spend API-Football quota, change its polling alarm, or erase live football data on failure. Recent listings can be retained during a failed refresh, but expire after ten minutes. The interface distinguishes an unavailable/expired catalogue from an empty filtered result and keeps All covered matches available. The public catalogue endpoint is undocumented and may change or reject requests; failures back off to at most one attempt per thirty minutes.
+
 ## Deployment and shared state
 
 The existing Expo site still builds normally. Vite adds this independent page to `SourDoughMobile/dist/redcard-7c4f/` afterwards. Pages Functions proxy only that path's read-only API to the `sourdough-redcard` Worker through a service binding. The Worker has no public workers.dev URL. One globally named SQLite Durable Object stores live state, the next scheduled poll, a daily request reservation counter, and dismissal IDs for deduplication.
@@ -16,7 +24,7 @@ After upgrading the same key to the 7,500/day tier, set GitHub repository variab
 
 ## Provider networking
 
-The deployed native-fetch adapter passes a mocked Cloudflare workerd regression test. Production calls currently receive API-Football's per-minute rate-limit response even with daily quota remaining. [API-Football documents that shared source IPs can combine unrelated traffic and specifically cautions about Cloudflare Workers](https://www.api-football.com/news/post/how-ratelimit-works). Shared Cloudflare egress is the likely cause. A provider-side resolution or a dedicated-IP relay is needed for reliable access; a higher daily allowance alone does not guarantee a fix. Do not rotate deployment locations or API keys to evade the provider's network protections.
+The deployed native-fetch adapter passes a mocked Cloudflare workerd regression test. Production calls have received API-Football's per-minute rate-limit response even with daily quota remaining, although later polls have succeeded. [API-Football documents that shared source IPs can combine unrelated traffic and specifically cautions about Cloudflare Workers](https://www.api-football.com/news/post/how-ratelimit-works). Shared Cloudflare egress is the likely cause. A provider-side resolution or a dedicated-IP relay is needed for reliable access; a higher daily allowance alone does not guarantee a fix. Do not rotate deployment locations or API keys to evade the provider's network protections.
 
 Provider error bodies and rate-limit headers are recorded in private Worker logs with the configured key redacted. The public interface shows an outage and keeps the daily reservation cap and progressive backoff. No sample matches are substituted for failed production requests.
 

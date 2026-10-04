@@ -10,6 +10,7 @@ export type MatchTeam = {
 
 export type LiveMatch = {
   id: string;
+  kickoffAt?: string;
   competition: { id: string; name: string; country?: string; logo?: string };
   status: string;
   minute?: number;
@@ -29,6 +30,18 @@ export type LiveSnapshot = {
   staleAfterMs: number;
   pollIntervalMs: number;
   nextPollAt: string;
+  iddaa?: FixtureListing;
+};
+
+export type FixtureListing = {
+  source: "iddaa";
+  country: "Turkey";
+  available: boolean;
+  updatedAt: string | null;
+  expiresAt: string | null;
+  error: string | null;
+  listedMatchIds: string[];
+  fixtureCount: number;
 };
 
 export function hasDismissals(match: LiveMatch): boolean {

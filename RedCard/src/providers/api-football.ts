@@ -52,8 +52,10 @@ export function normalizeFixture(raw: unknown, now = new Date()): LiveMatch | nu
   const league = object(row.league);
   const goals = object(row.goals);
   const dismissals = normalizeDismissals(row.events, matchId, [homeId, awayId]);
+  const kickoff = typeof fixture.timestamp === "number" ? fixture.timestamp * 1000 : Date.parse(text(fixture.date) ?? "");
   return {
     id: matchId,
+    kickoffAt: Number.isFinite(kickoff) && kickoff > 0 && kickoff <= 8_640_000_000_000_000 ? new Date(kickoff).toISOString() : undefined,
     competition: { id: id(league.id) ?? "unknown", name: text(league.name) ?? "Competition unavailable", country: text(league.country), logo: logo(league.logo) },
     status: liveStatuses[short], minute: nonnegative(status.elapsed), addedTime: nonnegative(status.extra),
     home: { id: homeId, name: text(home.name) ?? "Home team", logo: logo(home.logo), score: nonnegative(goals.home) ?? null, redCards: dismissals.filter(d => d.teamId === homeId).length },

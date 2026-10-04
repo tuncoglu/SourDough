@@ -8,6 +8,7 @@ type Connection = "connecting" | "live" | "reconnecting" | "offline";
 export function LiveMonitor() {
   const [snapshot, setSnapshot] = useState<LiveSnapshot | null>(null);
   const [redOnly, setRedOnly] = useState(true);
+  const [fixtureSource, setFixtureSource] = useState("all");
   const [connection, setConnection] = useState<Connection>("connecting");
   const [failed, setFailed] = useState(false);
   const [now, setNow] = useState(0);
@@ -71,7 +72,13 @@ export function LiveMonitor() {
   }
 
   const matches = snapshot?.matches ?? [];
-  const redMatches = matches.filter(hasDismissals);
+  const listing = snapshot?.iddaa;
+  const catalogueAvailable = Boolean(listing?.available && listing.expiresAt && now < Date.parse(listing.expiresAt));
+  const iddaaOnly = fixtureSource === "iddaa";
+  const listed = new Set(catalogueAvailable ? listing?.listedMatchIds : []);
+  const filteredMatches = iddaaOnly ? matches.filter(match => listed.has(match.id)) : matches;
+  const redMatches = filteredMatches.filter(hasDismissals);
+  const countsAvailable = snapshot !== null && (!iddaaOnly || catalogueAvailable);
   const dismissals = redMatches.reduce((total, match) => total + match.dismissals.length, 0);
   const stale = Boolean(snapshot?.lastSuccessfulPoll && now - Date.parse(snapshot.lastSuccessfulPoll) > snapshot.staleAfterMs);
   const providerFailed = Boolean(snapshot?.error) || (snapshot !== null && !snapshot.lastSuccessfulPoll);
@@ -82,12 +89,14 @@ export function LiveMonitor() {
   return <>
     <StatusHeader status={status} demo={snapshot?.provider === "mock"} light={light} onThemeChange={toggleTheme} />
     <main id="main-content" className="monitor">
-      <div className="page-intro"><div><p className="eyebrow">FOOTBALL · IN PLAY</p><h1>Live dismissals.</h1><p className="intro-description">Men’s and women’s football. Live matches with a player sent off.</p></div><div className="summary" aria-label={`${redMatches.length} matches with ${dismissals} dismissals`}><div><b>{snapshot ? redMatches.length : "–"}</b><span>matches</span></div><span className="summary-divider" /><div><b className="red-number">{snapshot ? dismissals : "–"}</b><span>dismissals</span></div></div></div>
-      <div className="view-bar"><div className="view-toggle" aria-label="Match view"><button className={redOnly ? "active" : ""} onClick={() => setRedOnly(true)} aria-pressed={redOnly}>Red cards<span className="tab-count">{redMatches.length}</span></button><button className={!redOnly ? "active" : ""} onClick={() => setRedOnly(false)} aria-pressed={!redOnly}>All live</button></div><span className="updated-at">{updated}</span></div>
+      <div className="page-intro"><div><p className="eyebrow">FOOTBALL · IN PLAY</p><h1>Live dismissals.</h1><p className="intro-description">Men’s and women’s football. Live matches with a player sent off.</p></div><div className="summary" aria-label={countsAvailable ? `${redMatches.length} matches with ${dismissals} dismissals` : "Match counts unavailable"}><div><b>{countsAvailable ? redMatches.length : "–"}</b><span>matches</span></div><span className="summary-divider" /><div><b className="red-number">{countsAvailable ? dismissals : "–"}</b><span>dismissals</span></div></div></div>
+      <div className="view-bar"><div className="view-toggle" aria-label="Match view"><button className={redOnly ? "active" : ""} onClick={() => setRedOnly(true)} aria-pressed={redOnly}>Red cards<span className="tab-count">{countsAvailable ? redMatches.length : "–"}</span></button><button className={!redOnly ? "active" : ""} onClick={() => setRedOnly(false)} aria-pressed={!redOnly}>All live</button></div><span className="updated-at">{updated}</span></div>
+      <div className="fixture-filter"><label htmlFor="fixture-source">Fixture list</label><select id="fixture-source" value={fixtureSource} onChange={event => setFixtureSource(event.target.value)}><option value="all">All covered matches</option><option value="iddaa">İddaa · Turkey</option></select></div>
+      {iddaaOnly && <p className="catalogue-notice" role="status">{catalogueAvailable ? `${listing?.listedMatchIds.length} live matches matched to İddaa’s fixture list. Listings checked ${new Date(listing!.updatedAt!).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}. Team-name differences can leave some matches unmatched.${listing?.error ? " Refresh delayed; using recent listings." : ""}` : "İddaa’s fixture list is currently unavailable. Choose All covered matches to keep viewing football statistics."}</p>}
       <p className="demo-notice">{snapshot?.pollIntervalMs ? `Provider updates every ${snapshot.pollIntervalMs >= 60_000 ? `${Math.round(snapshot.pollIntervalMs / 60_000)} minutes` : `${Math.round(snapshot.pollIntervalMs / 1000)} seconds`}. Matches may have changed since the last update.` : "Checking the football provider…"}</p>
       {snapshot?.provider === "mock" && <p className="demo-notice"><span className="demo-notice-icon" aria-hidden="true">◈</span> Demo matches · Scores and dismissals are simulated.</p>}
       {(providerFailed || stale || failed || connection === "offline" || connection === "reconnecting") && <p className="data-notice" role="status">{connection === "offline" ? "You’re offline." : providerFailed ? "The football provider is temporarily unavailable." : stale ? "Match data is delayed." : "Reconnecting to match data."} {snapshot?.lastSuccessfulPoll ? "Showing the last successful update; these matches may have finished." : "We’ll try again automatically."}</p>}
-      <LiveMatchList matches={redOnly ? redMatches : matches} redOnly={redOnly} loading={!snapshot && !failed} unavailable={failed || providerFailed} />
+      <LiveMatchList matches={redOnly ? redMatches : filteredMatches} redOnly={redOnly} loading={!snapshot && !failed} unavailable={failed || providerFailed} fixtureFiltered={iddaaOnly} catalogueUnavailable={iddaaOnly && !catalogueAvailable} />
       <footer className="monitor-footer"><span><span className="footer-card" aria-hidden="true">🟥</span> Straight red<span className="footer-second" aria-hidden="true">🟨🟥</span> Second yellow</span><span>Live matches. Red cards only.</span></footer>
     </main>
   </>;
