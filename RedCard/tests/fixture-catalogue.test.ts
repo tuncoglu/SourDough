@@ -43,6 +43,12 @@ describe("İddaa fixture identities", () => {
     expect(listedMatchIds([match()], [fixture, { ...fixture, id: "other" }])).toEqual([]);
     expect(listedMatchIds([match("one"), match("two")], [fixture])).toEqual([]);
   });
+  it("keeps different non-Latin team names distinct and rejects empty club identities", () => {
+    const nonLatin = { ...match("ru", "Локомотив", "Динамо"), competition: { id: "10", name: "Premier League" } };
+    expect(listedMatchIds([nonLatin], [{ ...fixture, home: "Спартак", away: "Зенит" }])).toEqual([]);
+    expect(listedMatchIds([nonLatin], [{ ...fixture, home: "Локомотив", away: "Динамо" }])).toEqual(["ru"]);
+    expect(listedMatchIds([match("empty", "FC Women", "CF Women")], [{ ...fixture, home: "FC (K)", away: "CF (K)" }])).toEqual([]);
+  });
   it("retains the football provider's actual kickoff without inventing missing dates", () => {
     const raw = { fixture: { id: 1, timestamp: Date.parse(kickoffAt) / 1000, status: { short: "1H" } }, teams: { home: { id: 1, name: "Twente W" }, away: { id: 2, name: "Utrecht W" } } };
     expect(normalizeFixture(raw)?.kickoffAt).toBe(kickoffAt);

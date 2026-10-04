@@ -35,10 +35,11 @@ function teamKey(name: string, women = false): string {
   const normalized = name.toLowerCase().replace(/ı/g, "i").replace(/ø/g, "o").replace(/ł/g, "l").replace(/æ/g, "ae").replace(/ß/g, "ss")
     .normalize("NFKD").replace(/\p{M}/gu, "")
     .replace(/\(k\)|\b(?:women|woman|ladies|w|kvinner)\b/g, " women ")
-    .replace(/\bu[- ]?(\d{2})\b/g, "u$1").replace(/[^a-z0-9]+/g, " ").trim();
+    .replace(/\bu[- ]?(\d{2})\b/g, "u$1").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
   const tokens = normalized.split(/\s+/).filter(token => !["fc", "cf", "afc", "sc", "fk", "bk", "sk", "cd", "ud", "gd", "sd", "ssd", "fbc", "ac", "as", "calcio", "club"].includes(token));
   const womenTeam = women || tokens.includes("women");
   const identity = tokens.filter(token => token !== "women").map(token => token === "ii" || token === "b" ? "reserve2" : token === "iii" || token === "c" ? "reserve3" : token);
+  if (!identity.length) return "";
   if (womenTeam) identity.push("women");
   return identity.join(" ");
 }
@@ -47,7 +48,9 @@ function teamKey(name: string, women = false): string {
 export function listedMatchIds(matches: LiveMatch[], fixtures: ListedFixture[]): string[] {
   const index = new Map<string, ListedFixture[]>();
   for (const fixture of fixtures) {
-    const key = JSON.stringify([teamKey(fixture.home), teamKey(fixture.away)]);
+    const home = teamKey(fixture.home), away = teamKey(fixture.away);
+    if (!home || !away) continue;
+    const key = JSON.stringify([home, away]);
     index.set(key, [...(index.get(key) ?? []), fixture]);
   }
   const proposals = new Map<string, string[]>();
@@ -55,7 +58,9 @@ export function listedMatchIds(matches: LiveMatch[], fixtures: ListedFixture[]):
     const kickoff = Date.parse(match.kickoffAt ?? "");
     if (!Number.isFinite(kickoff)) continue;
     const women = /\b(women|feminine|feminin|femenina|femminile|female|frauen|kvinner)\b/i.test(match.competition.name);
-    const key = JSON.stringify([teamKey(match.home.name, women), teamKey(match.away.name, women)]);
+    const home = teamKey(match.home.name, women), away = teamKey(match.away.name, women);
+    if (!home || !away) continue;
+    const key = JSON.stringify([home, away]);
     const candidates = (index.get(key) ?? []).filter(fixture => Math.abs(Date.parse(fixture.kickoffAt) - kickoff) <= 5 * 60_000);
     if (candidates.length !== 1) continue;
     const fixtureId = candidates[0].id;
