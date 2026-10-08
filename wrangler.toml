@@ -5,9 +5,9 @@ pages_build_output_dir = "SourDoughMobile/dist"
 # replaced this file before it was read.
 compatibility_date = "2026-07-01"
 
-# Retained although the /redcard-7c4f/ subtree is gone. Removing it would change the
-# live Pages project config as a side effect of a source cleanup; it is inert now that
-# the subtree is no longer built. Drop it deliberately if you want it gone.
-[[services]]
-binding = "REDCARD"
-service = "sourdough-redcard"
+# The REDCARD service binding to the `sourdough-redcard` Worker was removed here on
+# purpose. RedCard.Live now runs from tuncoglu/red-card as a Next.js process on the
+# home Raspberry Pi at redcard.sourdoughcalculator.uk, so that Worker has no consumer.
+# While this binding existed, the Pages project held a reference to the Worker and
+# Cloudflare refused to delete either it or its Durable Object namespace, which kept
+# its alarm-driven poller spending API-Football quota alongside the Pi.
