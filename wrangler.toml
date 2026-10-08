@@ -1,7 +1,13 @@
 name = "sourdough"
 pages_build_output_dir = "SourDoughMobile/dist"
-compatibility_date = "2026-10-03"
+# Matches the deployed project. The previous value here (2026-10-03) was only ever a
+# setdefault in configure-pages.py and was never applied, because the download step
+# replaced this file before it was read.
+compatibility_date = "2026-07-01"
 
+# Retained although the /redcard-7c4f/ subtree is gone. Removing it would change the
+# live Pages project config as a side effect of a source cleanup; it is inert now that
+# the subtree is no longer built. Drop it deliberately if you want it gone.
 [[services]]
 binding = "REDCARD"
 service = "sourdough-redcard"

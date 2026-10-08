@@ -53,9 +53,6 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // RedCard owns its own scoped worker; never cache its API or app shell here.
-  if (url.pathname === '/redcard-7c4f' || url.pathname.startsWith('/redcard-7c4f/')) return;
-
   // For navigations, try the network first so users always get the latest
   // app shell when online, and fall back to the cached shell when offline.
   if (request.mode === 'navigate') {
