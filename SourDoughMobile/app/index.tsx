@@ -10,9 +10,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAppTheme, Spacing, FontSize, BorderRadius, MaxWidth } from '../src/theme';
 import { useBreakpoint } from '../src/hooks/useBreakpoint';
 import { Seo } from '../src/components/Seo';
-import { InstallAppCard, useInstallPrompt } from '../src/components/InstallAppCard';
+import { InstallAppCard } from '../src/components/InstallAppCard';
 import { Icon, type IconName } from '../src/components/Icon';
-import { WaitlistCard } from '../src/components/WaitlistCard';
 
 interface LandingCard {
   icon: IconName;
@@ -48,7 +47,6 @@ const CARDS: LandingCard[] = [
 export default function LandingScreen() {
   const { colors, isDark } = useAppTheme();
   const { isDesktop } = useBreakpoint();
-  const { canInstall } = useInstallPrompt();
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.cream }]} edges={['top', 'bottom']}>
@@ -121,9 +119,6 @@ export default function LandingScreen() {
 
         {/* Install PWA when the browser supports it */}
         <InstallAppCard />
-
-        {/* Waitlist for native launch (hidden while an install prompt is available) */}
-        {!canInstall && <WaitlistCard />}
 
         {/* Footer */}
         <View style={[styles.footer, { borderTopColor: colors.border }]}>

@@ -209,8 +209,7 @@ directly instead of Google Play Services. `expo-store-review` has been removed.
 When you grant location permission, only your coordinates are sent to
 Open-Meteo (weather) and OpenStreetMap (geocoding). Nothing else.
 
-The website has an optional email waitlist for iOS/Android launch updates;
-your address is used only for that purpose. Full details: [PRIVACY.md](PRIVACY.md)
+Full details: [PRIVACY.md](PRIVACY.md)
 
 ---
 
