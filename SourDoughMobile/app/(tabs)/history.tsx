@@ -25,15 +25,6 @@ import { FermentHistoryCard } from '../../src/components/FermentHistoryCard';
 import { deleteFerment, loadFerments } from '../../src/store/fermentHistoryStore';
 import { FERMENT_RETENTION_DAYS } from '../../src/lib/fermentHistory';
 
-const FILTER_CHIPS: { key: string; label: string; match: (r: SavedRecipe) => boolean }[] = [
-  { key: 'all', label: 'All', match: () => true },
-  { key: 'boules', label: '🥖 Boules', match: (r) => ['classic-boule', 'spelt-loaf', '100-rye'].includes(r.breadType ?? '') },
-  { key: 'pizza', label: '🍕 Pizza', match: (r) => ['pizza', 'franco-manca-pizza'].includes(r.breadType ?? '') },
-  { key: 'flatbreads', label: '🫓 Flatbreads', match: (r) => ['pita-naan', 'flatbread', 'focaccia', 'crackers-grissini'].includes(r.breadType ?? '') },
-  { key: 'enriched', label: '🧈 Enriched', match: (r) => ['challah', 'brioche'].includes(r.breadType ?? '') },
-  { key: 'advanced', label: '💎 Advanced', match: (r) => r.results.tempZone === 'warm' || r.results.tempZone === 'hot' || ['baguette', 'ciabatta', 'pan-de-cristal'].includes(r.breadType ?? '') },
-];
-
 export default function HistoryScreen() {
   const [recipes, setRecipes] = useState<SavedRecipe[]>([]);
   const [ferments, setFerments] = useState<FermentHistoryEntry[]>([]);
@@ -41,7 +32,6 @@ export default function HistoryScreen() {
   const [segment, setSegment] = useState<'bread' | 'ferments'>('bread');
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
-  const [activeFilter, setActiveFilter] = useState('all');
   const router = useRouter();
   const { confirm, showToast } = useFeedback();
   const { isDesktop } = useBreakpoint();
@@ -123,8 +113,7 @@ export default function HistoryScreen() {
 
   // Filter + search
   const filteredRecipes = useMemo(() => {
-    const chip = FILTER_CHIPS.find((c) => c.key === activeFilter);
-    let result = chip ? recipes.filter(chip.match) : recipes;
+    let result = recipes;
 
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -140,7 +129,7 @@ export default function HistoryScreen() {
     }
 
     return result;
-  }, [recipes, search, activeFilter]);
+  }, [recipes, search]);
 
   // Search over the ferments as well as the recipes.
   const filteredFerments = useMemo(() => {
@@ -205,26 +194,6 @@ export default function HistoryScreen() {
         />
       </View>
 
-      {/* Bread filter chips — ferments have no sub-types to filter on */}
-      {segment === 'bread' && (
-      <View style={styles.chipRow}>
-        {FILTER_CHIPS.map((chip) => (
-          <Chip
-            key={chip.key}
-            selected={activeFilter === chip.key}
-            onPress={() => setActiveFilter(chip.key)}
-            label={chip.label}
-            colorScheme="terracotta"
-            role="button"
-            style={styles.chip}
-          >
-            <Text style={[styles.chipText, { color: activeFilter === chip.key ? colors.white : colors.muted }]}>
-              {chip.label}
-            </Text>
-          </Chip>
-        ))}
-      </View>
-      )}
 
       {/* Ferment history */}
       {segment === 'ferments' && (

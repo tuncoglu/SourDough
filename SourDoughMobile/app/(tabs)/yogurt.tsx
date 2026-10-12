@@ -49,7 +49,7 @@ export default function YogurtScreen() {
       {/* Header — tap to return home */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.push('/')} activeOpacity={0.7}>
-          <Text style={[styles.brand, { color: colors.terracotta }]}>JUST DOUGH IT  /  CULTURES</Text>
+          <Text style={[styles.brand, { color: colors.terracotta }]}>JUST DOUGH IT  /  YOGURT</Text>
         </TouchableOpacity>
         <Text style={[styles.heading, { color: colors.espresso }]}>Yogurt, your way.</Text>
         <Text style={[styles.subtitle, { color: colors.muted }]}>

@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
-import { useLocalSearchParams, Stack } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyle, sectionTitleStyle } from '../../src/theme';
 import { formatTemp, formatWeight, formatWeightValue, weightUnit } from '../../src/lib/unitConversion';
@@ -239,7 +239,6 @@ export default function RecipeDetailScreen() {
   // ── Layout (responsive; single component tree — no remount on resize) ──
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.cream }]} edges={['top']}>
-      <Stack.Screen options={{ title: 'Recipe Detail' }} />
       <Seo
         title="Recipe — Just Dough It"
         description="A saved sourdough recipe from Just Dough It, with weights, temperatures and fermentation timeline."

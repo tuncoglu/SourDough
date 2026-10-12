@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ScrollView,
   View,
@@ -10,702 +10,421 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyle, sectionTitleStyle } from '../../src/theme';
-import { useBreakpoint } from '../../src/hooks/useBreakpoint';
 import { summaryWithHardnessOverride } from '../../src/lib/location';
-import { PROOF_FRACTION } from '../../src/lib/calculations';
-import { formatTemp } from '../../src/lib/unitConversion';
+import { runAllCalculations } from '../../src/lib/calculations';
+import { buildBlendFromRows } from '../../src/lib/blendUtils';
+import { resolveHardness } from '../../src/lib/hardnessUtils';
+import { formatWeight } from '../../src/lib/unitConversion';
 import { isValidDecimalInput } from '../../src/lib/inputValidation';
-import { getRecipe } from '../../src/store/recipeStore';
 import { findFlour } from '../../src/lib/flourSearch';
-import { getPreset } from '../../src/data/recipePresets';
-import type { WaterHardness, RecipePreset, SavedRecipe } from '../../src/models/types';
+import {
+  buildLazySteps,
+  lazyBakeSummary,
+  LAZY_DEFAULTS,
+  type LazyVessel,
+} from '../../src/lib/lazyMethod';
+import { getRecipe } from '../../src/store/recipeStore';
+import type { CalculationResults } from '../../src/models/types';
 
 import { LocationBar } from '../../src/components/LocationBar';
-import { RecipeTypePicker } from '../../src/components/RecipeTypePicker';
-import { StarterCard } from '../../src/components/StarterCard';
-import { FlourBlendCard } from '../../src/components/FlourBlendCard';
-import { TemperatureCard } from '../../src/components/TemperatureCard';
+import { NumberInput } from '../../src/components/NumberInput';
 import { TempRow } from '../../src/components/TempRow';
-import { ResultsSection } from '../../src/components/ResultsSection';
 import { Seo } from '../../src/components/Seo';
-import { CalculatorShell } from '../../src/components/CalculatorShell';
-import { StaleResultsBanner } from '../../src/components/StaleResultsBanner';
-import { LazyBakeFlow } from '../../src/components/LazyBakeFlow';
+import { Icon } from '../../src/components/Icon';
 
 import { useCalculatorInputs } from '../../src/hooks/useCalculatorInputs';
-import { useRecipePreset } from '../../src/hooks/useRecipePreset';
-import { useStarterTracker } from '../../src/hooks/useStarterTracker';
-import { useRecipeCalculation } from '../../src/hooks/useRecipeCalculation';
 import { useRecipeActions } from '../../src/hooks/useRecipeActions';
-import { useDailyRecommendation } from '../../src/hooks/useDailyRecommendation';
 
+/** The lazy method takes the starter straight from the fridge. */
+const LAZY_STARTER_TEMP_C = '4';
+/** When the dough was mixed — persisted so the clock survives closing the app. */
+const MIXED_AT_KEY = 'sourdough_lazy_mixed_at';
 
-export default function CalculatorScreen() {
-  const { isDesktop } = useBreakpoint();
+const VESSELS: { key: LazyVessel; title: string; hint: string }[] = [
+  { key: 'cocotte', title: 'Cocotte', hint: 'Lidded pot' },
+  { key: 'tin', title: 'Loaf tin', hint: 'No shaping skill' },
+];
+
+function PercentField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  const { colors } = useAppTheme();
+  return (
+    <View style={[styles.pctBox, { borderColor: colors.border, backgroundColor: colors.white }]}>
+      <TextInput
+        value={value}
+        onChangeText={(t) => { if (isValidDecimalInput(t)) onChange(t); }}
+        keyboardType="decimal-pad"
+        selectTextOnFocus
+        accessibilityLabel={`${label}, percent of flour`}
+        style={[styles.pctInput, { color: colors.espresso }]}
+      />
+      <Text style={[styles.pctUnit, { color: colors.muted }]}>%</Text>
+    </View>
+  );
+}
+
+export default function BreadScreen() {
   const { colors, unitSystem } = useAppTheme();
   const { editRecipeId } = useLocalSearchParams<{ editRecipeId?: string }>();
   const router = useRouter();
-  const [mode, setMode] = React.useState<'easy' | 'detailed'>(editRecipeId ? 'detailed' : 'easy');
-  const [lastCalcMode, setLastCalcMode] = React.useState<'easy' | 'detailed' | null>(null);
-  const easyScrollRef = React.useRef<ScrollView>(null);
-
-  useEffect(() => { if (editRecipeId) setMode('detailed'); }, [editRecipeId]);
-
-  // ── Hooks ──────────────────────────────────────────────────────────────
   const inputs = useCalculatorInputs();
-  const preset = useRecipePreset();
-  const starter = useStarterTracker();
-  const calc = useRecipeCalculation();
   const actions = useRecipeActions();
 
-  // ── H1: Location fallback → Settings (water hardness override) ───────
-  const rawPrefermentType = preset.selectedPreset?.dough.preferment?.type;
-  const prefermentType: 'poolish' | 'biga' | undefined =
-    rawPrefermentType === 'none' ? undefined : rawPrefermentType;
+  const [waterPct, setWaterPctState] = useState(String(LAZY_DEFAULTS.waterPct));
+  const [starterPct, setStarterPctState] = useState(String(LAZY_DEFAULTS.starterPct));
+  const [vessel, setVessel] = useState<LazyVessel>('cocotte');
+  const [mixedAt, setMixedAt] = useState<Date | null>(null);
+  const pctTouchedRef = useRef(false);
+  const setWaterPct = useCallback((v: string) => { pctTouchedRef.current = true; setWaterPctState(v); }, []);
+  const setStarterPct = useCallback((v: string) => { pctTouchedRef.current = true; setStarterPctState(v); }, []);
 
-  const { recommendation, dismiss: dismissRec } = useDailyRecommendation(
-    inputs.ambientTemp, preset.breadType,
-  );
+  // Settings store default water in grams for the default flour weight;
+  // the formula speaks in baker's percentages.
+  useEffect(() => {
+    if (pctTouchedRef.current || editRecipeId) return;
+    const { defaultWaterGrams, defaultFlourWeight } = inputs.settings;
+    if (defaultFlourWeight > 0) {
+      setWaterPctState(String(Math.round((defaultWaterGrams / defaultFlourWeight) * 100)));
+    }
+  }, [inputs.settings, editRecipeId]);
 
-  // #21: Pre-fill from editRecipeId
+  // Restore the mix clock.
+  useEffect(() => {
+    AsyncStorage.getItem(MIXED_AT_KEY)
+      .then((iso) => {
+        const d = iso ? new Date(iso) : null;
+        if (d && !isNaN(d.getTime())) setMixedAt(d);
+      })
+      .catch(() => {});
+  }, []);
+
+  const startClock = useCallback(() => {
+    const now = new Date();
+    setMixedAt(now);
+    AsyncStorage.setItem(MIXED_AT_KEY, now.toISOString()).catch(() => {});
+  }, []);
+
+  const resetClock = useCallback(() => {
+    setMixedAt(null);
+    AsyncStorage.removeItem(MIXED_AT_KEY).catch(() => {});
+  }, []);
+
+  // Edit from History: load the saved loaf back into the formula.
   useEffect(() => {
     if (!editRecipeId) return;
     getRecipe(editRecipeId).then((recipe) => {
       if (!recipe) return;
-      const { inputs: ri } = recipe;
-      // Pre-fill flour mix
-      if (ri.flourBlend && ri.flourBlend.length > 0) {
-        inputs.setMixRows((_prev) =>
-          ri.flourBlend!.map((entry) => ({
-            key: `edit_${entry.label}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            flour: findFlour(entry.label),
-            grams: String(Math.round(ri.flourWeight * entry.percentage / 100)),
-          })),
-        );
+      const ri = recipe.inputs;
+      const water = ri.addedWaterGrams ?? (ri.hydration / 100) * ri.flourWeight;
+      inputs.setMixRows((rows) => [{
+        key: rows[0]?.key ?? 'flour_edit',
+        flour: findFlour(ri.flourBlend?.[0]?.label ?? ri.flourType),
+        grams: String(Math.round(ri.flourWeight)),
+      }]);
+      if (ri.flourWeight > 0) {
+        pctTouchedRef.current = true;
+        setWaterPctState(String(Math.round((water / ri.flourWeight) * 100)));
+        setStarterPctState(String(Math.round((ri.starterWeight / ri.flourWeight) * 100)));
       }
-      // Restore water grams from saved recipe (legacy: derive from hydration %)
-      inputs.setWaterGrams(
-        ri.addedWaterGrams !== undefined
-          ? String(ri.addedWaterGrams)
-          : String(Math.round(ri.hydration / 100 * ri.flourWeight)),
-      );
-      inputs.setStarterWeight(String(ri.starterWeight));
-      inputs.setSaltPct(String(ri.saltPct));
       inputs.setStarterHydrationStr(String(ri.starterHydration));
+      inputs.setSaltPct(String(ri.saltPct));
       inputs.setAmbientTemp(String(ri.ambientTemp));
-      inputs.setFlourTemp(String(ri.flourTemp));
-      inputs.setWaterTemp(String(ri.waterTemp));
-      inputs.setStarterTemp(String(ri.starterTemp));
-      if (ri.starterFlourType) starter.setStarterFlourLabel(ri.starterFlourType);
-      if (ri.oilPct && ri.oilPct > 0) preset.setOilPct(String(ri.oilPct));
-      if (ri.preferment) {
-        preset.setPrefermentEnabled(true);
-        preset.setPrefermentFlourPct(String(ri.preferment.flourPct));
-      }
-      if (ri.breadType) {
-        const p = getPreset(ri.breadType);
-        if (p) preset.setPreset(p);
-      }
-      // Restore cold-proof state
-      if (ri.coldProofHours && ri.coldProofHours > 0) {
-        setColdProofEnabled(true);
-        setColdProofHours(String(ri.coldProofHours));
-        if (ri.coldProofTemp) setColdProofTemp(String(ri.coldProofTemp));
-      }
     });
+    // inputs setters are stable; re-run only when a different loaf is opened.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editRecipeId]);
 
-  // ── Ready-by planner state ────────────────────────────────────────────
-  const [planByReadyEnabled, setPlanByReadyEnabled] = React.useState(false);
-  const [readyByHour, setReadyByHour] = React.useState('18');
-  const [readyByMinute, setReadyByMinute] = React.useState('00');
+  // ── Formula → weights and rise estimate (live; nothing to recalculate) ──
+  const flourRow = inputs.mixRows[0];
+  const flourGrams = parseFloat(flourRow?.grams ?? '');
+  const waterGrams = (flourGrams * parseFloat(waterPct)) / 100;
+  const starterGrams = (flourGrams * parseFloat(starterPct)) / 100;
+  const blend = useMemo(
+    () => (flourRow ? buildBlendFromRows([{ flour: flourRow.flour, grams: flourGrams || 0 }]) : []),
+    [flourRow, flourGrams],
+  );
 
-  // ── Cold proof state ──────────────────────────────────────────────────
-  const [coldProofEnabled, setColdProofEnabled] = React.useState(false);
-  const [coldProofHours, setColdProofHours] = React.useState('12');
-  const [coldProofTemp, setColdProofTemp] = React.useState('4');
+  const results: CalculationResults | null = useMemo(() => {
+    const salt = parseFloat(inputs.saltPct);
+    const starterHydration = parseFloat(inputs.starterHydrationStr);
+    const temps = [inputs.ambientTemp, inputs.flourTemp, inputs.waterTemp].map(parseFloat);
+    if (!flourRow || !(flourGrams > 0) || !(waterGrams > 0) || !(starterGrams > 0)) return null;
+    if (!Number.isFinite(salt) || salt < 0 || !(starterHydration > 0) || temps.some((t) => !Number.isFinite(t))) return null;
+    const starterFlour = starterGrams * (100 / (100 + starterHydration));
+    const totalFlour = flourGrams + starterFlour;
+    try {
+      return runAllCalculations(
+        {
+          flourWeight: flourGrams,
+          flourType: flourRow.flour.label,
+          flourProtein: flourRow.flour.protein,
+          flourProductNo: flourRow.flour.productNumber,
+          flourBlend: blend,
+          hydration: ((waterGrams + starterGrams - starterFlour) / totalFlour) * 100,
+          addedWaterGrams: waterGrams,
+          starterWeight: starterGrams,
+          starterHydration,
+          saltPct: salt,
+          oilPct: 0,
+          ambientTemp: temps[0],
+          flourTemp: temps[1],
+          waterTemp: temps[2],
+          starterTemp: parseFloat(LAZY_STARTER_TEMP_C),
+        },
+        inputs.locationData?.hourlyForecast ?? null,
+        resolveHardness(inputs.settings.waterHardnessOverride || 0, inputs.locationData?.hardness),
+        [],
+        unitSystem,
+      );
+    } catch {
+      return null;
+    }
+  }, [
+    flourRow, flourGrams, waterGrams, starterGrams, blend,
+    inputs.saltPct, inputs.starterHydrationStr, inputs.ambientTemp, inputs.flourTemp, inputs.waterTemp,
+    inputs.locationData, inputs.settings.waterHardnessOverride, unitSystem,
+  ]);
 
-  // ── D2: Stale-results detection (derived, no extra render) ──────────────
-  const calculatedSignature = React.useRef<string | null>(null);
-  const inputSignature = [
-    inputs.waterGrams, inputs.starterWeight, inputs.saltPct,
-    inputs.ambientTemp, inputs.flourTemp, inputs.waterTemp, inputs.starterTemp,
-    preset.oilPct, preset.prefermentFlourPct, preset.prefermentEnabled,
-    inputs.mixRows.map((r) => `${r.flour.label}:${r.grams}`).join(','),
-    coldProofEnabled, coldProofHours, coldProofTemp,
-    inputs.locationData?.summary,
-  ].join('|');
-  const inputsDirty = calculatedSignature.current !== null && inputSignature !== calculatedSignature.current;
+  const bulkHours = results ? (results.dynamicFerment?.bulkHours ?? results.staticFermentHours) : null;
+  const steps = useMemo(() => buildLazySteps(vessel, bulkHours, unitSystem), [vessel, bulkHours, unitSystem]);
+  const checkAt = mixedAt && bulkHours != null ? new Date(mixedAt.getTime() + bulkHours * 3600000) : null;
+  const weightDecimals = unitSystem === 'imperial' ? 1 : 0;
+  const w = (g: number | undefined) => (g != null && Number.isFinite(g) ? formatWeight(g, unitSystem, weightDecimals) : '—');
+  const ing = results?.ingredients;
+  const doughWeight = ing ? ing.bowlFlour + ing.addedWater + ing.starterTotal + ing.salt : undefined;
 
-  // ── Derived ───────────────────────────────────────────────────────────
-  const displaySummary = !inputs.locationData ? null
-    : summaryWithHardnessOverride(inputs.locationData, inputs.settings.waterHardnessOverride, unitSystem);
+  // ── Save / share ──────────────────────────────────────────────────────
+  const recipeParams = useCallback(() => ({
+    blend,
+    totalFlourWeight: flourGrams,
+    waterGrams: String(Math.round(waterGrams)),
+    starterWeight: String(Math.round(starterGrams)),
+    saltPct: inputs.saltPct,
+    starterHydrationStr: inputs.starterHydrationStr,
+    oilPct: '0',
+    ambientTemp: inputs.ambientTemp,
+    waterTemp: inputs.waterTemp,
+    prefermentEnabled: false,
+    prefermentFlourPct: '0',
+    locationSummary: inputs.locationData?.summary ?? 'Unknown location',
+    coldProofEnabled: false,
+    coldProofHours: '0',
+  }), [blend, flourGrams, waterGrams, starterGrams, inputs.saltPct, inputs.starterHydrationStr, inputs.ambientTemp, inputs.waterTemp, inputs.locationData]);
 
-  // ── Calculate ─────────────────────────────────────────────────────────
-  const doCalculate = useCallback((easy?: boolean) => {
-    const isEasy = easy === true;
-    setLastCalcMode(isEasy ? 'easy' : 'detailed');
-    calculatedSignature.current = inputSignature;
-    calc.doCalculate({
-      blend: inputs.blend,
-      totalFlourWeight: inputs.totalFlourWeight,
-      waterGrams: inputs.waterGrams,
-      starterWeight: inputs.starterWeight,
-      saltPct: inputs.saltPct,
-      starterHydrationStr: inputs.starterHydrationStr,
-      oilPct: isEasy ? '0' : preset.oilPct,
-      ambientTemp: inputs.ambientTemp,
-      flourTemp: inputs.flourTemp,
-      waterTemp: inputs.waterTemp,
-      starterTemp: isEasy ? '4' : inputs.starterTemp,
-      starterFlourLabel: starter.starterFlourLabel,
-      prefermentEnabled: isEasy ? false : preset.prefermentEnabled,
-      prefermentFlourPct: preset.prefermentFlourPct,
-      prefermentType: prefermentType,
-      breadType: isEasy ? 'custom' : preset.breadType,
-      locationData: inputs.locationData,
-      waterHardnessOverride: inputs.settings.waterHardnessOverride || 0,
-      coldProofHours,
-      coldProofTemp,
-      coldProofEnabled: isEasy ? false : coldProofEnabled,
-      starterHoursSinceFed: starter.status?.effectiveHours,
-    }, isDesktop);
-  }, [inputs, preset, starter.starterFlourLabel, isDesktop, calc]);
-
-  // ── Save ──────────────────────────────────────────────────────────────
-  const handleSave = useCallback((easy?: boolean) => {
-    if (!calc.results) return;
-    const isEasy = easy === true;
+  const handleSave = useCallback(() => {
+    if (!results || !flourRow) return;
     actions.handleSave({
-      blend: inputs.blend,
-      totalFlourWeight: inputs.totalFlourWeight,
-      waterGrams: inputs.waterGrams,
-      starterWeight: inputs.starterWeight,
-      saltPct: inputs.saltPct,
-      starterHydrationStr: inputs.starterHydrationStr,
-      oilPct: isEasy ? '0' : preset.oilPct,
-      ambientTemp: inputs.ambientTemp,
+      ...recipeParams(),
       flourTemp: inputs.flourTemp,
-      waterTemp: inputs.waterTemp,
-      starterTemp: isEasy ? '4' : inputs.starterTemp,
-      starterFlourLabel: starter.starterFlourLabel,
-      prefermentEnabled: isEasy ? false : preset.prefermentEnabled,
-      prefermentFlourPct: preset.prefermentFlourPct,
-      prefermentType: prefermentType,
-      breadType: isEasy ? 'custom' : preset.breadType,
-      results: calc.results,
-      locationSummary: inputs.locationData?.summary ?? '📍 Unknown location',
-      coldProofEnabled: isEasy ? false : coldProofEnabled,
-      coldProofHours,
-      coldProofTemp,
+      starterTemp: LAZY_STARTER_TEMP_C,
+      starterFlourLabel: flourRow.flour.label,
+      breadType: 'custom',
+      results,
+      coldProofTemp: '4',
       editId: editRecipeId,
     }).then((ok) => {
-      // Leave "edit" mode after a successful update so a second Save creates
-      // a new recipe instead of overwriting the original again.
-      if (ok && editRecipeId) {
-        router.setParams({ editRecipeId: undefined });
-      }
+      // Leave edit mode so a second Save creates a new loaf.
+      if (ok && editRecipeId) router.setParams({ editRecipeId: undefined });
     });
-  }, [inputs, preset, starter.starterFlourLabel, calc.results, actions, coldProofEnabled, coldProofHours, coldProofTemp, editRecipeId, router]);
+  }, [results, flourRow, actions, recipeParams, inputs.flourTemp, editRecipeId, router]);
 
-  // ── Share ─────────────────────────────────────────────────────────────
   const handleShare = useCallback(() => {
-    if (!calc.results) return;
-    const bakeInfo = preset.selectedPreset
-      ? `Bake at ${formatTemp(preset.selectedPreset.bake.ovenTempC, unitSystem, 0)}${preset.selectedPreset.bake.steamRequired ? ' with steam' : ''} in ${preset.selectedPreset.bake.bakingVessel} for ${preset.selectedPreset.bake.bakeTimeMinutes} min`
-      : undefined;
-    actions.handleShare({
-      blend: inputs.blend,
-      totalFlourWeight: inputs.totalFlourWeight,
-      waterGrams: inputs.waterGrams,
-      starterWeight: inputs.starterWeight,
-      saltPct: inputs.saltPct,
-      starterHydrationStr: inputs.starterHydrationStr,
-      oilPct: preset.oilPct,
-      ambientTemp: inputs.ambientTemp,
-      waterTemp: inputs.waterTemp,
-      prefermentEnabled: preset.prefermentEnabled,
-      prefermentFlourPct: preset.prefermentFlourPct,
-      prefermentType: prefermentType,
-      results: calc.results,
-      locationSummary: inputs.locationData?.summary ?? '📍 Unknown location',
-      bakeInfo,
-      unitSystem,
-      coldProofEnabled,
-      coldProofHours,
-    });
-  }, [inputs, preset, calc.results, actions, unitSystem, coldProofEnabled, coldProofHours]);
+    if (!results) return;
+    actions.handleShare({ ...recipeParams(), results, bakeInfo: lazyBakeSummary(vessel, unitSystem), unitSystem });
+  }, [results, actions, recipeParams, vessel, unitSystem]);
 
-  // ── Ready-by result ───────────────────────────────────────────────────
-  const readyByResult = React.useMemo(() => {
-    if (!planByReadyEnabled || !calc.results) return null;
-    const h = parseInt(readyByHour, 10);
-    const m = parseInt(readyByMinute, 10);
-    if (isNaN(h) || isNaN(m)) return null;
-
-    const fermentHours = calc.results.dynamicFerment?.bulkHours ?? calc.results.staticFermentHours;
-    let totalMinutes = fermentHours * 60;
-
-    // Pre-ferment lead time (poolish ~12h, biga ~16h)
-    if (preset.prefermentEnabled) {
-      const prefermentHours = prefermentType === 'biga' ? 16 : 12;
-      totalMinutes += prefermentHours * 60;
-    }
-
-    if (preset.selectedPreset) {
-      const { process, bake } = preset.selectedPreset;
-      totalMinutes += process.autolyseMinutes;
-      totalMinutes += process.folds * process.foldIntervalMinutes;
-      totalMinutes += process.benchRestMinutes;
-      totalMinutes += fermentHours * PROOF_FRACTION * 60;
-      totalMinutes += bake.bakeTimeMinutes;
-      totalMinutes += 5;
-    }
-
-    // Cold proof: replace room-temp proof with longer fridge hold.
-    // Only subtract the room-temp proof if a preset actually added it
-    // (custom recipes never add it, so subtracting would start the
-    // schedule too early by 0.6× bulk).
-    const cpHours = parseFloat(coldProofHours);
-    const cpValid = coldProofEnabled && !isNaN(cpHours) && cpHours > 0;
-    if (cpValid) {
-      if (preset.selectedPreset) {
-        totalMinutes -= fermentHours * PROOF_FRACTION * 60;
-      }
-      totalMinutes += cpHours * 60;
-    }
-    const totalHours = totalMinutes / 60;
-
-    const readyDate = new Date();
-    readyDate.setHours(h, m, 0, 0);
-    if (readyDate <= new Date()) readyDate.setDate(readyDate.getDate() + 1);
-    const startDate = new Date(readyDate.getTime() - totalMinutes * 60000);
-
-    const breakdownParts: string[] = [];
-    // Pre-ferment first in the breakdown
-    if (preset.prefermentEnabled) {
-      const prefH = prefermentType === 'biga' ? 16 : 12;
-      breakdownParts.push(`pre-ferment ~${prefH}h`);
-    }
-    breakdownParts.push(`bulk ferment ~${fermentHours.toFixed(1)}h`);
-    if (preset.selectedPreset) {
-      const { process, bake } = preset.selectedPreset;
-      if (process.autolyseMinutes > 0) breakdownParts.push(`autolyse ${process.autolyseMinutes}min`);
-      const foldTime = process.folds * process.foldIntervalMinutes;
-      if (foldTime > 0) breakdownParts.push(`folds ${foldTime}min`);
-      if (process.benchRestMinutes > 0) breakdownParts.push(`bench rest ${process.benchRestMinutes}min`);
-      breakdownParts.push(cpValid
-        ? `cold proof ~${cpHours}h in fridge`
-        : `proof ~${(fermentHours * PROOF_FRACTION).toFixed(1)}h`);
-      breakdownParts.push(`bake ${bake.bakeTimeMinutes}min`);
-    }
-
-    return {
-      startTimeStr: startDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }),
-      readyTimeStr: readyDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true }),
-      isToday: startDate.toDateString() === new Date().toDateString(),
-      startDate,
-      totalHours,
-      breakdownParts,
-      fermentHours,
-      stale: inputsDirty,
-    };
-  }, [planByReadyEnabled, calc.results, readyByHour, readyByMinute, preset.selectedPreset, coldProofEnabled, coldProofHours, inputsDirty]);
+  const displaySummary = inputs.locationData
+    ? summaryWithHardnessOverride(inputs.locationData, inputs.settings.waterHardnessOverride, unitSystem)
+    : null;
 
   // ═══════════════════════════════════════════════════════════════════════
   //  RENDER
   // ═══════════════════════════════════════════════════════════════════════
-  const inputPanels = React.useMemo(() => (
-    <>
-      {/* Daily Recommendation */}
-      {recommendation && (
-        <View style={[recStyles.card, { backgroundColor: colors.tipBg, borderColor: colors.border }]}>
-          <View style={recStyles.row}>
-            <Text style={recStyles.icon}>💡</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={[recStyles.title, { color: colors.muted }]}>Today's suggestion</Text>
-              <Text style={[recStyles.body, { color: colors.espresso }]}>
-                <Text style={recStyles.presetName}>{recommendation.preset.emoji} {recommendation.preset.name}</Text>
-                {' — '}{recommendation.reason}
-              </Text>
-              <TouchableOpacity
-                onPress={() => preset.handlePresetSelect(
-                  recommendation.preset, inputs.mixRows, inputs.setMixRows,
-                  inputs.waterGrams, inputs.starterWeight, inputs.saltPct, preset.oilPct,
-                  inputs.setWaterGrams, inputs.setStarterWeight, inputs.setSaltPct,
-                )}
-                activeOpacity={0.7}
-                hitSlop={{ top: 8, bottom: 8 }}
-                accessibilityRole="button"
-              >
-                <Text style={[recStyles.applyBtn, { color: colors.terracotta }]}>Use this preset →</Text>
-              </TouchableOpacity>
-            </View>
-            <TouchableOpacity
-              onPress={dismissRec}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              accessibilityLabel="Dismiss recommendation"
-              accessibilityRole="button"
-            >
-              <Text style={[recStyles.dismiss, { color: colors.muted }]}>×</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-
-      {/* Recipe Type */}
-      <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={[sectionTitleStyle, { color: colors.muted }]}>RECIPE TYPE</Text>
-        <RecipeTypePicker
-          selected={preset.breadType}
-          onSelect={(p) => preset.handlePresetSelect(
-            p, inputs.mixRows, inputs.setMixRows,
-            inputs.waterGrams, inputs.starterWeight, inputs.saltPct, preset.oilPct,
-            inputs.setWaterGrams, inputs.setStarterWeight, inputs.setSaltPct,
-          )}
-        />
-        {preset.selectedPreset && (
-          <Text style={[styles.cardHint, { color: colors.muted }]}>{preset.selectedPreset.emoji} {preset.selectedPreset.description}</Text>
-        )}
-      </View>
-
-      {/* Starter */}
-      <StarterCard {...starter} />
-
-      {/* Flour & Ingredients */}
-      <FlourBlendCard
-        mixRows={inputs.mixRows}
-        totalFlourWeight={inputs.totalFlourWeight}
-        waterGrams={inputs.waterGrams}
-        starterWeight={inputs.starterWeight}
-        saltPct={inputs.saltPct}
-        oilPct={preset.oilPct}
-        showOil={preset.showOil}
-        onAddFlour={inputs.handleAddFlour}
-        onRemoveFlour={inputs.handleRemoveFlour}
-        onUpdateFlour={inputs.handleUpdateFlour}
-        onUpdateFlourGrams={inputs.handleUpdateFlourGrams}
-        setWaterGrams={inputs.setWaterGrams}
-        setStarterWeight={inputs.setStarterWeight}
-        setSaltPct={inputs.setSaltPct}
-        setOilPct={preset.setOilPct}
-      />
-
-      {/* Pre-ferment */}
-      {preset.prefermentEnabled && (
-        <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[sectionTitleStyle, { color: colors.muted }]}>PRE-FERMENT</Text>
-          <Text style={[styles.cardHint, { color: colors.muted }]}>
-            Pre-ferment flour is subtracted from the bowl flour. Its water is accounted for in total hydration.
-          </Text>
-          <View style={prefStyles.row}>
-            <Text style={[prefStyles.label, { color: colors.espresso }]}>Flour in pre-ferment</Text>
-            <View style={{ flex: 1 }}>
-              <TextInput
-                style={[prefStyles.input, { backgroundColor: colors.white, borderColor: colors.border, color: colors.espresso }]}
-                value={preset.prefermentFlourPct}
-                onChangeText={(t) => { if (isValidDecimalInput(t)) preset.setPrefermentFlourPct(t); }}
-                keyboardType="decimal-pad"
-                placeholderTextColor={colors.muted}
-              />
-            </View>
-            <Text style={[prefStyles.unit, { color: colors.muted }]}>% of total flour</Text>
-          </View>
-          <Text style={[styles.cardHint, { color: colors.muted }]}>
-            Poolish: 100% hydration · Mix equal weights flour and water{'\n'}
-            Pre-ferment ripeness: look for a domed surface that just begins to sink in the centre.
-          </Text>
-          <TouchableOpacity
-            style={prefStyles.removeBtn}
-            onPress={() => preset.setPrefermentEnabled(false)}
-            activeOpacity={0.6}
-            hitSlop={{ top: 8, bottom: 8 }}
-            accessibilityLabel="Remove pre-ferment"
-            accessibilityRole="button"
-          >
-            <Text style={[prefStyles.removeBtnText, { color: colors.terracotta }]}>Remove Pre-ferment</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Ready-By Planner */}
-      {!planByReadyEnabled ? (
-        <TouchableOpacity
-          style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}
-          onPress={() => setPlanByReadyEnabled(true)}
-          activeOpacity={0.7}
-          accessibilityLabel="Plan by ready time. Tell us when you want your bread ready."
-          accessibilityRole="button"
-        >
-          <View style={readyStyles.promptRow}>
-            <Text style={readyStyles.promptIcon}>🕐</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={[readyStyles.promptTitle, { color: colors.espresso }]}>Plan by ready time</Text>
-              <Text style={[readyStyles.promptHint, { color: colors.muted }]}>Tell us when you want your bread ready — we'll tell you when to start</Text>
-            </View>
-            <Text style={[readyStyles.promptChevron, { color: colors.muted }]}>›</Text>
-          </View>
-        </TouchableOpacity>
-      ) : (
-        <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={readyStyles.headerRow}>
-            <Text style={[sectionTitleStyle, { color: colors.muted }]}>🕐  READY-BY PLANNER</Text>
-            <TouchableOpacity
-              onPress={() => setPlanByReadyEnabled(false)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              accessibilityLabel="Remove ready-by planner"
-              accessibilityRole="button"
-            >
-              <Text style={[readyStyles.removeText, { color: colors.terracotta }]}>Remove</Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={[styles.cardHint, { color: colors.muted }]}>Set the time you want your bread to come out of the oven.</Text>
-          <View style={readyStyles.timeRow}>
-            <Text style={[readyStyles.timeLabel, { color: colors.espresso }]}>Ready by</Text>
-            <View style={readyStyles.timeInputGroup}>
-              <TextInput
-                style={[readyStyles.timeInput, { backgroundColor: colors.white, borderColor: colors.border, color: colors.espresso }]}
-                value={readyByHour}
-                onChangeText={(t) => {
-                  const n = parseInt(t, 10);
-                  if (t === '' || (!isNaN(n) && n >= 0 && n <= 23)) setReadyByHour(t);
-                }}
-                keyboardType="number-pad"
-                maxLength={2}
-                placeholder="HH"
-                placeholderTextColor={colors.lightText}
-              />
-              <Text style={[readyStyles.timeColon, { color: colors.espresso }]}>:</Text>
-              <TextInput
-                style={[readyStyles.timeInput, { backgroundColor: colors.white, borderColor: colors.border, color: colors.espresso }]}
-                value={readyByMinute}
-                onChangeText={(t) => {
-                  const n = parseInt(t, 10);
-                  if (t === '' || (!isNaN(n) && n >= 0 && n <= 59)) setReadyByMinute(t);
-                }}
-                keyboardType="number-pad"
-                maxLength={2}
-                placeholder="MM"
-                placeholderTextColor={colors.lightText}
-              />
-            </View>
-          </View>
-        </View>
-      )}
-
-      {/* Cold Proof (collapsible) */}
-      {!coldProofEnabled ? (
-        <TouchableOpacity
-          style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}
-          onPress={() => setColdProofEnabled(true)}
-          activeOpacity={0.7}
-          accessibilityLabel="Cold proof. Add a fridge proofing phase."
-          accessibilityRole="button"
-        >
-          <View style={readyStyles.promptRow}>
-            <Text style={readyStyles.promptIcon}>❄️</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={[readyStyles.promptTitle, { color: colors.espresso }]}>Cold proof / retard</Text>
-              <Text style={[readyStyles.promptHint, { color: colors.muted }]}>
-                Proof in the fridge overnight for deeper flavour and tangier crumb
-              </Text>
-            </View>
-            <Text style={[readyStyles.promptChevron, { color: colors.muted }]}>›</Text>
-          </View>
-        </TouchableOpacity>
-      ) : (
-        <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={readyStyles.headerRow}>
-            <Text style={[sectionTitleStyle, { color: colors.muted }]}>❄️  COLD PROOF</Text>
-            <TouchableOpacity
-              onPress={() => setColdProofEnabled(false)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              accessibilityLabel="Remove cold proof"
-              accessibilityRole="button"
-            >
-              <Text style={[readyStyles.removeText, { color: colors.terracotta }]}>Remove</Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={[styles.cardHint, { color: colors.muted }]}>
-            After bulk fermentation, shape and place in the fridge. Cold temperatures favour acetic acid production for a tangier crumb.
-          </Text>
-          <View style={coldStyles.row}>
-            <Text style={[coldStyles.label, { color: colors.espresso }]}>Duration</Text>
-            <TextInput
-              style={[coldStyles.input, { backgroundColor: colors.white, borderColor: colors.border, color: colors.espresso }]}
-              value={coldProofHours}
-              onChangeText={(t) => { if (isValidDecimalInput(t)) setColdProofHours(t); }}
-              keyboardType="decimal-pad"
-              placeholder="12"
-              placeholderTextColor={colors.lightText}
-            />
-            <Text style={[coldStyles.unit, { color: colors.muted }]}>hours</Text>
-          </View>
-          <TempRow
-            label="Fridge temp"
-            value={coldProofTemp}
-            onChangeText={setColdProofTemp}
-          />
-        </View>
-      )}
-
-      {/* Temperatures */}
-      <TemperatureCard
-        ambientTemp={inputs.ambientTemp}
-        flourTemp={inputs.flourTemp}
-        waterTemp={inputs.waterTemp}
-        starterTemp={inputs.starterTemp}
-        isLocationAuto={!!inputs.locationData}
-        autoAmbientTemp={inputs.locationData?.ambientTemp != null ? String(inputs.locationData.ambientTemp) : null}
-        autoWaterTemp={inputs.locationData?.waterTemp != null ? String(inputs.locationData.waterTemp) : null}
-        setAmbientTemp={inputs.setAmbientTemp}
-        setFlourTemp={inputs.setFlourTemp}
-        setWaterTemp={inputs.setWaterTemp}
-        setStarterTemp={inputs.setStarterTemp}
-      />
-
-      {/* Calculate */}
-      <TouchableOpacity style={[styles.calcBtn, { backgroundColor: colors.terracotta }]} onPress={() => doCalculate()} disabled={calc.calculating} activeOpacity={0.8}>
-        {calc.calculating ? (
-          <ActivityIndicator color={colors.white} />
-        ) : (
-          <Text style={[styles.calcBtnText, { color: colors.white }]}>Calculate</Text>
-        )}
-      </TouchableOpacity>
-    </>
-  ), [
-    recommendation, dismissRec,
-    preset.breadType, preset.selectedPreset, preset.oilPct, preset.showOil,
-    preset.prefermentEnabled, preset.prefermentFlourPct, preset.handlePresetSelect,
-    preset.setPrefermentEnabled, preset.setPrefermentFlourPct,
-    inputs.mixRows, inputs.totalFlourWeight, inputs.waterGrams, inputs.starterWeight,
-    inputs.saltPct, inputs.handleAddFlour, inputs.handleRemoveFlour,
-    inputs.handleUpdateFlour, inputs.handleUpdateFlourGrams,
-    inputs.setWaterGrams, inputs.setStarterWeight, inputs.setSaltPct,
-    inputs.ambientTemp, inputs.flourTemp, inputs.waterTemp, inputs.starterTemp,
-    inputs.locationData, inputs.setAmbientTemp, inputs.setFlourTemp,
-    inputs.setWaterTemp, inputs.setStarterTemp,
-    starter.starterFlourLabel, starter.feedFlourGrams, starter.feedWaterGrams,
-    starter.feedLogging, starter.expanded, starter.lastFed, starter.hoursSince,
-    starter.recentFeedings, starter.status, starter.setStarterFlourLabel,
-    starter.setFeedFlourGrams, starter.setFeedWaterGrams, starter.setExpanded,
-    starter.handleFeedNow, starter.handleFridgeIn, starter.handleFridgeOut,
-    starter.refresh,
-    planByReadyEnabled, readyByHour, readyByMinute,
-    coldProofEnabled, coldProofHours, coldProofTemp,
-    doCalculate, calc.calculating,
-    colors,
-  ]);
-
-  const resultsPanel = React.useMemo(() => calc.results && (
-    <>
-      {inputsDirty && (
-        <StaleResultsBanner onRecalculate={doCalculate} style={{ marginBottom: Spacing.md }} />
-      )}
-      <ResultsSection
-        results={calc.results}
-        blend={inputs.blend}
-        totalFlourWeight={inputs.totalFlourWeight}
-        starterFlourLabel={starter.starterFlourLabel}
-        preferredType={prefermentType}
-        selectedPreset={preset.selectedPreset}
-        flourTemp={inputs.flourTemp}
-        ambientTemp={inputs.ambientTemp}
-        waterTemp={inputs.waterTemp}
-        starterTemp={inputs.starterTemp}
-        saving={actions.saving}
-        onSave={handleSave}
-        onShare={handleShare}
-        readyByResult={readyByResult}
-        calculatedAt={calc.calculatedAt}
-      />
-    </>
-  ), [
-    calc.results, calc.calculatedAt, inputs.blend, inputs.totalFlourWeight, starter.starterFlourLabel,
-    preset.selectedPreset,
-    inputs.flourTemp, inputs.ambientTemp, inputs.waterTemp, inputs.starterTemp,
-    actions.saving, handleSave, handleShare, readyByResult,
-    inputsDirty, doCalculate, colors,
-  ]);
-
-  // ═══════════════════════════════════════════════════════════════════════
-  //  LAYOUT
-  // ═══════════════════════════════════════════════════════════════════════
-  const header = (
-    <>
-      <TouchableOpacity onPress={() => router.push('/')} activeOpacity={0.7}>
-        <Text style={[layoutStyles.brand, { color: colors.terracotta }]}>JUST DOUGH IT  /  BREAD</Text>
-      </TouchableOpacity>
-      <Text style={[layoutStyles.header, { color: colors.espresso }]}>The recipe studio.</Text>
-      <Text style={[layoutStyles.tagline, { color: colors.muted }]}>
-        Flour blends, temperatures and timing for the loaf you have in mind.
-      </Text>
-    </>
-  );
-
-  const locationBar = (
-    <LocationBar
-      summary={displaySummary}
-      loading={inputs.locLoading}
-      error={inputs.locError}
-      onRefresh={inputs.onRefreshLocation}
-      showFallbackWarning={!inputs.locLoading && !inputs.locationData}
-      onTapFallback={() => router.push('/settings')}
-      onPostcodeSubmit={inputs.onPostcodeSubmit}
-    />
-  );
-
-  if (mode === 'easy') {
-    return (
-      <SafeAreaView style={[layoutStyles.container, { backgroundColor: colors.cream }]} edges={['top']}>
-        <Seo
-          title="Easy Sourdough Bread — Just Dough It"
-          description="A simple one-bowl sourdough method with a temperature-aware forecast for when to check the rise."
-          path="/bread"
-        />
-        <LazyBakeFlow
-          scrollRef={easyScrollRef}
-          flourGrams={inputs.mixRows.length === 1 ? inputs.mixRows[0].grams : String(inputs.totalFlourWeight)}
-          waterGrams={inputs.waterGrams}
-          starterGrams={inputs.starterWeight}
-          starterHydration={inputs.starterHydrationStr}
-          saltPct={inputs.saltPct}
-          ambientTemp={inputs.ambientTemp}
-          onFlourChange={(value) => inputs.setMixRows((rows) => [{ ...rows[0], grams: value }])}
-          onWaterChange={inputs.setWaterGrams}
-          onStarterChange={inputs.setStarterWeight}
-          onSaltChange={inputs.setSaltPct}
-          onAmbientChange={inputs.setAmbientTemp}
-          onCalculate={() => doCalculate(true)}
-          onDetailed={() => setMode('detailed')}
-          results={lastCalcMode === 'easy' ? calc.results : null}
-          calculatedAt={lastCalcMode === 'easy' ? calc.calculatedAt : null}
-          dirty={inputsDirty}
-          calculating={calc.calculating}
-          saving={actions.saving}
-          onSave={() => handleSave(true)}
-        />
-      </SafeAreaView>
-    );
-  }
+  const formulaRows: { label: string; value: string; onChange: (v: string) => void; grams: number | undefined }[] = [
+    { label: 'Water', value: waterPct, onChange: setWaterPct, grams: ing?.addedWater },
+    { label: 'Starter', value: starterPct, onChange: setStarterPct, grams: ing?.starterTotal },
+    { label: 'Salt', value: inputs.saltPct, onChange: inputs.setSaltPct, grams: ing?.salt },
+  ];
 
   return (
-    <SafeAreaView style={[layoutStyles.container, { backgroundColor: colors.cream }]} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.cream }]} edges={['top']}>
       <Seo
-        title="Sourdough Calculator — Just Dough It"
-        description="Final dough temperature, hydration, flour blends and temperature-adjusted fermentation timelines from your local weather and water hardness. Free, private, open source."
+        title="Lazy Sourdough — Just Dough It"
+        description="A one-bowl sourdough formula with no autolyse, no kneading and no folding schedule, plus a temperature-aware estimate for when to check the rise. Free, private, open source."
         path="/bread"
       />
-      <CalculatorShell
-        leftRef={calc.scrollRef}
-        rightRef={calc.rightScrollRef}
-        header={<>{header}<TouchableOpacity onPress={() => setMode('easy')} accessibilityRole="button" style={{ alignSelf: 'center', marginBottom: Spacing.md }}><Text style={{ color: colors.terracotta, fontWeight: '700' }}>← Easy one-bowl bake</Text></TouchableOpacity>{locationBar}</>}
-        bottomPad={40}
-        right={resultsPanel}
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.page}
+        keyboardShouldPersistTaps="handled"
       >
-        {inputPanels}
-      </CalculatorShell>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.push('/')} activeOpacity={0.7} accessibilityRole="link" accessibilityLabel="Just Dough It home">
+            <Text style={[styles.brand, { color: colors.terracotta }]}>JUST DOUGH IT  /  BREAD</Text>
+          </TouchableOpacity>
+          <Text style={[styles.heading, { color: colors.espresso }]} accessibilityRole="header">Lazy sourdough.</Text>
+          <Text style={[styles.subtitle, { color: colors.muted }]}>
+            One bowl. No autolyse, no kneading, no folding schedule. Weigh, stir, wait, bake.
+          </Text>
+        </View>
+
+        <LocationBar
+          summary={displaySummary}
+          loading={inputs.locLoading}
+          error={inputs.locError}
+          onRefresh={inputs.onRefreshLocation}
+          showFallbackWarning={!inputs.locLoading && !inputs.locationData}
+          onTapFallback={() => router.push('/settings')}
+          onPostcodeSubmit={inputs.onPostcodeSubmit}
+        />
+
+        {/* ── The formula ── */}
+        <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[sectionTitleStyle, { color: colors.muted }]}>THE FORMULA</Text>
+          <NumberInput
+            label="Flour"
+            unit="g"
+            value={flourRow?.grams ?? ''}
+            onChangeText={(v) => inputs.setMixRows((rows) => [{ ...rows[0], grams: v }])}
+          />
+          <Text style={[styles.hint, { color: colors.muted }]}>
+            {flourRow?.flour.label ?? 'Bread flour'}. Change the weight to scale the loaf.
+          </Text>
+
+          <View style={[styles.tableHead, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.th, styles.colName, { color: colors.muted }]}>Ingredient</Text>
+            <Text style={[styles.th, styles.colPct, { color: colors.muted }]}>Baker's %</Text>
+            <Text style={[styles.th, styles.colWeigh, { color: colors.muted }]}>Weigh</Text>
+          </View>
+          {formulaRows.map((row) => (
+            <View key={row.label} style={styles.tableRow}>
+              <Text style={[styles.colName, styles.rowLabel, { color: colors.espresso }]}>{row.label}</Text>
+              <View style={styles.colPct}>
+                <PercentField label={row.label} value={row.value} onChange={row.onChange} />
+              </View>
+              <Text style={[styles.colWeigh, styles.weigh, { color: colors.espresso }]}>{w(row.grams)}</Text>
+            </View>
+          ))}
+          <View style={[styles.totalRow, { borderTopColor: colors.border }]}>
+            <Text style={[styles.totalLabel, { color: colors.muted }]}>Dough weight</Text>
+            <Text style={[styles.totalValue, { color: colors.espresso }]}>{w(doughWeight)}</Text>
+          </View>
+          <Text style={[styles.hint, { color: colors.muted }]}>
+            Percentages are of the flour weight; salt also counts the starter's flour. Assumes a {inputs.starterHydrationStr}% hydration starter straight from the fridge and tap water.
+          </Text>
+        </View>
+
+        {/* ── The method ── */}
+        <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[sectionTitleStyle, { color: colors.muted }]}>THE METHOD</Text>
+          {steps.map((step, i) => {
+            const active = mixedAt ? step.key === 'rise' : step.key === 'mix';
+            return (
+              <View key={step.key} style={styles.step}>
+                <View style={[styles.stepNum, { backgroundColor: active ? colors.terracotta : colors.badgeBg }]}>
+                  <Text style={[styles.stepNumText, { color: active ? colors.white : colors.terracotta }]}>{i + 1}</Text>
+                </View>
+                <View style={styles.stepBody}>
+                  <View style={styles.stepTitleRow}>
+                    <Text style={[styles.stepTitle, { color: colors.espresso }]}>{step.title}</Text>
+                    <Text style={[styles.stepDuration, { color: colors.muted }]}>{step.duration}</Text>
+                  </View>
+
+                  {step.key === 'rise' && (
+                    <>
+                      <TempRow label="Room temp" value={inputs.ambientTemp} onChangeText={inputs.setAmbientTemp} isAuto={!!inputs.locationData} />
+                      {checkAt && (
+                        <View style={[styles.clock, { backgroundColor: colors.successBg, borderColor: colors.border }]}>
+                          <Text style={[styles.clockLabel, { color: colors.olive }]}>START CHECKING AT</Text>
+                          <Text style={[styles.clockTime, { color: colors.espresso }]}>
+                            {checkAt.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                          </Text>
+                          <Text style={[styles.clockDate, { color: colors.espresso }]}>
+                            {checkAt.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })}
+                            {' · mixed at '}
+                            {mixedAt!.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                          </Text>
+                          <TouchableOpacity onPress={resetClock} accessibilityRole="button" style={styles.textBtn}>
+                            <Text style={[styles.textBtnLabel, { color: colors.terracotta }]}>Reset the clock</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    </>
+                  )}
+
+                  {step.key === 'shape' && (
+                    <View style={styles.vesselRow} accessibilityRole="radiogroup" accessibilityLabel="Baking vessel">
+                      {VESSELS.map((v) => {
+                        const selected = vessel === v.key;
+                        return (
+                          <TouchableOpacity
+                            key={v.key}
+                            onPress={() => setVessel(v.key)}
+                            accessibilityRole="radio"
+                            accessibilityState={{ selected }}
+                            style={[styles.vessel, {
+                              borderColor: selected ? colors.terracotta : colors.border,
+                              borderWidth: selected ? 2 : 1,
+                              backgroundColor: selected ? colors.tipBg : colors.white,
+                            }]}
+                          >
+                            <Text style={[styles.vesselTitle, { color: colors.espresso }]}>{v.title}</Text>
+                            <Text style={[styles.vesselHint, { color: colors.muted }]}>{v.hint}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  )}
+
+                  <Text style={[styles.stepText, { color: colors.espresso }]}>{step.body}</Text>
+                  {step.aside && <Text style={[styles.stepAside, { color: colors.muted }]}>{step.aside}</Text>}
+
+                  {step.key === 'mix' && !mixedAt && (
+                    <TouchableOpacity
+                      onPress={startClock}
+                      disabled={!results}
+                      accessibilityRole="button"
+                      style={[styles.primaryBtn, { backgroundColor: colors.terracotta, opacity: results ? 1 : 0.5 }]}
+                    >
+                      <Icon name="timer-outline" size={20} color={colors.white} />
+                      <Text style={[styles.primaryBtnText, { color: colors.white }]}>I've mixed: start the clock</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            );
+          })}
+        </View>
+
+        {/* ── Save / share ── */}
+        <View style={styles.actions}>
+          <TouchableOpacity
+            onPress={handleSave}
+            disabled={!results || actions.saving}
+            accessibilityRole="button"
+            style={[styles.actionBtn, { backgroundColor: colors.terracotta, opacity: results ? 1 : 0.5 }]}
+          >
+            {actions.saving ? (
+              <ActivityIndicator color={colors.white} />
+            ) : (
+              <>
+                <Icon name="content-save-outline" size={20} color={colors.white} />
+                <Text style={[styles.actionText, { color: colors.white }]}>{editRecipeId ? 'Update loaf' : 'Save loaf'}</Text>
+              </>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleShare}
+            disabled={!results}
+            accessibilityRole="button"
+            style={[styles.actionBtn, styles.actionBtnOutline, { borderColor: colors.terracotta, backgroundColor: colors.card, opacity: results ? 1 : 0.5 }]}
+          >
+            <Icon name="share-variant-outline" size={20} color={colors.terracotta} />
+            <Text style={[styles.actionText, { color: colors.terracotta }]}>Share</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -714,74 +433,60 @@ export default function CalculatorScreen() {
 //  STYLES
 // ═══════════════════════════════════════════════════════════════════════════
 
-const layoutStyles = StyleSheet.create({
-  container: { flex: 1 },
-  brand: { fontSize: FontSize.xs, fontWeight: '800', letterSpacing: 1.4, marginTop: Spacing.md, textAlign: 'center' },
-  header: { fontFamily: 'Georgia', fontSize: FontSize.title + 5, fontWeight: '700', textAlign: 'center', marginBottom: Spacing.xs, marginTop: Spacing.sm },
-  tagline: { fontSize: FontSize.sm, textAlign: 'center', marginBottom: Spacing.lg, paddingHorizontal: Spacing.lg, lineHeight: 21 },
-});
-
 const styles = StyleSheet.create({
-  cardHint: { fontSize: FontSize.xs, marginBottom: Spacing.sm, lineHeight: 16 },
-  calcBtn: {
-    borderRadius: BorderRadius.md,
-    paddingVertical: Spacing.md + 4, alignItems: 'center', marginBottom: Spacing.lg,
-  },
-  calcBtnText: { fontSize: FontSize.lg, fontWeight: '700' },
-});
+  container: { flex: 1 },
+  scroll: { flex: 1 },
+  page: { width: '100%', maxWidth: 720, alignSelf: 'center', paddingHorizontal: Spacing.lg, paddingTop: Spacing.lg, paddingBottom: 40 },
 
-const prefStyles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.xs, gap: Spacing.sm },
-  label: { fontSize: FontSize.sm },
-  input: {
-    minHeight: 44,
-    borderWidth: 1,
-    borderRadius: BorderRadius.sm, paddingHorizontal: Spacing.sm, paddingVertical: Spacing.xs,
-    fontSize: FontSize.sm, textAlign: 'right', minWidth: 60,
-  },
-  unit: { fontSize: FontSize.xs },
-  removeBtn: { alignSelf: 'flex-end', minHeight: 44, justifyContent: 'center', paddingVertical: Spacing.xs, paddingHorizontal: Spacing.sm, marginTop: Spacing.xs },
-  removeBtnText: { fontSize: FontSize.xs, fontWeight: '600' },
-});
+  header: { marginBottom: Spacing.xl },
+  brand: { fontSize: FontSize.xs, fontWeight: '800', letterSpacing: 1.4, marginBottom: Spacing.sm },
+  heading: { fontFamily: 'Georgia', fontSize: FontSize.title + 7, fontWeight: '700' },
+  subtitle: { fontSize: FontSize.sm, lineHeight: 21, marginTop: Spacing.xs },
 
-const recStyles = StyleSheet.create({
-  card: {
-    borderWidth: 1,
-    borderRadius: BorderRadius.md, padding: Spacing.md, marginBottom: Spacing.md,
-  },
-  row: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm },
-  icon: { fontSize: 20, marginTop: 1 },
-  title: { fontSize: FontSize.xs, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
-  body: { fontSize: FontSize.sm, lineHeight: 19 },
-  presetName: { fontWeight: '700' },
-  applyBtn: { fontSize: FontSize.xs, fontWeight: '700', marginTop: Spacing.sm },
-  dismiss: { fontSize: FontSize.lg, fontWeight: '300', paddingLeft: Spacing.sm },
-});
+  hint: { fontSize: FontSize.xs, lineHeight: 17, marginTop: Spacing.xs },
 
-const readyStyles = StyleSheet.create({
-  promptRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  promptIcon: { fontSize: 22 },
-  promptTitle: { fontSize: FontSize.sm, fontWeight: '600' },
-  promptHint: { fontSize: FontSize.xs, marginTop: 2 },
-  promptChevron: { fontSize: FontSize.xl, fontWeight: '300' },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xs },
-  removeText: { fontSize: FontSize.xs, fontWeight: '600' },
-  timeRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.sm },
-  timeLabel: { width: 90, fontSize: FontSize.sm },
-  timeInputGroup: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  timeInput: {
-    width: 52, minHeight: 44, borderWidth: 1,
-    borderRadius: BorderRadius.sm, textAlign: 'center', fontSize: FontSize.lg, fontWeight: '700',
-  },
-  timeColon: { fontSize: FontSize.xl, fontWeight: '700' },
-});
+  tableHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.lg, paddingBottom: Spacing.xs, borderBottomWidth: 1 },
+  th: { fontSize: FontSize.xs, fontWeight: '700' },
+  tableRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.xs + 2 },
+  colName: { flex: 1 },
+  colPct: { width: 92 },
+  colWeigh: { width: 84, textAlign: 'right' },
+  rowLabel: { fontSize: FontSize.md, fontWeight: '600' },
+  weigh: { fontSize: FontSize.lg, fontWeight: '700' },
+  pctBox: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: BorderRadius.sm, minHeight: 44, paddingHorizontal: Spacing.sm },
+  pctInput: { flex: 1, minWidth: 0, fontSize: FontSize.md, fontWeight: '600', textAlign: 'right', paddingVertical: Spacing.xs },
+  pctUnit: { fontSize: FontSize.sm, paddingLeft: 2 },
+  totalRow: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, paddingTop: Spacing.sm, marginTop: Spacing.xs },
+  totalLabel: { fontSize: FontSize.sm },
+  totalValue: { fontSize: FontSize.sm, fontWeight: '700' },
 
-const coldStyles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.xs, gap: Spacing.sm },
-  label: { fontSize: FontSize.sm, width: 90 },
-  input: {
-    width: 60, minHeight: 44, borderWidth: 1,
-    borderRadius: BorderRadius.sm, textAlign: 'center', fontSize: FontSize.sm, fontWeight: '600',
-  },
-  unit: { fontSize: FontSize.xs },
+  step: { flexDirection: 'row', gap: Spacing.md, paddingVertical: Spacing.md },
+  stepNum: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  stepNumText: { fontSize: FontSize.sm, fontWeight: '800' },
+  stepBody: { flex: 1, gap: Spacing.sm },
+  stepTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: Spacing.sm, flexWrap: 'wrap' },
+  stepTitle: { fontSize: FontSize.lg, fontWeight: '700' },
+  stepDuration: { fontSize: FontSize.xs, fontWeight: '600' },
+  stepText: { fontSize: FontSize.sm, lineHeight: 22 },
+  stepAside: { fontSize: FontSize.xs, lineHeight: 18 },
+
+  clock: { borderWidth: 1, borderRadius: BorderRadius.md, padding: Spacing.lg },
+  clockLabel: { fontSize: FontSize.xs, fontWeight: '800', letterSpacing: 1 },
+  clockTime: { fontFamily: 'Georgia', fontSize: FontSize.title + 7, fontWeight: '700', marginTop: 2 },
+  clockDate: { fontSize: FontSize.sm, marginTop: 2 },
+  textBtn: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' },
+  textBtnLabel: { fontSize: FontSize.sm, fontWeight: '700' },
+
+  vesselRow: { flexDirection: 'row', gap: Spacing.sm },
+  vessel: { flex: 1, borderRadius: BorderRadius.md, padding: Spacing.md, minHeight: 64 },
+  vesselTitle: { fontSize: FontSize.md, fontWeight: '700' },
+  vesselHint: { fontSize: FontSize.xs, marginTop: 2 },
+
+  primaryBtn: { flexDirection: 'row', gap: Spacing.sm, borderRadius: BorderRadius.md, minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: Spacing.lg, marginTop: Spacing.xs },
+  primaryBtnText: { fontSize: FontSize.md, fontWeight: '800' },
+
+  actions: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.lg },
+  actionBtn: { flex: 1, flexDirection: 'row', gap: Spacing.sm, borderRadius: BorderRadius.md, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
+  actionBtnOutline: { borderWidth: 1.5 },
+  actionText: { fontSize: FontSize.md, fontWeight: '800' },
 });

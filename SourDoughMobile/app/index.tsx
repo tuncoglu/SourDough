@@ -24,9 +24,9 @@ interface LandingCard {
 const CARDS: LandingCard[] = [
   {
     icon: 'bread-slice-outline',
-    title: 'Easy Sourdough Bread',
+    title: 'Lazy sourdough',
     description:
-      'One bowl, a few hands-on steps, and a forecast for when to check the rise.',
+      'One bowl, no kneading, and an estimate for when to check the rise.',
     route: '/bread',
   },
   {
