@@ -14,3 +14,6 @@ kimchi_refs/
 refs/
 salt-evidence/
 ferment_vessel_research/
+
+# Cloudflare local secrets for `wrangler pages dev` (DeepSeek key etc.). Never commit.
+.dev.vars
