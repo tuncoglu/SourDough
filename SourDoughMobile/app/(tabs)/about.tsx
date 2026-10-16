@@ -94,7 +94,7 @@ export default function AboutScreen() {
               No accounts. No cloud recipe storage.
             </Text>
             <Text style={[aboutStyles.body, { color: colors.espresso, marginTop: Spacing.sm }]}>
-              Your recipes and starter logs stay on your device. If you use location features, your coordinates are sent to weather and geocoding services to fetch local conditions.
+              Your recipes and starter logs stay on your device. If you use location features, your coordinates are sent to weather and geocoding services to fetch local conditions. If you use Ask the baker, your question and this loaf's details are sent to DeepSeek, an AI service based in China, to answer it.
             </Text>
             <TouchableOpacity
               onPress={() => Linking.openURL('https://github.com/tuncoglu/SourDough/blob/main/SourDoughMobile/PRIVACY.md')}

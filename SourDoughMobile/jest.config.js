@@ -5,8 +5,11 @@ module.exports = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
   },
-  // Only test pure-logic files (no React Native components / JSX)
-  testMatch: ['**/__tests__/**/*.test.ts'],
+  // Only test pure-logic files (no React Native components / JSX).
+  // ../functions holds the Cloudflare Pages Functions, which have no npm
+  // dependencies of their own, so their tests run here too.
+  roots: ['<rootDir>', '<rootDir>/../functions'],
+  testMatch: ['**/__tests__/**/*.test.ts', '**/functions/api/**/*.test.ts'],
   transform: {
     '^.+\\.tsx?$': ['ts-jest', { tsconfig: 'tsconfig.jest.json' }],
   },

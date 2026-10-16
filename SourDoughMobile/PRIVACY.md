@@ -1,6 +1,6 @@
 # Privacy Policy for Just Dough It
 
-**Last updated:** September 25, 2026
+**Last updated:** October 16, 2026
 
 Just Dough It ("the App") is a baking tool with calculators for sourdough
 bread, yogurt, and lacto-fermentation. This policy explains what data the
@@ -75,18 +75,44 @@ whatever your Google account does with them is governed by
 itself does not connect to Google — it only hands the link to your device's
 browser. Skip the button and nothing is transmitted.
 
+## Ask the baker (optional)
+
+The bread page can show an "Ask the baker" box for questions about the lazy
+sourdough method. It is off unless you use it: nothing is sent until you
+type a question, press **Ask** and agree to the consent note the first time.
+
+**What is sent:** your question (and earlier questions and answers in the
+same conversation, which are kept only on the page until you leave it),
+this loaf's formula (flour weight, water, starter and salt percentages,
+starter hydration), room temperature, baking vessel, the time you started
+the mix clock if you did, your device's current time and its time zone.
+No location, postcode, water hardness, saved recipes, history, account or
+device identifiers are sent.
+
+**To whom:** the request goes to a Cloudflare Pages Function on this
+website, which forwards it to [DeepSeek](https://www.deepseek.com/), an AI
+service, to write the answer. DeepSeek processes and stores data in the
+People's Republic of China under its own
+[privacy policy](https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html).
+
+**What we keep:** we store no questions or answers. To limit how often the
+service can be used, the function keeps a salted hash of your IP address
+(never the address itself) with a count of questions for that day, plus a
+site-wide daily count. Both expire after 48 hours.
+
 ## Data sharing
 
-Beyond the location, optional calendar, waitlist, and website analytics
-flows described above, the App does not sell your data or transmit your
+Beyond the location, optional calendar, Ask the baker, waitlist, and
+website analytics flows described above, the App does not sell your data or transmit your
 saved recipes and starter logs to third parties. There are no advertising
 networks or analytics SDKs in the native apps.
 
 ## Data retention
 
 All locally stored data (recipes, starter history, settings) remains on
-your device until you delete the App or clear its storage. We have no
-servers and retain none of your data.
+your device until you delete the App or clear its storage. We keep no
+copy of it. The only data our website's server side holds is the Ask the
+baker rate-limit counters described above, which expire after 48 hours.
 
 ## Children's privacy
 

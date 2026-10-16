@@ -33,8 +33,14 @@ jobs:
         run: npx tsc --noEmit
         working-directory: SourDoughMobile
 
+      # Also runs the Pages Function tests in ../functions (see jest.config.js).
       - name: Run tests
         run: npx jest --silent
+        working-directory: SourDoughMobile
+
+      # The Functions have no npm dependencies; check them with this package's TypeScript.
+      - name: Typecheck Pages Functions
+        run: npx tsc -p ../functions
         working-directory: SourDoughMobile
 
       - name: Build web export
@@ -43,6 +49,8 @@ jobs:
         env:
           EXPO_PUBLIC_SITE_URL: ${{ vars.EXPO_PUBLIC_SITE_URL }}
           EXPO_PUBLIC_CF_BEACON_TOKEN: ${{ vars.EXPO_PUBLIC_CF_BEACON_TOKEN }}
+          # "1" shows the Ask the baker card; unset keeps it hidden.
+          EXPO_PUBLIC_ASSISTANT_ENABLED: ${{ vars.EXPO_PUBLIC_ASSISTANT_ENABLED }}
 
       - name: Ensure Cloudflare _headers is present
         run: cp -f SourDoughMobile/public/_headers SourDoughMobile/dist/_headers 2>/dev/null || true

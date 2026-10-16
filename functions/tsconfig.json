@@ -1,0 +1,16 @@
+{
+  // Type-checked with SourDoughMobile's TypeScript (the Functions have no npm
+  // dependencies of their own): SourDoughMobile/node_modules/.bin/tsc -p functions
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "typeRoots": ["../SourDoughMobile/node_modules/@types"],
+    "types": ["jest"]
+  },
+  "include": ["api/**/*.ts"]
+}
