@@ -14,6 +14,3 @@ kimchi_refs/
 refs/
 salt-evidence/
 ferment_vessel_research/
-
-# Cloudflare Pages Functions dependencies (package.json at the repo root)
-/node_modules/

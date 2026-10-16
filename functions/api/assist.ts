@@ -10,7 +10,7 @@
  * the client IP per UTC day, and a global per-day count), both expiring
  * after 48 h.
  */
-import Anthropic from '@anthropic-ai/sdk';
+import { chat, type LlmEnv, type LlmMessage, type ToolDef } from './llm';
 import { estimateLazyLoaf, planLazyBake, type LazyPlan, type ProofMode } from '../../SourDoughMobile/src/lib/lazyPlan';
 import { roundToHalfHour, type LazyVessel } from '../../SourDoughMobile/src/lib/lazyMethod';
 import { FALLBACK_HARDNESS } from '../../SourDoughMobile/src/lib/hardnessUtils';
@@ -22,8 +22,7 @@ interface KVLike {
   put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
 }
 
-export interface Env {
-  ANTHROPIC_API_KEY?: string;
+export interface Env extends LlmEnv {
   ASSIST_KV?: KVLike;
   SITE_ORIGIN?: string;
   ALLOW_LOCALHOST?: string;
@@ -60,20 +59,10 @@ export interface AssistResponse {
   actions: AssistAction[];
 }
 
-/** The parts of the SDK client this Function uses (mocked in tests). */
-export interface AssistClient {
-  beta: { messages: { create(params: Anthropic.Beta.MessageCreateParamsNonStreaming): Promise<Anthropic.Beta.BetaMessage> } };
-}
-
-export interface AssistDeps {
-  createClient(apiKey: string): AssistClient;
-}
-
 // ── Constants ───────────────────────────────────────────────────────────
 
-const MODEL = 'claude-opus-5-5';
-const MAX_TOKENS = 4000;
-const MAX_TOOL_ROUNDS = 4;
+/** Model calls per request; the model must have called reply by the last one. */
+const MAX_ROUNDS = 4;
 const MAX_BODY_BYTES = 16 * 1024;
 const MAX_USER_TURNS = 6;
 const MAX_USER_CHARS = 500;
@@ -107,18 +96,75 @@ to eat (mould, a smell, raw dough), say that you can't judge that and that when 
 they should throw it out.
 
 Always finish by calling the reply tool exactly once with your answer and any actions.`;
-// The last line above is the one addition to the spec's §5.5 text: forced
-// tool_choice is rejected on this model, so the prompt asks for the reply tool.
+// The last line above is the one addition to the spec's §5.5 text, as §3 asks:
+// the model must finish with the reply function.
 
 // ── Tools ───────────────────────────────────────────────────────────────
 
-const TOOLS: Anthropic.Beta.BetaTool[] = [
+const PLAN_SCHEMA = {
+  type: 'object',
+  description: "Copy it from your latest plan_bake result; the server always shows the engine's plan",
+  properties: {
+    mixAt: { type: 'string' },
+    steps: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: { key: { type: 'string' }, at: { type: 'string' } },
+        required: ['key', 'at'],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ['mixAt', 'steps'],
+  additionalProperties: false,
+};
+
+const ACTION_SCHEMAS = [
+  {
+    type: 'object',
+    properties: { type: { type: 'string', enum: ['set_room_temp'] }, roomTempC: { type: 'number' } },
+    required: ['type', 'roomTempC'],
+    additionalProperties: false,
+  },
+  {
+    type: 'object',
+    properties: {
+      type: { type: 'string', enum: ['set_formula'] },
+      waterPct: { type: 'number' },
+      starterPct: { type: 'number' },
+      saltPct: { type: 'number' },
+    },
+    required: ['type'],
+    additionalProperties: false,
+  },
+  {
+    type: 'object',
+    properties: { type: { type: 'string', enum: ['set_vessel'] }, vessel: { type: 'string', enum: ['cocotte', 'tin'] } },
+    required: ['type', 'vessel'],
+    additionalProperties: false,
+  },
+  {
+    type: 'object',
+    properties: { type: { type: 'string', enum: ['reset_clock'] } },
+    required: ['type'],
+    additionalProperties: false,
+  },
+  {
+    type: 'object',
+    properties: { type: { type: 'string', enum: ['show_plan'] }, plan: PLAN_SCHEMA },
+    required: ['type', 'plan'],
+    additionalProperties: false,
+  },
+];
+
+// Byte-identical on every request so DeepSeek's prefix cache can hit.
+export const TOOLS: ToolDef[] = [
   {
     name: 'estimate_rise',
     description:
       "Estimate the rise (bulk) and counter-proof hours for this loaf at a room temperature, using the app's fermentation engine. Call this whenever the answer depends on how long the dough takes at some temperature or with changed percentages. Omitted percentages come from the baker's current formula.",
-    strict: true,
-    input_schema: {
+    parameters: {
       type: 'object',
       properties: {
         roomTempC: { type: 'number', description: 'Room temperature in °C' },
@@ -135,11 +181,10 @@ const TOOLS: Anthropic.Beta.BetaTool[] = [
     name: 'plan_bake',
     description:
       "Work backwards from when the baker wants the loaf cool and ready to slice to when to mix, with the start time of each of the six steps. Call this for any 'I want bread by …' question. Times come back in the baker's time zone.",
-    strict: true,
-    input_schema: {
+    parameters: {
       type: 'object',
       properties: {
-        readyAt: { type: 'string', format: 'date-time', description: 'ISO 8601 date-time with offset, in the baker’s time zone' },
+        readyAt: { type: 'string', description: "ISO 8601 date-time with offset, in the baker's time zone" },
         proofMode: { type: 'string', enum: ['counter', 'fridge'], description: 'counter: proof on the counter; fridge: proof overnight in the fridge and bake from cold' },
         fridgeHours: { type: 'number', description: 'Fridge proof length in hours (fridge only; default 12, kept within 8–16)' },
         roomTempC: { type: 'number', description: "Room temperature in °C, if different from the context's" },
@@ -152,69 +197,48 @@ const TOOLS: Anthropic.Beta.BetaTool[] = [
     name: 'elapsed_since_mix',
     description:
       'How long ago the baker mixed (from the page clock), the estimated rise, and the hours left. Call this for any question about dough that is already rising.',
-    strict: true,
-    input_schema: { type: 'object', properties: {}, additionalProperties: false },
+    parameters: { type: 'object', properties: {}, required: [], additionalProperties: false },
   },
   {
     name: 'reply',
     description:
-      'Your final answer to the baker. Call this exactly once, last. actions are optional one-tap changes: set_room_temp, set_formula (only changed fields), set_vessel, reset_clock, and show_plan (shows the timeline from your latest plan_bake call).',
-    strict: true,
-    input_schema: {
+      'Your final answer to the baker. Call this exactly once, last. actions are optional one-tap changes: set_room_temp, set_formula (only changed fields), set_vessel, reset_clock, and show_plan (the timeline from your latest plan_bake call).',
+    parameters: {
       type: 'object',
       properties: {
         reply: { type: 'string', description: 'At most 120 words, plain sentences, no headings, no emoji' },
-        actions: {
-          type: 'array',
-          description: 'Zero to three actions',
-          items: {
-            anyOf: [
-              {
-                type: 'object',
-                properties: { type: { type: 'string', const: 'set_room_temp' }, roomTempC: { type: 'number' } },
-                required: ['type', 'roomTempC'],
-                additionalProperties: false,
-              },
-              {
-                type: 'object',
-                properties: {
-                  type: { type: 'string', const: 'set_formula' },
-                  waterPct: { type: 'number' },
-                  starterPct: { type: 'number' },
-                  saltPct: { type: 'number' },
-                },
-                required: ['type'],
-                additionalProperties: false,
-              },
-              {
-                type: 'object',
-                properties: { type: { type: 'string', const: 'set_vessel' }, vessel: { type: 'string', enum: ['cocotte', 'tin'] } },
-                required: ['type', 'vessel'],
-                additionalProperties: false,
-              },
-              {
-                type: 'object',
-                properties: { type: { type: 'string', const: 'reset_clock' } },
-                required: ['type'],
-                additionalProperties: false,
-              },
-              {
-                type: 'object',
-                properties: { type: { type: 'string', const: 'show_plan' } },
-                required: ['type'],
-                additionalProperties: false,
-              },
-            ],
-          },
-        },
+        actions: { type: 'array', description: 'Zero to three actions', items: { anyOf: ACTION_SCHEMAS } },
       },
       required: ['reply', 'actions'],
       additionalProperties: false,
     },
-    // Tools render before the system prompt, so this breakpoint caches the tool list.
-    cache_control: { type: 'ephemeral' },
   },
 ];
+
+/**
+ * Minimal JSON Schema check for the subset the tool schemas use: object
+ * (required, additionalProperties: false), array (items), string, number,
+ * enum and anyOf.
+ */
+export function matchesSchema(schema: Record<string, unknown>, value: unknown): boolean {
+  if (Array.isArray(schema.anyOf)) return (schema.anyOf as Record<string, unknown>[]).some((s) => matchesSchema(s, value));
+  if (Array.isArray(schema.enum) && !(schema.enum as unknown[]).includes(value)) return false;
+  switch (schema.type) {
+    case 'string': return typeof value === 'string';
+    case 'number': return typeof value === 'number' && Number.isFinite(value);
+    case 'array':
+      return Array.isArray(value) && (!schema.items || value.every((v) => matchesSchema(schema.items as Record<string, unknown>, v)));
+    case 'object': {
+      if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+      const props = (schema.properties ?? {}) as Record<string, Record<string, unknown>>;
+      const obj = value as Record<string, unknown>;
+      if (((schema.required ?? []) as string[]).some((k) => !(k in obj))) return false;
+      return Object.entries(obj).every(([k, v]) => (k in props ? matchesSchema(props[k], v) : schema.additionalProperties !== false));
+    }
+    default:
+      return true;
+  }
+}
 
 // ── Helpers ─────────────────────────────────────────────────────────────
 
@@ -330,26 +354,26 @@ class ToolRunner {
     );
   }
 
-  run(name: string, input: unknown): { result: unknown; isError?: boolean } {
-    const i = isObj(input) ? input : {};
+  /** Run an engine tool on schema-checked arguments and return its JSON result. */
+  run(name: string, i: Record<string, unknown>): unknown {
     const optNum = (k: string) => (isNum(i[k]) ? (i[k] as number) : undefined);
     switch (name) {
       case 'estimate_rise': {
-        if (!isNum(i.roomTempC)) return { result: { error: 'roomTempC is required' }, isError: true };
+        if (!isNum(i.roomTempC)) return { error: 'roomTempC is required' };
         const est = this.estimate(i.roomTempC, {
           waterPct: optNum('waterPct'), starterPct: optNum('starterPct'),
           saltPct: optNum('saltPct'), starterTempC: optNum('starterTempC'),
         });
-        if (!est) return { result: { error: 'The engine cannot estimate this formula' }, isError: true };
-        return { result: { bulkHours: roundToHalfHour(est.bulkHours), proofHours: est.proofHours } };
+        if (!est) return { error: 'The engine cannot estimate this formula' };
+        return { bulkHours: roundToHalfHour(est.bulkHours), proofHours: est.proofHours };
       }
       case 'plan_bake': {
-        if (!isIsoWithOffset(i.readyAt)) return { result: { error: 'readyAt must be ISO 8601 with an offset' }, isError: true };
+        if (!isIsoWithOffset(i.readyAt)) return { error: 'readyAt must be ISO 8601 with an offset' };
         const proofMode: ProofMode = i.proofMode === 'fridge' ? 'fridge' : 'counter';
         const roomTempC = optNum('roomTempC');
         let bulkHours = roomTempC === undefined ? this.ctx.bulkHours : null;
         if (bulkHours == null) bulkHours = this.estimate(roomTempC ?? this.ctx.roomTempC)?.bulkHours ?? null;
-        if (bulkHours == null) return { result: { error: 'The engine cannot estimate this formula' }, isError: true };
+        if (bulkHours == null) return { error: 'The engine cannot estimate this formula' };
         const plan: LazyPlan = planLazyBake({
           readyAt: new Date(i.readyAt), bulkHours, proofMode, fridgeHours: optNum('fridgeHours'), vessel: this.ctx.vessel,
         });
@@ -359,30 +383,26 @@ class ToolRunner {
           steps: plan.steps.map((s) => ({ key: s.key, at: toZonedIso(s.at, tz) })),
         };
         return {
-          result: {
-            ...this.lastPlan,
-            local: plan.steps.map((s) => `${s.key}: ${localLabel(s.at, tz)}`),
-            totalHours: round1(plan.totalHours),
-            bulkHours: roundToHalfHour(bulkHours),
-            mixAtIsPast: plan.mixAt.getTime() < Date.parse(this.ctx.now),
-          },
+          ...this.lastPlan,
+          local: plan.steps.map((s) => `${s.key}: ${localLabel(s.at, tz)}`),
+          totalHours: round1(plan.totalHours),
+          bulkHours: roundToHalfHour(bulkHours),
+          mixAtIsPast: plan.mixAt.getTime() < Date.parse(this.ctx.now),
         };
       }
       case 'elapsed_since_mix': {
-        if (!this.ctx.mixedAt) return { result: { mixedAt: null } };
+        if (!this.ctx.mixedAt) return { mixedAt: null };
         const hoursElapsed = (Date.parse(this.ctx.now) - Date.parse(this.ctx.mixedAt)) / 3_600_000;
         const bulk = this.ctx.bulkHours;
         return {
-          result: {
-            mixedAt: toZonedIso(new Date(this.ctx.mixedAt), this.ctx.timeZone),
-            hoursElapsed: round1(Math.max(0, hoursElapsed)),
-            bulkHours: bulk == null ? null : roundToHalfHour(bulk),
-            hoursRemaining: bulk == null ? null : round1(Math.max(0, bulk - hoursElapsed)),
-          },
+          mixedAt: toZonedIso(new Date(this.ctx.mixedAt), this.ctx.timeZone),
+          hoursElapsed: round1(Math.max(0, hoursElapsed)),
+          bulkHours: bulk == null ? null : roundToHalfHour(bulk),
+          hoursRemaining: bulk == null ? null : round1(Math.max(0, bulk - hoursElapsed)),
         };
       }
       default:
-        return { result: { error: `Unknown tool ${name}` }, isError: true };
+        return { error: `Unknown tool ${name}` };
     }
   }
 }
@@ -454,59 +474,54 @@ function contextPreamble(ctx: AssistContext): string {
     'mixedAt is when the baker pressed "I\'ve mixed" (null if not mixed yet).';
 }
 
-export async function answer(client: AssistClient, req: AssistRequest): Promise<AssistResponse> {
+const TOOL_SCHEMAS = new Map(TOOLS.map((t) => [t.name, t.parameters]));
+
+/** JSON.parse the model's arguments and check them against the tool's schema; null if either fails. */
+export function parseToolArguments(name: string, json: string): Record<string, unknown> | null {
+  const schema = TOOL_SCHEMAS.get(name);
+  if (!schema) return null;
+  let value: unknown;
+  try {
+    value = JSON.parse(json || '{}');
+  } catch {
+    return null;
+  }
+  return matchesSchema(schema, value) ? (value as Record<string, unknown>) : null;
+}
+
+export async function answer(env: Env, req: AssistRequest): Promise<AssistResponse> {
   const tools = new ToolRunner(req.context);
-  const messages: Anthropic.Beta.BetaMessageParam[] = req.messages.map((m, i) => ({
-    role: m.role,
-    content: i === 0 ? `${contextPreamble(req.context)}\n\n${m.text}` : m.text,
-  }));
+  const messages: LlmMessage[] = [
+    { role: 'system', content: SYSTEM_PROMPT },
+    ...req.messages.map((m, i): LlmMessage => ({
+      role: m.role,
+      content: i === 0 ? `${contextPreamble(req.context)}\n\n${m.text}` : m.text,
+    })),
+  ];
 
-  let toolRounds = 0;
-  // Up to MAX_TOOL_ROUNDS rounds of engine tools, then one more call to answer.
-  for (let call = 0; call <= MAX_TOOL_ROUNDS + 1; call++) {
-    const response = await client.beta.messages.create({
-      model: MODEL,
-      max_tokens: MAX_TOKENS,
-      betas: ['server-side-fallback-2026-07-01'],
-      fallbacks: 'default',
-      thinking: { type: 'adaptive' },
-      output_config: { effort: 'low' },
-      system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
-      tools: TOOLS,
-      tool_choice: { type: 'auto' },
-      messages: [...messages],
-    });
+  for (let round = 0; round < MAX_ROUNDS; round++) {
+    const turn = await chat(env, [...messages], TOOLS);
 
-    if (response.stop_reason === 'refusal') return FALLBACK_REPLY;
-
-    const toolUses = response.content.filter((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === 'tool_use');
-    const replyCall = toolUses.find((b) => b.name === 'reply');
-    if (replyCall) return cleanReplyInput(replyCall.input, tools.lastPlan) ?? FALLBACK_REPLY;
-
-    if (toolUses.length === 0) {
-      // Answered in prose without the reply tool: show the text, no actions.
-      const text = response.content
-        .filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text')
-        .map((b) => b.text)
-        .join('\n');
-      const reply = cleanReply(text);
+    if (turn.toolCalls.length === 0) {
+      // Answered in plain text instead of calling reply: show it, no actions.
+      const reply = cleanReply(turn.content);
       return reply ? { reply, actions: [] } : FALLBACK_REPLY;
     }
-    if (response.stop_reason === 'max_tokens') return FALLBACK_REPLY;
 
-    const limitReached = toolRounds >= MAX_TOOL_ROUNDS;
-    toolRounds++;
-    messages.push({ role: 'assistant', content: response.content });
-    messages.push({
-      role: 'user',
-      content: toolUses.map((t): Anthropic.Beta.BetaToolResultBlockParam => {
-        if (limitReached) {
-          return { type: 'tool_result', tool_use_id: t.id, is_error: true, content: 'Tool limit reached. Call reply now with what you have.' };
-        }
-        const { result, isError } = tools.run(t.name, t.input);
-        return { type: 'tool_result', tool_use_id: t.id, content: JSON.stringify(result), ...(isError ? { is_error: true } : {}) };
-      }),
-    });
+    const replyCall = turn.toolCalls.find((c) => c.name === 'reply');
+    if (replyCall) {
+      const args = parseToolArguments('reply', replyCall.arguments);
+      const response = args && cleanReplyInput(args, tools.lastPlan);
+      if (response) return response;
+    }
+
+    // Run every call in the round; malformed arguments get an error result.
+    messages.push({ role: 'assistant', content: turn.content, tool_calls: turn.toolCalls });
+    for (const call of turn.toolCalls) {
+      const args = parseToolArguments(call.name, call.arguments);
+      const result = args && call.name !== 'reply' ? tools.run(call.name, args) : { error: 'bad_arguments' };
+      messages.push({ role: 'tool', tool_call_id: call.id, content: JSON.stringify(result) });
+    }
   }
   return FALLBACK_REPLY;
 }
@@ -523,11 +538,7 @@ function limitFrom(value: string | undefined, fallback: number): number {
   return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
-const defaultDeps: AssistDeps = {
-  createClient: (apiKey) => new Anthropic({ apiKey, maxRetries: 1, timeout: 60_000 }),
-};
-
-export async function handleAssist(request: Request, env: Env, deps: AssistDeps = defaultDeps, now = new Date()): Promise<Response> {
+export async function handleAssist(request: Request, env: Env, now = new Date()): Promise<Response> {
   // 1. Method
   if (request.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
 
@@ -538,7 +549,7 @@ export async function handleAssist(request: Request, env: Env, deps: AssistDeps 
   if (!originOk) return json({ error: 'bad_origin' }, 403);
 
   // 3. Configuration (rate limiting needs KV and the salt as much as the model needs the key)
-  if (!env.ANTHROPIC_API_KEY || !env.ASSIST_KV || !env.RATE_SALT) return json({ error: 'not_configured' }, 503);
+  if (!env.DEEPSEEK_API_KEY || !env.ASSIST_KV || !env.RATE_SALT) return json({ error: 'not_configured' }, 503);
 
   // 4. Body size and schema
   const declared = parseInt(request.headers.get('Content-Length') ?? '', 10);
@@ -567,10 +578,10 @@ export async function handleAssist(request: Request, env: Env, deps: AssistDeps 
   ]);
 
   try {
-    return json(await answer(deps.createClient(env.ANTHROPIC_API_KEY), parsed));
+    return json(await answer(env, parsed));
   } catch (err) {
     // Log the failure class only, never the question.
-    console.error('assist: model call failed', err instanceof Anthropic.APIError ? `${err.status} ${err.name}` : (err as Error)?.name);
+    console.error('assist: model call failed', err instanceof Error ? `${err.name}: ${err.message}` : 'unknown');
     return json(FALLBACK_REPLY);
   }
 }
