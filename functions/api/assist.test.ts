@@ -12,6 +12,7 @@ import {
   toZonedIso,
   TOOLS,
   FALLBACK_REPLY,
+  SYSTEM_PROMPT,
   type AssistRequest,
   type Env,
 } from './assist';
@@ -226,7 +227,7 @@ describe('guards', () => {
 // ── The DeepSeek call ───────────────────────────────────────────────────
 
 describe('chat request', () => {
-  it('sends the spec request: deepseek-flash, temperature 0.3, 700 tokens, tools, no thinking or response_format', async () => {
+  it('sends the spec request: deepseek-flash, temperature 0.3, 700 tokens, tools, thinking disabled, no response_format', async () => {
     queue(replyTurn('Mix tonight.'));
     const { data } = await call(validBody());
     expect(data).toEqual({ reply: 'Mix tonight.', actions: [] });
@@ -238,7 +239,7 @@ describe('chat request', () => {
     const body = sent(0);
     expect(body).toMatchObject({ model: 'deepseek-flash', temperature: 0.3, max_tokens: 700, stream: false, tool_choice: 'auto' });
     expect(body).not.toHaveProperty('response_format');
-    expect(body).not.toHaveProperty('thinking');
+    expect(body.thinking).toEqual({ type: 'disabled' });
     expect(body.tools.map((t: { type: string; function: { name: string } }) => `${t.type}:${t.function.name}`))
       .toEqual(['function:estimate_rise', 'function:plan_bake', 'function:elapsed_since_mix', 'function:reply']);
     // Volatile context goes in the first user message; the system prompt stays fixed.
@@ -308,6 +309,30 @@ describe('answering', () => {
       },
     });
     expect(data.actions[1]).toEqual({ type: 'set_room_temp', roomTempC: 21 });
+  });
+
+  it('never shows a plan whose mix time has already passed', async () => {
+    // Now is 10:00; ready by 14:00 needs an 11 h process that should have started last night.
+    const plan = toolCall('plan_bake', { readyAt: '2026-10-16T14:00:00+01:00', proofMode: 'counter' });
+    queue(toolsTurn(plan), replyTurn('Too late for 14:00.', [{ type: 'show_plan', plan: { mixAt: 'x', steps: [] } }]));
+    const { data } = await call(validBody());
+    const result = JSON.parse(sent(1).messages.at(-1).content);
+    expect(result.mixAtIsPast).toBe(true);
+    expect(data.actions).toEqual([]);
+  });
+
+  it('refuses to plan a new mix time once the dough is mixed', async () => {
+    const plan = toolCall('plan_bake', { readyAt: '2026-10-17T12:00:00+01:00', proofMode: 'counter' });
+    queue(toolsTurn(plan), replyTurn('You mixed it already.', [{ type: 'show_plan', plan: { mixAt: 'x', steps: [] } }]));
+    const { data } = await call(validBody({ mixedAt: '2026-10-16T07:00:00+01:00' }));
+    expect(JSON.parse(sent(1).messages.at(-1).content).error).toMatch(/already mixed/);
+    expect(data.actions).toEqual([]);
+  });
+
+  it('tells the model what to do about a past plan, a running clock and salt', () => {
+    expect(SYSTEM_PROMPT).toContain('mixAtIsPast');
+    expect(SYSTEM_PROMPT).toContain('mixedAt is');
+    expect(SYSTEM_PROMPT).toContain('Salt does not change');
   });
 
   it('runs every call in a round: estimate_rise and elapsed_since_mix from the engine', async () => {

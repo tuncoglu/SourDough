@@ -5,9 +5,10 @@
  * the runtime's fetch (no SDK, no npm dependencies). Swapping providers later
  * should touch only this file. Spec: ASSISTANT_SPEC.md §3.
  *
- * No thinking parameter is sent: the spec asks for non-thinking (chat) mode
- * and says to send none if DeepSeek's docs can't be checked, which they
- * couldn't be when this was written.
+ * Thinking is explicitly disabled: DeepSeek's docs say it is on by default, and
+ * a thinking reply spends the whole token budget on reasoning_content, leaving
+ * content empty. Disabling it also means reasoning_content never has to be
+ * passed back on tool-call continuations.
  */
 
 export interface LlmEnv {
@@ -64,6 +65,7 @@ export async function chat(env: LlmEnv, messages: LlmMessage[], tools: ToolDef[]
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${env.DEEPSEEK_API_KEY}` },
       body: JSON.stringify({
         model: env.DEEPSEEK_MODEL ?? DEFAULT_MODEL,
+        thinking: { type: 'disabled' },
         messages: messages.map(toWire),
         tools: tools.map((t) => ({ type: 'function', function: { name: t.name, description: t.description, parameters: t.parameters } })),
         tool_choice: 'auto',

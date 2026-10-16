@@ -87,13 +87,23 @@ from the context you were given. Never estimate one yourself. If a tool can't an
 say what the baker should look for instead (doubled, domed, bubbly, jiggles; a floured
 finger dent that springs back slowly).
 
+The context's bulkHours is how long the rise takes now; call estimate_rise only for a
+different temperature or formula. When the baker states a temperature, use exactly that
+temperature in estimate_rise and in any set_room_temp action. Salt does not change the
+rise estimate: never say it makes the rise faster or slower. If the context's mixedAt is
+set, the dough is already mixed: work from the time elapsed and do not plan a new mix
+time. If the baker asks for a plan without saying when the loaf should be ready, ask for
+the time instead of assuming one. If plan_bake says mixAtIsPast, say it is too late to be
+ready by then and offer to plan for a later time; do not offer show_plan.
+
 Answer in at most 120 words. Lead with what to do now. Plain sentences, no headings, no
 emoji. Use the baker's unit system from the context. Offer at most three actions, only
 from the allowed set, and only when applying one would actually help.
 
-You are not a food-safety authority. If the question is about whether something is safe
-to eat (mould, a smell, raw dough), say that you can't judge that and that when in doubt
-they should throw it out.
+You are not a food-safety authority. Only if the baker asks whether something is safe to
+eat (mould, a smell, raw dough), say that you can't judge that and that when in doubt
+they should throw it out. For every other question, never mention food safety, throwing
+dough out, or anything you can't judge.
 
 Always finish by calling the reply tool exactly once with your answer and any actions.`;
 // The last line above is the one addition to the spec's §5.5 text, as §3 asks:
@@ -328,6 +338,9 @@ function localLabel(date: Date, timeZone: string): string {
 
 // ── Engine tools ────────────────────────────────────────────────────────
 
+/** A mix time up to this far in the past still counts as "mix now". */
+const PAST_GRACE_MS = 15 * 60_000;
+
 type PlanResult = { mixAt: string; steps: { key: string; at: string }[] };
 
 class ToolRunner {
@@ -368,6 +381,7 @@ class ToolRunner {
         return { bulkHours: roundToHalfHour(est.bulkHours), proofHours: est.proofHours };
       }
       case 'plan_bake': {
+        if (this.ctx.mixedAt) return { error: 'The dough is already mixed, so there is nothing to plan. Do not call plan_bake again: call elapsed_since_mix if you need the time left, then reply.' };
         if (!isIsoWithOffset(i.readyAt)) return { error: 'readyAt must be ISO 8601 with an offset' };
         const proofMode: ProofMode = i.proofMode === 'fridge' ? 'fridge' : 'counter';
         const roomTempC = optNum('roomTempC');
@@ -378,16 +392,19 @@ class ToolRunner {
           readyAt: new Date(i.readyAt), bulkHours, proofMode, fridgeHours: optNum('fridgeHours'), vessel: this.ctx.vessel,
         });
         const tz = this.ctx.timeZone;
-        this.lastPlan = {
+        const planResult: PlanResult = {
           mixAt: toZonedIso(plan.mixAt, tz),
           steps: plan.steps.map((s) => ({ key: s.key, at: toZonedIso(s.at, tz) })),
         };
+        // A plan whose mix time has already passed can't be met, so it is never shown as a plan.
+        const mixAtIsPast = plan.mixAt.getTime() < Date.parse(this.ctx.now) - PAST_GRACE_MS;
+        this.lastPlan = mixAtIsPast ? null : planResult;
         return {
-          ...this.lastPlan,
+          ...planResult,
           local: plan.steps.map((s) => `${s.key}: ${localLabel(s.at, tz)}`),
           totalHours: round1(plan.totalHours),
           bulkHours: roundToHalfHour(bulkHours),
-          mixAtIsPast: plan.mixAt.getTime() < Date.parse(this.ctx.now),
+          mixAtIsPast,
         };
       }
       case 'elapsed_since_mix': {
@@ -499,12 +516,14 @@ export async function answer(env: Env, req: AssistRequest): Promise<AssistRespon
     })),
   ];
 
+  const called: string[] = []; // tool names only, for logs; never the content
   for (let round = 0; round < MAX_ROUNDS; round++) {
     const turn = await chat(env, [...messages], TOOLS);
 
     if (turn.toolCalls.length === 0) {
       // Answered in plain text instead of calling reply: show it, no actions.
       const reply = cleanReply(turn.content);
+      if (!reply) console.warn('assist: empty reply after tools:', called.join(',') || 'none');
       return reply ? { reply, actions: [] } : FALLBACK_REPLY;
     }
 
@@ -513,16 +532,19 @@ export async function answer(env: Env, req: AssistRequest): Promise<AssistRespon
       const args = parseToolArguments('reply', replyCall.arguments);
       const response = args && cleanReplyInput(args, tools.lastPlan);
       if (response) return response;
+      console.warn('assist: invalid reply arguments after tools:', called.join(',') || 'none');
     }
 
     // Run every call in the round; malformed arguments get an error result.
     messages.push({ role: 'assistant', content: turn.content, tool_calls: turn.toolCalls });
     for (const call of turn.toolCalls) {
+      called.push(call.name);
       const args = parseToolArguments(call.name, call.arguments);
       const result = args && call.name !== 'reply' ? tools.run(call.name, args) : { error: 'bad_arguments' };
       messages.push({ role: 'tool', tool_call_id: call.id, content: JSON.stringify(result) });
     }
   }
+  console.warn('assist: no reply within the round limit; tools:', called.join(','));
   return FALLBACK_REPLY;
 }
 
