@@ -8,7 +8,7 @@
  * fixed copy so the steps read the same every time.
  */
 import { PROOF_FRACTION } from './calculations';
-import { formatTemp } from './unitConversion';
+import { formatTemp, formatWeight } from './unitConversion';
 import type { UnitSystem } from '../models/types';
 
 export type LazyVessel = 'cocotte' | 'tin';
@@ -27,6 +27,9 @@ export const LAZY_BAKE = {
   cocotte: { ovenTempC: 240, preheatMinutes: 30, lidOnMinutes: 25, lidOffMinutes: '15–20', totalMinutes: 45 },
   tin: { ovenTempC: 220, bakeMinutes: '40–45', totalMinutes: 45 },
 } as const;
+
+/** Flour and water (each) to refresh the jar with after taking starter out. */
+export const STARTER_FEED_GRAMS = 50;
 
 /** Defaults for a first loaf: 75% water, 20% starter, 2% salt. */
 export const LAZY_DEFAULTS = { waterPct: 75, starterPct: 20 } as const;
@@ -82,7 +85,7 @@ export function buildLazySteps(
       title: 'Mix',
       duration: 'about 5 min',
       body: "Stir the starter, water and salt together in a large bowl. Add the flour and mix with a spoon or your hand until no dry flour is left. It will look shaggy. That's fine. Cover the bowl.",
-      aside: "Feed what's left in your starter jar and put it back in the fridge.",
+      aside: `Feed what's left in your starter jar with equal weights of flour and water (about ${formatWeight(STARTER_FEED_GRAMS, unitSystem, unitSystem === 'imperial' ? 1 : 0)} of each), stir, and put it back in the fridge.`,
     },
     {
       key: 'rise',

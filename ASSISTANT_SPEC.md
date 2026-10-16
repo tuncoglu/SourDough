@@ -1,6 +1,8 @@
 # Bread assistant: phase 1 implementation spec
 
 Status: ready to implement. Every decision below is final unless it says "owner decides".
+Revision 2026-10-16: the provider is DeepSeek (`deepseek-flash`, non-thinking mode) instead
+of Claude; see §3 "Model and API usage". Nothing else in the design changed.
 Read it end to end before writing code. Where this spec and your instincts disagree,
 follow the spec; where the spec is silent, follow `SourDoughMobile/AGENTS.md`.
 
@@ -48,8 +50,8 @@ using the app's own calculators for every number:
 ## 3. Architecture
 
 ```
-PWA (bread.tsx)                       Cloudflare Pages Function                Anthropic API
-  AskCard ──POST /api/assist──▶  functions/api/assist.ts  ──Messages API──▶  claude-opus-5-5
+PWA (bread.tsx)                       Cloudflare Pages Function                DeepSeek API
+  AskCard ──POST /api/assist──▶  functions/api/assist.ts  ──chat/completions──▶ deepseek-flash
             {context, messages}     - origin + size checks                     (tools: engine)
             ◀── {reply, actions} ── - KV rate limits / daily cap
                                     - tool loop runs engine code from
@@ -62,32 +64,56 @@ PWA (bread.tsx)                       Cloudflare Pages Function                A
   `calculations.ts`, `lazyMethod.ts`, `unitConversion.ts`, `hardnessUtils.ts`,
   `blendUtils.ts`, `flourSearch.ts`, `data/flours.ts`, `models/types.ts`). Import them from
   the Function by relative path; wrangler's bundler inlines them. Do not copy them.
-- Function dependencies go in a new `functions/package.json` (with its own lockfile) so
-  `functions/node_modules` resolves for the bundler. Add a CI step
-  `npm ci --prefix functions` before the deploy step in `.github/workflows/deploy.yml`.
+- The Function has **no npm dependencies**: it calls DeepSeek with the runtime's `fetch`.
+  No `functions/package.json`, no SDK, no extra CI install step.
 - Same origin, so the existing CSP `connect-src 'self'` already allows it; do not edit
   `_headers` for this. The service worker (`public/sw.js`) ignores non-GET requests, so the
   POST is never cached; leave it alone.
 
 ### Model and API usage
 
-- **Before writing the Function, load the `claude-api` skill and read its TypeScript files**
-  (`typescript/claude-api/README.md`, `typescript/claude-api/tool-use.md`). Take SDK names
-  and shapes from there, not from memory.
-- SDK: `@anthropic-ai/sdk` (official TypeScript SDK).
-- Model: `claude-opus-5-5`, `thinking: {type: "adaptive"}`, `output_config.effort: "low"`.
-- Enable server-side refusal fallbacks (`fallbacks: "default"` with beta
-  `server-side-fallback-2026-07-01`, per the skill). Check `stop_reason` before reading
-  content; on `refusal`, return the generic "can't help with that" reply (§5.3).
-- `max_tokens: 4000`. Non-streaming (answers are short).
-- Prompt caching: put the system prompt and the tool definitions first and mark them with
-  `cache_control`, as the skill describes. Nothing volatile (time, context) goes in the
-  system prompt; it goes in the first user message.
-- Tool loop: at most **4** tool rounds per request, then answer with what it has.
-- Final answer format: a JSON object matching §5.3. Use structured outputs
-  (`output_config.format`) if the skill confirms it works together with tool use on this
-  model; otherwise define a `reply` tool with `strict: true`, and instruct the model in the
-  system prompt to finish by calling it (forced `tool_choice` is rejected on this model).
+DeepSeek is the provider **for now**. Keep every provider detail in one small file,
+`functions/api/llm.ts`, behind this interface, so swapping providers later touches only
+that file:
+
+```ts
+export interface LlmMessage { role: 'system' | 'user' | 'assistant' | 'tool';
+  content: string | null; tool_calls?: LlmToolCall[]; tool_call_id?: string; }
+export interface LlmToolCall { id: string; name: string; arguments: string; } // JSON text
+export interface LlmTurn { content: string | null; toolCalls: LlmToolCall[]; }
+export function chat(env: Env, messages: LlmMessage[], tools: ToolDef[]): Promise<LlmTurn>;
+```
+
+`chat` maps to DeepSeek's OpenAI-compatible Chat Completions API:
+
+- `POST {env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com"}/chat/completions` with
+  `Authorization: Bearer {env.DEEPSEEK_API_KEY}`, using plain `fetch`.
+- `model: env.DEEPSEEK_MODEL ?? "deepseek-flash"`.
+- **How smart: exactly enough, no more.** The job is reading a short question, calling one
+  or two calculator tools and writing 120 words. That needs reliable tool calling, not deep
+  reasoning. Use the model's **non-thinking (chat) mode**: if `deepseek-flash` thinks by
+  default, turn it off with the documented parameter (check
+  https://api-docs.deepseek.com before coding; if the docs can't be reached, send no
+  thinking parameter and note it in the PR). Do not add a second "smarter" model, routing,
+  retries with escalation, self-critique passes or multi-sample voting.
+- `temperature: 0.3` (steady, still natural), `max_tokens: 700`, `stream: false`.
+- `tools`: OpenAI function format (`{type: "function", function: {name, description,
+  parameters}}`), `tool_choice: "auto"`. Do not use `response_format` together with tools.
+- Timeout: 20 s per call via `AbortController`. On timeout, HTTP error, or a response
+  without `choices[0].message`, return the generic reply (§5.3).
+- Tool loop: at most **4** rounds per request. Run every tool call in a round, append each
+  result as a `tool` message with its `tool_call_id`, then call again.
+- Final answer: the model must finish by calling a `reply` function whose parameters are
+  the §5.3 `AssistResponse` schema. Say so in the system prompt. If the model instead
+  returns plain text, wrap it as `{reply: text, actions: []}`; if it returns neither within
+  4 rounds, return the generic reply. Parse every `arguments` string with `JSON.parse`
+  inside `try` and validate it against the schema before use.
+- Caching: DeepSeek caches repeated prompt prefixes automatically. Keep the system prompt
+  and the tool list byte-identical across requests (no dates, no context in them); put the
+  context in the first user message.
+- Cost, for orientation only (third-party price reports disagree, confirm on DeepSeek's
+  pricing page): a typical question is ~2–3 calls of ~3K input and ~300 output tokens,
+  well under one US cent.
 
 ## 4. Shared engine helpers (new pure code, used by BOTH the page and the Function)
 
@@ -191,7 +217,7 @@ Nothing else is sent: no location, no postcode, no water hardness, no History, n
 2. `Origin` header must equal the site origin (`env.SITE_ORIGIN`, e.g.
    `https://sourdoughcalculator.uk`); allow `http://localhost:8081` only when
    `env.ALLOW_LOCALHOST === "1"` (`403 bad_origin`).
-3. `env.ANTHROPIC_API_KEY` present (`503 not_configured`).
+3. `env.DEEPSEEK_API_KEY` present (`503 not_configured`).
 4. Body size and schema valid; reject unknown keys (`400 bad_request`).
 5. Rate limits, using the KV namespace bound as `ASSIST_KV`:
    - Per client: key `ip:<sha256(CF-Connecting-IP + env.RATE_SALT)>:<UTC date>`, limit
@@ -218,7 +244,7 @@ type AssistAction =
 
 Validate the model's output against this schema server-side; drop invalid actions rather
 than failing. Clamp `waterPct` to 55–100, `starterPct` to 5–50, `saltPct` to 0–3.
-On refusal or any internal error after the guards, return `200` with
+On any provider or internal error after the guards, return `200` with
 `{reply: "Sorry, I can't help with that one. The steps on this page still apply.", actions: []}`
 so the UI has one shape to render.
 
@@ -232,7 +258,9 @@ All tools are thin wrappers over §4; they return JSON.
 | `plan_bake` | `readyAt` (ISO with offset), `proofMode`, optional `fridgeHours`, optional `roomTempC` | the `LazyPlan`, with times as ISO strings in the user's time zone |
 | `elapsed_since_mix` | none | `{mixedAt, hoursElapsed, bulkHours, hoursRemaining}` or `{mixedAt: null}` |
 
-`strict: true` on every tool. The model never computes a time or duration itself.
+Every tool's `parameters` schema sets `additionalProperties: false` and lists `required`;
+the Function validates arguments before running a tool and returns `{error: "bad_arguments"}`
+as the tool result if they don't validate. The model never computes a time or duration itself.
 
 ### 5.5 System prompt (use this text; tune only via the eval in §8)
 
@@ -273,8 +301,8 @@ the method card and the Save/Share row**. Nothing else on the page moves.
 - **First use: consent.** Before the first request, show an inline consent panel inside
   the card (not a modal):
   "Your question and this loaf's formula, room temperature and mix time are sent to
-  Anthropic's Claude to answer it. Nothing is saved to an account. Answers can be wrong;
-  trust your dough." Buttons: "Ask" (primary) and "Not now". Store consent in AsyncStorage
+  DeepSeek, an AI service based in China, to answer it. Nothing is saved to an account.
+  Answers can be wrong; trust your dough." Buttons: "Ask" (primary) and "Not now". Store consent in AsyncStorage
   key `sourdough_assistant_consent_v1` = ISO timestamp. "Not now" leaves the question in
   the input and sends nothing.
 - **While waiting.** Disable send, show `ActivityIndicator`, keep the question visible.
@@ -297,8 +325,9 @@ the method card and the Save/Share row**. Nothing else on the page moves.
 
 ### Owner prerequisites (owner decides; the code must work without them by staying hidden)
 
-1. Create an Anthropic API key with a monthly spend limit, and add it as the Pages secret
-   `ANTHROPIC_API_KEY` on the `sourdough` project.
+1. Create a DeepSeek API key, top up a small prepaid balance (that balance is the hard
+   spend limit), and add the key as the Pages secret `DEEPSEEK_API_KEY` on the `sourdough`
+   project. Optional overrides: `DEEPSEEK_MODEL`, `DEEPSEEK_BASE_URL`.
 2. Create a KV namespace and add its id to `wrangler.toml` as binding `ASSIST_KV`
    (leave a commented placeholder block in `wrangler.toml` for this).
 3. Set Pages environment variables `SITE_ORIGIN`, `RATE_SALT` (random string), and
@@ -312,12 +341,13 @@ Until step 4, the card is not rendered, so merging is safe.
 
 - Add a section "Ask the baker (optional)" to **both** `PRIVACY.md` (repo root) and
   `SourDoughMobile/PRIVACY.md`: what is sent (the question, formula, room temperature,
-  vessel, mix time, device time and time zone), to whom (Anthropic, via our Cloudflare
-  function), that we store no content, that a salted hash of the IP is kept for up to 48 h
+  vessel, mix time, device time and time zone), to whom (DeepSeek, via our Cloudflare
+  function; DeepSeek processes and stores data in the People's Republic of China under its
+  own privacy policy, linked), that we store no content, that a salted hash of the IP is kept for up to 48 h
   for rate limiting, and that it only happens when the user presses Ask after consenting.
 - Add one sentence to the Privacy card in `app/(tabs)/about.tsx`:
-  "If you use Ask the baker, your question and this loaf's details are sent to Anthropic's
-  Claude to answer it."
+  "If you use Ask the baker, your question and this loaf's details are sent to DeepSeek,
+  an AI service based in China, to answer it."
 
 ### Docs
 
@@ -332,8 +362,9 @@ Required, all offline (no network in tests):
 - `__tests__/lazyPlan.test.ts`: §4.1 parity and §4.2 cases.
 - `functions/api/assist.test.ts` (run with the existing Jest setup or a `functions`-local
   test script; your call, but it must run in CI): guards (405, 403, 503, 400, both 429s),
-  schema validation of model output, action clamping, refusal → fallback reply. Mock the
-  SDK client; never call the real API in tests.
+  schema validation of model output, action clamping, plain-text answer wrapped,
+  malformed tool arguments ignored, timeout → generic reply, 4-round cap. Mock `fetch`;
+  never call the real API in tests.
 - `npx tsc --noEmit` and `npx jest` in `SourDoughMobile` stay green; `iconNames.test.ts`
   covers the new icons.
 - Build the web export and check the bread page renders with the flag off (no card) and

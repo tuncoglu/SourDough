@@ -13,6 +13,14 @@ describe('lazy sourdough method', () => {
     }
   });
 
+  it('tells the baker how much to feed the starter', () => {
+    const mix = buildLazySteps('cocotte', 6, 'metric').find((s) => s.key === 'mix')!;
+    expect(mix.aside).toMatch(/equal weights of flour and water/);
+    expect(mix.aside).toMatch(/50 g/);
+    const imperial = buildLazySteps('cocotte', 6, 'imperial').find((s) => s.key === 'mix')!;
+    expect(imperial.aside).toMatch(/1\.8 oz/);
+  });
+
   it('derives the rise and proof durations from the bulk estimate', () => {
     const steps = buildLazySteps('tin', 7.2, 'metric');
     expect(steps.find((s) => s.key === 'rise')!.duration).toBe('about 7 h');
