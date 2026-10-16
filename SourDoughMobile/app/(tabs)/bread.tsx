@@ -33,6 +33,7 @@ import { NumberInput } from '../../src/components/NumberInput';
 import { TempRow } from '../../src/components/TempRow';
 import { Seo } from '../../src/components/Seo';
 import { Icon } from '../../src/components/Icon';
+import { AskCard } from '../../src/components/AskCard';
 
 import { useCalculatorInputs } from '../../src/hooks/useCalculatorInputs';
 import { useRecipeActions } from '../../src/hooks/useRecipeActions';
@@ -379,6 +380,34 @@ export default function BreadScreen() {
             );
           })}
         </View>
+
+        {/* ── Ask the baker (hidden unless EXPO_PUBLIC_ASSISTANT_ENABLED=1) ── */}
+        {estimate && (
+          <AskCard
+            context={{
+              unitSystem,
+              formula: {
+                flourGrams,
+                waterPct: parseFloat(waterPct),
+                starterPct: parseFloat(starterPct),
+                saltPct: parseFloat(inputs.saltPct),
+                starterHydration: parseFloat(inputs.starterHydrationStr),
+              },
+              roomTempC: parseFloat(inputs.ambientTemp),
+              vessel,
+              mixedAt: mixedAt ? mixedAt.toISOString() : null,
+              bulkHours,
+            }}
+            onSetRoomTemp={(t) => inputs.setAmbientTemp(String(t))}
+            onSetFormula={(f) => {
+              if (f.waterPct != null) setWaterPct(String(f.waterPct));
+              if (f.starterPct != null) setStarterPct(String(f.starterPct));
+              if (f.saltPct != null) inputs.setSaltPct(String(f.saltPct));
+            }}
+            onSetVessel={setVessel}
+            onResetClock={resetClock}
+          />
+        )}
 
         {/* ── Save / share ── */}
         <View style={styles.actions}>
