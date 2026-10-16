@@ -51,6 +51,7 @@ pick bread, yogurt, or lacto-fermentation — then dive into the full calculator
 - **Private by design** — no accounts, all data stored locally via AsyncStorage (weather and water-hardness detection need network; manual mode works offline)
 - **Local recipe data** — no account or cloud recipe storage; optional cookieless website analytics are described in the privacy policy
 - **Location is transient** — with permission, coordinates are sent to fetch weather and geocode your city; they are not saved with recipes
+- **Opt-in assistant** — "Ask the baker" on the bread page answers questions with the app's own calculators via a Cloudflare Function and DeepSeek (based in China); nothing is sent until you press Ask and consent, no content is stored, and it stays hidden unless `EXPO_PUBLIC_ASSISTANT_ENABLED=1`
 
 ### 🌐 Web
 - **Installable PWA** — add to home screen; works offline once loaded
