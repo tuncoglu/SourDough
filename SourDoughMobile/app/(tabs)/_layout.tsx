@@ -44,7 +44,7 @@ export default function TabLayout() {
   // preserved across responsive layout changes (critical for web hydration
   // where useWindowDimensions reports 0×0 on first render, then real dims).
   return (
-    <View style={[styles.shell, isDesktop && styles.shellDesktop]}>
+    <View style={[styles.shell, isDesktop && styles.shellDesktop, { backgroundColor: colors.cream }]}>
       {isDesktop && <Sidebar />}
       <View style={styles.content}>
         <View style={styles.maxWidth}>
