@@ -13,7 +13,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyle, sectionTitleStyle } from '../../src/theme';
 import { summaryWithHardnessOverride } from '../../src/lib/location';
-import { runAllCalculations } from '../../src/lib/calculations';
 import { buildBlendFromRows } from '../../src/lib/blendUtils';
 import { resolveHardness } from '../../src/lib/hardnessUtils';
 import { formatWeight } from '../../src/lib/unitConversion';
@@ -25,6 +24,7 @@ import {
   LAZY_DEFAULTS,
   type LazyVessel,
 } from '../../src/lib/lazyMethod';
+import { estimateLazyLoaf, LAZY_STARTER_TEMP_C } from '../../src/lib/lazyPlan';
 import { getRecipe } from '../../src/store/recipeStore';
 import type { CalculationResults } from '../../src/models/types';
 
@@ -37,8 +37,6 @@ import { Icon } from '../../src/components/Icon';
 import { useCalculatorInputs } from '../../src/hooks/useCalculatorInputs';
 import { useRecipeActions } from '../../src/hooks/useRecipeActions';
 
-/** The lazy method takes the starter straight from the fridge. */
-const LAZY_STARTER_TEMP_C = '4';
 /** When the dough was mixed — persisted so the clock survives closing the app. */
 const MIXED_AT_KEY = 'sourdough_lazy_mixed_at';
 
@@ -145,54 +143,39 @@ export default function BreadScreen() {
     [flourRow, flourGrams],
   );
 
-  const results: CalculationResults | null = useMemo(() => {
-    const salt = parseFloat(inputs.saltPct);
-    const starterHydration = parseFloat(inputs.starterHydrationStr);
-    const temps = [inputs.ambientTemp, inputs.flourTemp, inputs.waterTemp].map(parseFloat);
-    if (!flourRow || !(flourGrams > 0) || !(waterGrams > 0) || !(starterGrams > 0)) return null;
-    if (!Number.isFinite(salt) || salt < 0 || !(starterHydration > 0) || temps.some((t) => !Number.isFinite(t))) return null;
-    const starterFlour = starterGrams * (100 / (100 + starterHydration));
-    const totalFlour = flourGrams + starterFlour;
-    try {
-      return runAllCalculations(
-        {
-          flourWeight: flourGrams,
-          flourType: flourRow.flour.label,
-          flourProtein: flourRow.flour.protein,
-          flourProductNo: flourRow.flour.productNumber,
-          flourBlend: blend,
-          hydration: ((waterGrams + starterGrams - starterFlour) / totalFlour) * 100,
-          addedWaterGrams: waterGrams,
-          starterWeight: starterGrams,
-          starterHydration,
-          saltPct: salt,
-          oilPct: 0,
-          ambientTemp: temps[0],
-          flourTemp: temps[1],
-          waterTemp: temps[2],
-          starterTemp: parseFloat(LAZY_STARTER_TEMP_C),
-        },
-        inputs.locationData?.hourlyForecast ?? null,
-        resolveHardness(inputs.settings.waterHardnessOverride || 0, inputs.locationData?.hardness),
-        [],
-        unitSystem,
-      );
-    } catch {
-      return null;
-    }
+  const estimate = useMemo(() => {
+    if (!flourRow) return null;
+    return estimateLazyLoaf(
+      {
+        flourGrams,
+        waterPct: parseFloat(waterPct),
+        starterPct: parseFloat(starterPct),
+        saltPct: parseFloat(inputs.saltPct),
+        starterHydration: parseFloat(inputs.starterHydrationStr),
+        roomTempC: parseFloat(inputs.ambientTemp),
+        flourTempC: parseFloat(inputs.flourTemp),
+        waterTempC: parseFloat(inputs.waterTemp),
+        starterTempC: LAZY_STARTER_TEMP_C,
+        flour: flourRow.flour,
+      },
+      inputs.locationData?.hourlyForecast ?? null,
+      resolveHardness(inputs.settings.waterHardnessOverride || 0, inputs.locationData?.hardness),
+      unitSystem,
+    );
   }, [
-    flourRow, flourGrams, waterGrams, starterGrams, blend,
+    flourRow, flourGrams, waterPct, starterPct,
     inputs.saltPct, inputs.starterHydrationStr, inputs.ambientTemp, inputs.flourTemp, inputs.waterTemp,
     inputs.locationData, inputs.settings.waterHardnessOverride, unitSystem,
   ]);
+  const results: CalculationResults | null = estimate?.results ?? null;
 
-  const bulkHours = results ? (results.dynamicFerment?.bulkHours ?? results.staticFermentHours) : null;
+  const bulkHours = estimate?.bulkHours ?? null;
   const steps = useMemo(() => buildLazySteps(vessel, bulkHours, unitSystem), [vessel, bulkHours, unitSystem]);
   const checkAt = mixedAt && bulkHours != null ? new Date(mixedAt.getTime() + bulkHours * 3600000) : null;
   const weightDecimals = unitSystem === 'imperial' ? 1 : 0;
   const w = (g: number | undefined) => (g != null && Number.isFinite(g) ? formatWeight(g, unitSystem, weightDecimals) : '—');
   const ing = results?.ingredients;
-  const doughWeight = ing ? ing.bowlFlour + ing.addedWater + ing.starterTotal + ing.salt : undefined;
+  const doughWeight = estimate?.doughGrams;
 
   // ── Save / share ──────────────────────────────────────────────────────
   const recipeParams = useCallback(() => ({
@@ -217,7 +200,7 @@ export default function BreadScreen() {
     actions.handleSave({
       ...recipeParams(),
       flourTemp: inputs.flourTemp,
-      starterTemp: LAZY_STARTER_TEMP_C,
+      starterTemp: String(LAZY_STARTER_TEMP_C),
       starterFlourLabel: flourRow.flour.label,
       breadType: 'custom',
       results,
