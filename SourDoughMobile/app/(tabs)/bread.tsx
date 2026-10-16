@@ -25,6 +25,7 @@ import {
   type LazyVessel,
 } from '../../src/lib/lazyMethod';
 import { estimateLazyLoaf, LAZY_STARTER_TEMP_C } from '../../src/lib/lazyPlan';
+import { isoWithOffset } from '../../src/lib/assist';
 import { getRecipe } from '../../src/store/recipeStore';
 import type { CalculationResults } from '../../src/models/types';
 
@@ -144,6 +145,8 @@ export default function BreadScreen() {
     [flourRow, flourGrams],
   );
 
+  // The Room temp field drives the estimate: flour and water follow it and no weather
+  // forecast is used, so the field, the assistant's tools and this number all agree.
   const estimate = useMemo(() => {
     if (!flourRow) return null;
     return estimateLazyLoaf(
@@ -154,18 +157,16 @@ export default function BreadScreen() {
         saltPct: parseFloat(inputs.saltPct),
         starterHydration: parseFloat(inputs.starterHydrationStr),
         roomTempC: parseFloat(inputs.ambientTemp),
-        flourTempC: parseFloat(inputs.flourTemp),
-        waterTempC: parseFloat(inputs.waterTemp),
         starterTempC: LAZY_STARTER_TEMP_C,
         flour: flourRow.flour,
       },
-      inputs.locationData?.hourlyForecast ?? null,
+      null,
       resolveHardness(inputs.settings.waterHardnessOverride || 0, inputs.locationData?.hardness),
       unitSystem,
     );
   }, [
     flourRow, flourGrams, waterPct, starterPct,
-    inputs.saltPct, inputs.starterHydrationStr, inputs.ambientTemp, inputs.flourTemp, inputs.waterTemp,
+    inputs.saltPct, inputs.starterHydrationStr, inputs.ambientTemp,
     inputs.locationData, inputs.settings.waterHardnessOverride, unitSystem,
   ]);
   const results: CalculationResults | null = estimate?.results ?? null;
@@ -395,7 +396,7 @@ export default function BreadScreen() {
               },
               roomTempC: parseFloat(inputs.ambientTemp),
               vessel,
-              mixedAt: mixedAt ? mixedAt.toISOString() : null,
+              mixedAt: mixedAt ? isoWithOffset(mixedAt) : null,
               bulkHours,
             }}
             onSetRoomTemp={(t) => inputs.setAmbientTemp(String(t))}
