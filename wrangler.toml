@@ -11,3 +11,11 @@ compatibility_date = "2026-07-01"
 # While this binding existed, the Pages project held a reference to the Worker and
 # Cloudflare refused to delete either it or its Durable Object namespace, which kept
 # its alarm-driven poller spending API-Football quota alongside the Pi.
+
+# Ask the baker (functions/api/assist.ts) keeps its rate-limit counters in KV.
+# Create a namespace (`npx wrangler kv namespace create ASSIST_KV`), then
+# uncomment this block and paste its id. Until the binding, the DEEPSEEK_API_KEY
+# secret and RATE_SALT exist, /api/assist answers 503 and the card hides itself.
+# [[kv_namespaces]]
+# binding = "ASSIST_KV"
+# id = "<kv-namespace-id>"
