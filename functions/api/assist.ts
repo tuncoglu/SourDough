@@ -14,6 +14,7 @@ import { chat, type LlmEnv, type LlmMessage, type ToolDef } from './llm';
 import { estimateLazyLoaf, planLazyBake, type LazyPlan, type ProofMode } from '../../SourDoughMobile/src/lib/lazyPlan';
 import { roundToHalfHour, type LazyVessel } from '../../SourDoughMobile/src/lib/lazyMethod';
 import { FALLBACK_HARDNESS } from '../../SourDoughMobile/src/lib/hardnessUtils';
+import { findFlour } from '../../SourDoughMobile/src/lib/flourSearch';
 
 // ── Types ───────────────────────────────────────────────────────────────
 
@@ -37,6 +38,10 @@ export interface AssistContext {
   unitSystem: 'metric' | 'imperial';
   formula: { flourGrams: number; waterPct: number; starterPct: number; saltPct: number; starterHydration: number };
   roomTempC: number;
+  /** Tap water temperature when known; otherwise the water is at room temperature. */
+  waterTempC?: number;
+  /** The bowl flours, when not a single default flour. */
+  flours?: { label: string; grams: number }[];
   vessel: LazyVessel;
   mixedAt: string | null;
   bulkHours: number | null;
@@ -285,13 +290,22 @@ function isTimeZone(s: unknown): s is string {
 export function parseAssistRequest(body: unknown): AssistRequest | null {
   if (!isObj(body) || !onlyKeys(body, ['context', 'messages'])) return null;
   const c = body.context;
-  if (!isObj(c) || !onlyKeys(c, ['now', 'timeZone', 'unitSystem', 'formula', 'roomTempC', 'vessel', 'mixedAt', 'bulkHours'])) return null;
+  if (!isObj(c) || !onlyKeys(c, ['now', 'timeZone', 'unitSystem', 'formula', 'roomTempC', 'waterTempC', 'flours', 'vessel', 'mixedAt', 'bulkHours'])) return null;
   if (!isIsoWithOffset(c.now) || !isTimeZone(c.timeZone)) return null;
   if (c.unitSystem !== 'metric' && c.unitSystem !== 'imperial') return null;
   if (c.vessel !== 'cocotte' && c.vessel !== 'tin') return null;
   if (!isNum(c.roomTempC) || c.roomTempC < -10 || c.roomTempC > 50) return null;
   if (c.mixedAt !== null && !(typeof c.mixedAt === 'string' && !isNaN(Date.parse(c.mixedAt)) && c.mixedAt.length <= 40)) return null;
   if (c.bulkHours !== null && !(isNum(c.bulkHours) && c.bulkHours > 0 && c.bulkHours < 200)) return null;
+  if (c.waterTempC !== undefined && !(isNum(c.waterTempC) && c.waterTempC >= -10 && c.waterTempC <= 50)) return null;
+  if (c.flours !== undefined) {
+    const fl = c.flours;
+    if (!Array.isArray(fl) || fl.length === 0 || fl.length > 3) return null;
+    for (const r of fl) {
+      if (!isObj(r) || !onlyKeys(r, ['label', 'grams']) || typeof r.label !== 'string' || r.label.length > 100) return null;
+      if (!(isNum(r.grams) && r.grams > 0 && r.grams <= 20000)) return null;
+    }
+  }
   const f = c.formula;
   const formulaKeys = ['flourGrams', 'waterPct', 'starterPct', 'saltPct', 'starterHydration'] as const;
   if (!isObj(f) || !onlyKeys(f, formulaKeys) || !formulaKeys.every((k) => isNum(f[k]))) return null;
@@ -359,7 +373,9 @@ class ToolRunner {
         saltPct: overrides.saltPct ?? f.saltPct,
         starterHydration: f.starterHydration,
         roomTempC,
+        waterTempC: this.ctx.waterTempC,
         starterTempC: overrides.starterTempC,
+        flours: this.ctx.flours?.map((r) => ({ flour: findFlour(r.label), grams: r.grams })),
       },
       null,
       FALLBACK_HARDNESS,
