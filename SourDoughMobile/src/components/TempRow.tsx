@@ -63,7 +63,8 @@ export function TempRow({
       if (!isNaN(f)) {
         onChangeText(String(Math.round(fahrenheitToCelsius(f) * 10) / 10));
       } else if (text === '' || text === '.' || text === '-') {
-        onChangeText('0');
+        // Same as metric: hand the parent an empty value, not a real 0 °C.
+        onChangeText('');
       }
     } else {
       onChangeText(text);

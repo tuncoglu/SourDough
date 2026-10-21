@@ -351,6 +351,11 @@ export default function BreadScreen() {
                         onChangeText={(v) => setWaterOverride(Number.isFinite(parseFloat(v)) ? v : null)}
                         isAuto={waterIsAuto && tapTempC != null}
                       />
+                      {waterIsAuto && tapTempC == null && (
+                        <Text style={[styles.hint, { color: colors.muted }]}>
+                          No tap temperature for your location, so the water is assumed to be at room temperature. Type one to override.
+                        </Text>
+                      )}
                       {!waterIsAuto && (
                         <TouchableOpacity onPress={() => setWaterOverride(null)} accessibilityRole="button" style={styles.textBtn}>
                           <Text style={[styles.textBtnLabel, { color: colors.terracotta }]}>
