@@ -57,11 +57,12 @@ export function FlourMix({ rows, onAdd, onRemove, onUpdateFlour, onUpdateGrams }
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.sm },
+  row: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm, marginTop: Spacing.sm },
   picker: { flex: 1, minWidth: 0 },
   pct: { fontSize: FontSize.xs, marginTop: 2 },
-  grams: { width: 120 },
-  remove: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  // NumberInput pads its row by xs + 2; cancel it so the box lines up with the picker.
+  grams: { width: 112, flexShrink: 0, marginTop: -(Spacing.xs + 2) },
+  remove: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
   removeText: { fontSize: FontSize.lg, fontWeight: '700', lineHeight: 22 },
   add: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' },
   addText: { fontSize: FontSize.sm, fontWeight: '700' },

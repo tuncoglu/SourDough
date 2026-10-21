@@ -83,7 +83,7 @@ export function NumberInput({
 
   return (
     <View style={[styles.row, isMobile && styles.rowMobile]}>
-      <Text style={[styles.label, isMobile && styles.labelMobile, { color: colors.espresso }]}>{label}</Text>
+      {label ? <Text style={[styles.label, isMobile && styles.labelMobile, { color: colors.espresso }]}>{label}</Text> : null}
       <View style={[styles.inputGroup, isMobile && styles.inputGroupMobile]}>
         <TextInput
           style={[styles.input, isMobile && styles.inputMobile, { backgroundColor: colors.white, borderColor: colors.border, color: colors.espresso }]}
@@ -129,6 +129,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
+    minWidth: 0, // let the field shrink in a narrow column so the unit stays visible
     maxWidth: 90,
     minHeight: 44,
     borderWidth: 1,

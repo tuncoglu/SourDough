@@ -30,7 +30,6 @@ import { getRecipe } from '../../src/store/recipeStore';
 import type { CalculationResults } from '../../src/models/types';
 
 import { LocationBar } from '../../src/components/LocationBar';
-import { NumberInput } from '../../src/components/NumberInput';
 import { FlourMix } from '../../src/components/FlourMix';
 import { TempRow } from '../../src/components/TempRow';
 import { Seo } from '../../src/components/Seo';
@@ -57,7 +56,7 @@ function PercentField({ label, value, onChange }: { label: string; value: string
         onChangeText={(t) => { if (isValidDecimalInput(t)) onChange(t); }}
         keyboardType="decimal-pad"
         selectTextOnFocus
-        accessibilityLabel={`${label}, percent of flour`}
+        accessibilityLabel={`${label}, percent`}
         style={[styles.pctInput, { color: colors.espresso }]}
       />
       <Text style={[styles.pctUnit, { color: colors.muted }]}>%</Text>
@@ -314,14 +313,15 @@ export default function BreadScreen() {
             <Text style={[styles.totalLabel, { color: colors.muted }]}>Dough weight</Text>
             <Text style={[styles.totalValue, { color: colors.espresso }]}>{w(doughWeight)}</Text>
           </View>
-          <NumberInput
-            label="Starter hydration"
-            unit="%"
-            value={inputs.starterHydrationStr}
-            onChangeText={inputs.setStarterHydrationStr}
-          />
+          <View style={styles.tableRow}>
+            <Text style={[styles.colName, styles.rowLabel, { color: colors.espresso }]}>Starter hydration</Text>
+            <View style={styles.colPct}>
+              <PercentField label="Starter hydration" value={inputs.starterHydrationStr} onChange={inputs.setStarterHydrationStr} />
+            </View>
+            <View style={styles.colWeigh} />
+          </View>
           <Text style={[styles.hint, { color: colors.muted }]}>
-            Percentages are of the flour weight; salt also counts the starter's flour. Assumes the starter comes straight from the fridge.
+            Water, starter and salt are percentages of the flour weight (salt also counts the starter's flour); hydration is the starter's own water-to-flour ratio. Assumes the starter comes straight from the fridge.
             {' '}Water temperature is set in the rise step.
           </Text>
         </View>
