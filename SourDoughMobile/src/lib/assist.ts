@@ -18,6 +18,10 @@ export interface AssistContext {
   unitSystem: UnitSystem;
   formula: { flourGrams: number; waterPct: number; starterPct: number; saltPct: number; starterHydration: number };
   roomTempC: number;
+  /** Tap water temperature when known; otherwise the water is at room temperature. */
+  waterTempC?: number;
+  /** The bowl flours, when not a single default flour. */
+  flours?: { label: string; grams: number }[];
   vessel: LazyVessel;
   mixedAt: string | null;
   bulkHours: number | null;

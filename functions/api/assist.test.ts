@@ -190,6 +190,15 @@ describe('guards', () => {
     expect(parseAssistRequest(validBody({}, turns))).not.toBeNull();
   });
 
+  it('accepts an optional tap temperature and flour blend, and rejects malformed ones', () => {
+    const flours = [{ label: 'Generic: Bread Flour', grams: 400 }, { label: 'Generic: Whole Wheat / WW', grams: 100 }];
+    expect(parseAssistRequest(validBody({ waterTempC: 12, flours }))).not.toBeNull();
+    expect(parseAssistRequest(validBody({ waterTempC: 99 }))).toBeNull();
+    expect(parseAssistRequest(validBody({ flours: [] }))).toBeNull();
+    expect(parseAssistRequest(validBody({ flours: [{ label: 'x', grams: 0 }] }))).toBeNull();
+    expect(parseAssistRequest(validBody({ flours: Array(4).fill(flours[0]) }))).toBeNull();
+  });
+
   it('429 rate_limited once one client reaches its daily limit, without calling DeepSeek', async () => {
     const env = makeEnv({ ASSIST_PER_IP_DAILY: '2' });
     queue(replyTurn('one'), replyTurn('two'), replyTurn('other'));

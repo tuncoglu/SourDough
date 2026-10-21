@@ -7,7 +7,7 @@
  * Function bundles this file directly.
  */
 import { runAllCalculations } from './calculations';
-import { buildBlendFromRows } from './blendUtils';
+import { buildBlendFromRows, buildFlourTypeLabel, getBlendProtein } from './blendUtils';
 import { findFlour } from './flourSearch';
 import { LAZY_BAKE, lazyProofHours, type LazyStep, type LazyVessel } from './lazyMethod';
 import {
@@ -36,6 +36,8 @@ export interface LazyLoafInput {
   starterTempC?: number;    // default 4 (straight from the fridge)
   /** The bowl flour. Default: the app's default flour. */
   flour?: FlourEntry;
+  /** A blend of bowl flours (weights in grams, summing to flourGrams). Wins over `flour`. */
+  flours?: { flour: FlourEntry; grams: number }[];
 }
 
 export interface LazyLoafEstimate {
@@ -69,6 +71,7 @@ export function estimateLazyLoaf(
   if (![flourGrams, waterPct, starterPct, starterHydration, roomTempC, flourTempC, waterTempC, starterTempC].every(finite)) return null;
 
   const flour = input.flour ?? findFlour(DEFAULT_SETTINGS.defaultFlourType);
+  const blend = buildBlendFromRows(input.flours?.length ? input.flours : [{ flour, grams: flourGrams }]);
   const waterGrams = (flourGrams * waterPct) / 100;
   const starterGrams = (flourGrams * starterPct) / 100;
   const starterFlour = starterGrams * (100 / (100 + starterHydration));
@@ -79,10 +82,10 @@ export function estimateLazyLoaf(
     results = runAllCalculations(
       {
         flourWeight: flourGrams,
-        flourType: flour.label,
-        flourProtein: flour.protein,
-        flourProductNo: flour.productNumber,
-        flourBlend: buildBlendFromRows([{ flour, grams: flourGrams }]),
+        flourType: blend.length === 1 ? blend[0].label : buildFlourTypeLabel(blend),
+        flourProtein: blend.length === 1 ? blend[0].protein : getBlendProtein(blend),
+        flourProductNo: blend[0].productNumber,
+        flourBlend: blend,
         hydration: ((waterGrams + starterGrams - starterFlour) / totalFlour) * 100,
         addedWaterGrams: waterGrams,
         starterWeight: starterGrams,

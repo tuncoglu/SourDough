@@ -42,6 +42,18 @@ describe('estimateLazyLoaf', () => {
     expect(explicit.results.fdt).toBe(implicit.results.fdt);
   });
 
+  it('scores a blend by its weighted flours, and cold tap water slows the rise', () => {
+    const white = findFlour('Generic: Bread Flour');
+    const whole = findFlour('Generic: Whole Wheat / WW');
+    const blend = estimateLazyLoaf(
+      { ...DEFAULT_LOAF, flours: [{ flour: white, grams: 250 }, { flour: whole, grams: 250 }] }, null, FALLBACK_HARDNESS,
+    )!;
+    const plain = estimateLazyLoaf({ ...DEFAULT_LOAF, flour: white }, null, FALLBACK_HARDNESS)!;
+    expect(blend.bulkHours).toBeLessThanOrEqual(plain.bulkHours); // wholemeal ferments faster
+    const coldTap = estimateLazyLoaf({ ...DEFAULT_LOAF, waterTempC: 8 }, null, FALLBACK_HARDNESS)!;
+    expect(coldTap.results.fdt).toBeLessThan(plain.results.fdt);
+  });
+
   it('rises faster in a warm kitchen and slower in a cold one', () => {
     const cold = estimateLazyLoaf({ ...DEFAULT_LOAF, roomTempC: 16 }, null, FALLBACK_HARDNESS)!;
     const warm = estimateLazyLoaf({ ...DEFAULT_LOAF, roomTempC: 28 }, null, FALLBACK_HARDNESS)!;

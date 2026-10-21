@@ -31,6 +31,7 @@ import type { CalculationResults } from '../../src/models/types';
 
 import { LocationBar } from '../../src/components/LocationBar';
 import { NumberInput } from '../../src/components/NumberInput';
+import { FlourMix } from '../../src/components/FlourMix';
 import { TempRow } from '../../src/components/TempRow';
 import { Seo } from '../../src/components/Seo';
 import { Icon } from '../../src/components/Icon';
@@ -75,6 +76,9 @@ export default function BreadScreen() {
   const [starterPct, setStarterPctState] = useState(String(LAZY_DEFAULTS.starterPct));
   const [vessel, setVessel] = useState<LazyVessel>('cocotte');
   const [mixedAt, setMixedAt] = useState<Date | null>(null);
+  // Water temperature typed by the baker (°C). Session-only: tap water changes with the season,
+  // so a remembered value would go stale. Null means use the tap temperature, else room temperature.
+  const [waterOverride, setWaterOverride] = useState<string | null>(null);
   const pctTouchedRef = useRef(false);
   const setWaterPct = useCallback((v: string) => { pctTouchedRef.current = true; setWaterPctState(v); }, []);
   const setStarterPct = useCallback((v: string) => { pctTouchedRef.current = true; setStarterPctState(v); }, []);
@@ -117,16 +121,18 @@ export default function BreadScreen() {
       if (!recipe) return;
       const ri = recipe.inputs;
       const water = ri.addedWaterGrams ?? (ri.hydration / 100) * ri.flourWeight;
-      inputs.setMixRows((rows) => [{
-        key: rows[0]?.key ?? 'flour_edit',
-        flour: findFlour(ri.flourBlend?.[0]?.label ?? ri.flourType),
-        grams: String(Math.round(ri.flourWeight)),
-      }]);
+      const saved = ri.flourBlend?.length ? ri.flourBlend : [{ label: ri.flourType, percentage: 100 }];
+      inputs.setMixRows(() => saved.slice(0, 3).map((b, i) => ({
+        key: `flour_edit_${i}`,
+        flour: findFlour(b.label),
+        grams: String(Math.round((ri.flourWeight * b.percentage) / 100)),
+      })));
       if (ri.flourWeight > 0) {
         pctTouchedRef.current = true;
         setWaterPctState(String(Math.round((water / ri.flourWeight) * 100)));
         setStarterPctState(String(Math.round((ri.starterWeight / ri.flourWeight) * 100)));
       }
+      setWaterOverride(Number.isFinite(ri.waterTemp) ? String(ri.waterTemp) : null);
       inputs.setStarterHydrationStr(String(ri.starterHydration));
       inputs.setSaltPct(String(ri.saltPct));
       inputs.setAmbientTemp(String(ri.ambientTemp));
@@ -136,17 +142,27 @@ export default function BreadScreen() {
   }, [editRecipeId]);
 
   // ── Formula → weights and rise estimate (live; nothing to recalculate) ──
-  const flourRow = inputs.mixRows[0];
-  const flourGrams = parseFloat(flourRow?.grams ?? '');
+  const flourRows = useMemo(
+    () => inputs.mixRows
+      .map((r) => ({ flour: r.flour, grams: parseFloat(r.grams) || 0 }))
+      .filter((r) => r.grams > 0),
+    [inputs.mixRows],
+  );
+  const flourRow = flourRows[0];
+  const flourGrams = flourRows.reduce((sum, r) => sum + r.grams, 0);
   const waterGrams = (flourGrams * parseFloat(waterPct)) / 100;
   const starterGrams = (flourGrams * parseFloat(starterPct)) / 100;
-  const blend = useMemo(
-    () => (flourRow ? buildBlendFromRows([{ flour: flourRow.flour, grams: flourGrams || 0 }]) : []),
-    [flourRow, flourGrams],
-  );
+  const blend = useMemo(() => buildBlendFromRows(flourRows), [flourRows]);
 
-  // The Room temp field drives the estimate: flour and water follow it and no weather
+  // The Room temp field drives the estimate and the flour follows it. The water is at the
+  // location's tap temperature when we have one, otherwise at room temperature. No weather
   // forecast is used, so the field, the assistant's tools and this number all agree.
+  const roomTempC = parseFloat(inputs.ambientTemp);
+  const tapTempC = inputs.locationData?.waterTemp ?? null;
+  const autoWaterC = tapTempC ?? roomTempC;
+  const overrideC = waterOverride !== null ? parseFloat(waterOverride) : NaN;
+  const waterTempC = Number.isFinite(overrideC) ? overrideC : autoWaterC;
+  const waterIsAuto = !Number.isFinite(overrideC);
   const estimate = useMemo(() => {
     if (!flourRow) return null;
     return estimateLazyLoaf(
@@ -156,17 +172,19 @@ export default function BreadScreen() {
         starterPct: parseFloat(starterPct),
         saltPct: parseFloat(inputs.saltPct),
         starterHydration: parseFloat(inputs.starterHydrationStr),
-        roomTempC: parseFloat(inputs.ambientTemp),
+        roomTempC,
+        waterTempC,
         starterTempC: LAZY_STARTER_TEMP_C,
         flour: flourRow.flour,
+        flours: flourRows,
       },
       null,
       resolveHardness(inputs.settings.waterHardnessOverride || 0, inputs.locationData?.hardness),
       unitSystem,
     );
   }, [
-    flourRow, flourGrams, waterPct, starterPct,
-    inputs.saltPct, inputs.starterHydrationStr, inputs.ambientTemp,
+    flourRow, flourRows, flourGrams, waterPct, starterPct,
+    inputs.saltPct, inputs.starterHydrationStr, roomTempC, waterTempC,
     inputs.locationData, inputs.settings.waterHardnessOverride, unitSystem,
   ]);
   const results: CalculationResults | null = estimate?.results ?? null;
@@ -189,19 +207,19 @@ export default function BreadScreen() {
     starterHydrationStr: inputs.starterHydrationStr,
     oilPct: '0',
     ambientTemp: inputs.ambientTemp,
-    waterTemp: inputs.waterTemp,
+    waterTemp: String(waterTempC),
     prefermentEnabled: false,
     prefermentFlourPct: '0',
     locationSummary: inputs.locationData?.summary ?? 'Unknown location',
     coldProofEnabled: false,
     coldProofHours: '0',
-  }), [blend, flourGrams, waterGrams, starterGrams, inputs.saltPct, inputs.starterHydrationStr, inputs.ambientTemp, inputs.waterTemp, inputs.locationData]);
+  }), [blend, flourGrams, waterGrams, starterGrams, inputs.saltPct, inputs.starterHydrationStr, inputs.ambientTemp, waterTempC, inputs.locationData]);
 
   const handleSave = useCallback(() => {
     if (!results || !flourRow) return;
     actions.handleSave({
       ...recipeParams(),
-      flourTemp: inputs.flourTemp,
+      flourTemp: inputs.ambientTemp,
       starterTemp: String(LAZY_STARTER_TEMP_C),
       starterFlourLabel: flourRow.flour.label,
       breadType: 'custom',
@@ -212,7 +230,7 @@ export default function BreadScreen() {
       // Leave edit mode so a second Save creates a new loaf.
       if (ok && editRecipeId) router.setParams({ editRecipeId: undefined });
     });
-  }, [results, flourRow, actions, recipeParams, inputs.flourTemp, editRecipeId, router]);
+  }, [results, flourRow, actions, recipeParams, inputs.ambientTemp, editRecipeId, router]);
 
   const handleShare = useCallback(() => {
     if (!results) return;
@@ -267,14 +285,15 @@ export default function BreadScreen() {
         {/* ── The formula ── */}
         <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[sectionTitleStyle, { color: colors.muted }]}>THE FORMULA</Text>
-          <NumberInput
-            label="Flour"
-            unit="g"
-            value={flourRow?.grams ?? ''}
-            onChangeText={(v) => inputs.setMixRows((rows) => [{ ...rows[0], grams: v }])}
+          <FlourMix
+            rows={inputs.mixRows}
+            onAdd={inputs.handleAddFlour}
+            onRemove={inputs.handleRemoveFlour}
+            onUpdateFlour={inputs.handleUpdateFlour}
+            onUpdateGrams={inputs.handleUpdateFlourGrams}
           />
           <Text style={[styles.hint, { color: colors.muted }]}>
-            {flourRow?.flour.label ?? 'Bread flour'}. Change the weight to scale the loaf.
+            Change the weights to scale the loaf. Up to three flours; percentages below are of the total.
           </Text>
 
           <View style={[styles.tableHead, { borderBottomColor: colors.border }]}>
@@ -295,8 +314,15 @@ export default function BreadScreen() {
             <Text style={[styles.totalLabel, { color: colors.muted }]}>Dough weight</Text>
             <Text style={[styles.totalValue, { color: colors.espresso }]}>{w(doughWeight)}</Text>
           </View>
+          <NumberInput
+            label="Starter hydration"
+            unit="%"
+            value={inputs.starterHydrationStr}
+            onChangeText={inputs.setStarterHydrationStr}
+          />
           <Text style={[styles.hint, { color: colors.muted }]}>
-            Percentages are of the flour weight; salt also counts the starter's flour. Assumes a {inputs.starterHydrationStr}% hydration starter straight from the fridge and tap water.
+            Percentages are of the flour weight; salt also counts the starter's flour. Assumes the starter comes straight from the fridge.
+            {' '}Water temperature is set in the rise step.
           </Text>
         </View>
 
@@ -319,6 +345,19 @@ export default function BreadScreen() {
                   {step.key === 'rise' && (
                     <>
                       <TempRow label="Room temp" value={inputs.ambientTemp} onChangeText={inputs.setAmbientTemp} isAuto={!!inputs.locationData} />
+                      <TempRow
+                        label="Water temp"
+                        value={String(Math.round(waterTempC * 10) / 10)}
+                        onChangeText={(v) => setWaterOverride(Number.isFinite(parseFloat(v)) ? v : null)}
+                        isAuto={waterIsAuto && tapTempC != null}
+                      />
+                      {!waterIsAuto && (
+                        <TouchableOpacity onPress={() => setWaterOverride(null)} accessibilityRole="button" style={styles.textBtn}>
+                          <Text style={[styles.textBtnLabel, { color: colors.terracotta }]}>
+                            {tapTempC != null ? 'Use tap temperature' : 'Use room temperature'}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
                       {checkAt && (
                         <View style={[styles.clock, { backgroundColor: colors.successBg, borderColor: colors.border }]}>
                           <Text style={[styles.clockLabel, { color: colors.olive }]}>START CHECKING AT</Text>
@@ -394,7 +433,9 @@ export default function BreadScreen() {
                 saltPct: parseFloat(inputs.saltPct),
                 starterHydration: parseFloat(inputs.starterHydrationStr),
               },
-              roomTempC: parseFloat(inputs.ambientTemp),
+              roomTempC,
+              waterTempC: Number.isFinite(overrideC) ? overrideC : tapTempC ?? undefined,
+              flours: flourRows.map((r) => ({ label: r.flour.label, grams: r.grams })),
               vessel,
               mixedAt: mixedAt ? isoWithOffset(mixedAt) : null,
               bulkHours,
@@ -457,6 +498,7 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: FontSize.sm, lineHeight: 21, marginTop: Spacing.xs },
 
   hint: { fontSize: FontSize.xs, lineHeight: 17, marginTop: Spacing.xs },
+  flourRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, marginTop: Spacing.sm },
 
   tableHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: Spacing.lg, paddingBottom: Spacing.xs, borderBottomWidth: 1 },
   th: { fontSize: FontSize.xs, fontWeight: '700' },
