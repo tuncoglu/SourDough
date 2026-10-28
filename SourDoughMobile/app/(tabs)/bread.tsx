@@ -25,6 +25,7 @@ import {
   type LazyVessel,
 } from '../../src/lib/lazyMethod';
 import { estimateLazyLoaf, LAZY_STARTER_TEMP_C } from '../../src/lib/lazyPlan';
+import { starterTempFor } from '../../src/lib/starterStatus';
 import { isoWithOffset } from '../../src/lib/assist';
 import { getRecipe } from '../../src/store/recipeStore';
 import type { CalculationResults } from '../../src/models/types';
@@ -38,6 +39,7 @@ import { AskCard } from '../../src/components/AskCard';
 
 import { useCalculatorInputs } from '../../src/hooks/useCalculatorInputs';
 import { useRecipeActions } from '../../src/hooks/useRecipeActions';
+import { useStarterStatus } from '../../src/hooks/useStarterStatus';
 
 /** When the dough was mixed — persisted so the clock survives closing the app. */
 const MIXED_AT_KEY = 'sourdough_lazy_mixed_at';
@@ -162,6 +164,14 @@ export default function BreadScreen() {
   const overrideC = waterOverride !== null ? parseFloat(waterOverride) : NaN;
   const waterTempC = Number.isFinite(overrideC) ? overrideC : autoWaterC;
   const waterIsAuto = !Number.isFinite(overrideC);
+
+  // The starter's state, from the feeding log. With no usable log it is a
+  // fridge-cold starter at full strength, as before.
+  const starter = useStarterStatus();
+  const starterTempC = starter.status
+    ? starterTempFor(starter.status, roomTempC, LAZY_STARTER_TEMP_C)
+    : LAZY_STARTER_TEMP_C;
+  const starterHoursSinceFed = starter.status?.effectiveHours;
   const estimate = useMemo(() => {
     if (!flourRow) return null;
     return estimateLazyLoaf(
@@ -173,7 +183,9 @@ export default function BreadScreen() {
         starterHydration: parseFloat(inputs.starterHydrationStr),
         roomTempC,
         waterTempC,
-        starterTempC: LAZY_STARTER_TEMP_C,
+        starterTempC,
+        starterHoursSinceFed,
+        starterFlourBlend: starter.flourBlend,
         flour: flourRow.flour,
         flours: flourRows,
       },
@@ -184,6 +196,7 @@ export default function BreadScreen() {
   }, [
     flourRow, flourRows, flourGrams, waterPct, starterPct,
     inputs.saltPct, inputs.starterHydrationStr, roomTempC, waterTempC,
+    starterTempC, starterHoursSinceFed, starter.flourBlend,
     inputs.locationData, inputs.settings.waterHardnessOverride, unitSystem,
   ]);
   const results: CalculationResults | null = estimate?.results ?? null;
@@ -219,7 +232,7 @@ export default function BreadScreen() {
     actions.handleSave({
       ...recipeParams(),
       flourTemp: inputs.ambientTemp,
-      starterTemp: String(LAZY_STARTER_TEMP_C),
+      starterTemp: String(starterTempC),
       starterFlourLabel: flourRow.flour.label,
       breadType: 'custom',
       results,

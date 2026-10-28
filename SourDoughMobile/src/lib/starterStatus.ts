@@ -116,3 +116,55 @@ export function starterZoneColor(zone: Zone, colors: { ideal: string; hot: strin
     default: return undefined;
   }
 }
+
+// ── Feeding the rise estimate ───────────────────────────────────────────
+
+/** A status older than this, with no fridge record, is too stale to trust. */
+export const STARTER_STATUS_MAX_AGE_HOURS = 14 * 24;
+
+/**
+ * The status to use in a recipe estimate, or null when it should not be used.
+ *
+ * A starter that is in the fridge is always usable: dormant is a real state
+ * however long it has been there. A counter starter with no fridge record
+ * that was last fed weeks ago is probably a stale log from an old install, not
+ * a hungry jar, so it is ignored rather than allowed to quietly slow every
+ * estimate.
+ */
+export function usableStarterStatus(status: StarterStatus | null): StarterStatus | null {
+  if (!status) return null;
+  if (status.isInFridge) return status;
+  return status.hoursSinceFed > STARTER_STATUS_MAX_AGE_HOURS ? null : status;
+}
+
+/**
+ * Temperature of the starter when it goes into the dough: fridge-cold while
+ * in the fridge, room temperature once it is warmed up, and halfway while it
+ * is still coming up (the first hours out of the fridge).
+ */
+export function starterTempFor(
+  status: StarterStatus,
+  roomTempC: number,
+  fridgeTempC: number,
+): number {
+  if (status.isInFridge) return fridgeTempC;
+  if (status.zone === 'building') return (fridgeTempC + roomTempC) / 2;
+  return roomTempC;
+}
+
+/**
+ * The flour mix a feeding used, as shares of its flour (summing to 100).
+ * A feeding with several flours uses their grams; an older single-flour
+ * record uses its one label. Undefined when there is nothing to go on.
+ */
+export function starterFlourBlendFromFeeding(
+  feeding: StarterFeeding | null,
+): { label: string; share: number }[] | undefined {
+  if (!feeding) return undefined;
+  const flours = (feeding.flours ?? []).filter((f) => f.label && f.grams > 0);
+  const total = flours.reduce((s, f) => s + f.grams, 0);
+  if (flours.length > 0 && total > 0) {
+    return flours.map((f) => ({ label: f.label, share: (f.grams / total) * 100 }));
+  }
+  return feeding.flourUsed ? [{ label: feeding.flourUsed, share: 100 }] : undefined;
+}

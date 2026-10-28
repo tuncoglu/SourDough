@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React from 'react';
 import { useRouter } from 'expo-router';
 import {
   View,
@@ -13,7 +13,6 @@ import { useYogurtCalculator } from '@/src/hooks/useYogurtCalculator';
 import { useBreakpoint } from '@/src/hooks/useBreakpoint';
 import { CalculatorShell } from '@/src/components/CalculatorShell';
 import { TempForecastCard } from '@/src/components/TempForecastCard';
-import { StaleResultsBanner } from '@/src/components/StaleResultsBanner';
 import { ValidationMessage } from '@/src/components/ValidationMessage';
 import { Chip } from '@/src/components/Chip';
 import { YogurtResultCard } from '@/src/components/YogurtResultCard';
@@ -35,10 +34,6 @@ export default function YogurtScreen() {
   const calc = useYogurtCalculator();
   const { colors, unitSystem } = useAppTheme();
   const { isDesktop } = useBreakpoint();
-
-  const handleCalculate = useCallback(() => {
-    calc.calculate();
-  }, [calc.calculate]);
 
   const locationSummary = calc.locationData
     ? summaryWithHardnessOverride(calc.locationData, calc.waterHardnessOverride, unitSystem)
@@ -73,8 +68,8 @@ export default function YogurtScreen() {
         <TempForecastCard
           dailyTemps={calc.dailyTemps}
           title="🌡 Ambient temperature"
-          summary={calc.tempResult?.summary ?? 'Using weather forecast for ambient temp'}
-          source={calc.tempResult?.source}
+          summary={calc.tempSummary}
+          source={calc.tempSource}
           locationEnabled={!!calc.locationData}
           suffixes={[
             calc.cultureType === 'thermophilic' ? ` (thermophilic — use a heat source at ${formatTemp(40, unitSystem, 0)}–${formatTemp(45, unitSystem, 0)})` : '',
@@ -273,24 +268,14 @@ export default function YogurtScreen() {
           </View>
         </View>
 
-        {/* ── Validation message ── */}
-        {calc.validationError && <ValidationMessage message={calc.validationError} />}
 
-        {/* ── Calculate ── */}
-        <TouchableOpacity
-          style={[styles.calcBtn, { backgroundColor: colors.terracotta }]}
-          onPress={handleCalculate}
-          activeOpacity={0.8}
-          accessibilityRole="button"
-        >
-          <Text style={[styles.calcBtnText, { color: colors.white }]}>Calculate</Text>
-        </TouchableOpacity>
       </>
   );
 
-  const resultsPanel = calc.showResults && calc.results && (
+  // Always rendered, so the two-column desktop layout does not jump while a
+  // field is briefly empty mid-edit; the message replaces the results.
+  const resultsPanel = calc.showResults && calc.results ? (
     <View style={styles.results}>
-      {calc.inputsDirty && <StaleResultsBanner onRecalculate={handleCalculate} />}
       <YogurtResultCard
         results={calc.results}
         cultureType={calc.cultureType}
@@ -310,16 +295,12 @@ export default function YogurtScreen() {
         presetHealthNote={calc.presetHealthNote}
       />
     </View>
+  ) : (
+    <View style={styles.results}>
+      {calc.validationError && <ValidationMessage message={calc.validationError} />}
+    </View>
   );
 
-  const scrollRef = React.useRef<ScrollView>(null);
-
-  // Scroll to results when they first appear (mobile single-column layout)
-  useEffect(() => {
-    if (calc.showResults) {
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
-    }
-  }, [calc.showResults]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.cream }]} edges={['top']}>
@@ -328,7 +309,7 @@ export default function YogurtScreen() {
         description="Incubation time, starter culture, yield and nutrition for 10 yogurt cultures, adjusted to your kitchen temperature. Free, private, open source."
         path="/yogurt"
       />
-      <CalculatorShell right={resultsPanel} leftRef={scrollRef}>
+      <CalculatorShell right={resultsPanel}>
         {inputPanels}
       </CalculatorShell>
     </SafeAreaView>
@@ -468,18 +449,6 @@ const styles = StyleSheet.create({
   toggleHint: {
     fontSize: FontSize.xs,
     marginTop: 2,
-  },
-
-  // Calculate
-  calcBtn: {
-    marginVertical: Spacing.lg,
-    paddingVertical: Spacing.md + 2,
-    borderRadius: BorderRadius.lg,
-    alignItems: 'center',
-  },
-  calcBtnText: {
-    fontSize: FontSize.lg,
-    fontWeight: '700',
   },
 
   // Results

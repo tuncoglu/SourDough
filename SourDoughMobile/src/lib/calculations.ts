@@ -759,6 +759,7 @@ export function runAllCalculations(
     inputs.starterFlourType,
     inputs.flourWeight,
     ingredients.flourFromStarter,
+    inputs.starterFlourBlend,
   );
 
   const staticFerment = estimateFermentation(

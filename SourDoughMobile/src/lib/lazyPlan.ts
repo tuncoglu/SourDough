@@ -38,6 +38,13 @@ export interface LazyLoafInput {
   flour?: FlourEntry;
   /** A blend of bowl flours (weights in grams, summing to flourGrams). Wins over `flour`. */
   flours?: { flour: FlourEntry; grams: number }[];
+  /**
+   * How lively the starter is, as effective hours since its last feed (see
+   * `computeStarterStatus`). Undefined = assume full strength.
+   */
+  starterHoursSinceFed?: number;
+  /** The flours the starter is fed with, as shares of its flour. Default: generic bread flour. */
+  starterFlourBlend?: { label: string; share: number }[];
 }
 
 export interface LazyLoafEstimate {
@@ -68,6 +75,7 @@ export function estimateLazyLoaf(
   const starterTempC = input.starterTempC ?? LAZY_STARTER_TEMP_C;
   if (!(flourGrams > 0) || !(waterPct > 0) || !(starterPct > 0) || !(starterHydration > 0)) return null;
   if (!finite(saltPct) || saltPct < 0) return null;
+  if (input.starterHoursSinceFed !== undefined && !(finite(input.starterHoursSinceFed) && input.starterHoursSinceFed >= 0)) return null;
   if (![flourGrams, waterPct, starterPct, starterHydration, roomTempC, flourTempC, waterTempC, starterTempC].every(finite)) return null;
 
   const flour = input.flour ?? findFlour(DEFAULT_SETTINGS.defaultFlourType);
@@ -96,6 +104,8 @@ export function estimateLazyLoaf(
         flourTemp: flourTempC,
         waterTemp: waterTempC,
         starterTemp: starterTempC,
+        starterHoursSinceFed: input.starterHoursSinceFed,
+        starterFlourBlend: input.starterFlourBlend,
       },
       hourlyForecast,
       hardness,

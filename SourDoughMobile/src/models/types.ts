@@ -59,6 +59,8 @@ export interface RecipeInputs {
   starterWeight: number;     // g
   starterHydration: number;  // %
   starterFlourType?: string; // flour label used to feed the starter (undefined on legacy recipes)
+  /** Several flours in the starter: each share is a percent of the starter's flour. Wins over starterFlourType. */
+  starterFlourBlend?: { label: string; share: number }[];
   saltPct: number;           // %
   oilPct?: number;           // % — oil/fat as percentage of total flour (0 if unset)
   ambientTemp: number;       // °C
@@ -189,6 +191,8 @@ export interface StarterFeeding {
   timestamp: string;          // ISO
   flourUsed: string;          // flour label
   flourGrams: number;         // g of flour used to feed
+  /** When the feed used several flours: each flour and its grams (they add up to flourGrams). */
+  flours?: { label: string; grams: number }[];
   waterGrams: number;         // g of water used to feed
   notes?: string;
   /** If the starter went into the fridge after this feeding, when (ISO). */

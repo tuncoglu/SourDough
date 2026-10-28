@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   View,
@@ -13,7 +13,6 @@ import { useLactoCalculator } from '@/src/hooks/useLactoCalculator';
 import { useBreakpoint } from '@/src/hooks/useBreakpoint';
 import { CalculatorShell } from '@/src/components/CalculatorShell';
 import { TempForecastCard } from '@/src/components/TempForecastCard';
-import { StaleResultsBanner } from '@/src/components/StaleResultsBanner';
 import { ValidationMessage } from '@/src/components/ValidationMessage';
 import { Chip } from '@/src/components/Chip';
 import { LactoResultCard } from '@/src/components/LactoResultCard';
@@ -50,10 +49,6 @@ export default function FermentsScreen() {
   }, [historyId, loadedHistoryId, calc.restoreFrom]);
   const { colors, unitSystem } = useAppTheme();
   const { isDesktop } = useBreakpoint();
-
-  const handleCalculate = useCallback(() => {
-    calc.calculate();
-  }, [calc.calculate]);
 
   const locationSummary = calc.locationData
     ? summaryWithHardnessOverride(calc.locationData, calc.waterHardnessOverride, unitSystem)
@@ -377,24 +372,13 @@ export default function FermentsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* ── Validation message ── */}
-        {calc.validationError && <ValidationMessage message={calc.validationError} />}
-
-        {/* ── Calculate ── */}
-        <TouchableOpacity
-          style={[styles.calcBtn, { backgroundColor: colors.terracotta }]}
-          onPress={handleCalculate}
-          activeOpacity={0.8}
-          accessibilityRole="button"
-        >
-          <Text style={[styles.calcBtnText, { color: colors.white }]}>Calculate</Text>
-        </TouchableOpacity>
       </>
   );
 
-  const resultsPanel = calc.showResults && calc.results && (
+  // Always rendered, so the two-column desktop layout does not jump while a
+  // field is briefly empty mid-edit; the message replaces the results.
+  const resultsPanel = calc.showResults && calc.results ? (
     <View style={styles.results}>
-      {calc.inputsDirty && <StaleResultsBanner onRecalculate={handleCalculate} />}
       <LactoResultCard results={calc.results} method={calc.method} />
       <LactoTimeline timeline={calc.timeline} results={calc.results} timing={calc.timing} />
       <AddToCalendarCard
@@ -435,16 +419,11 @@ export default function FermentsScreen() {
               presetHealthNote={calc.presetHealthNote}
             />
           </View>
+  ) : (
+    <View style={styles.results}>
+      {calc.validationError && <ValidationMessage message={calc.validationError} />}
+    </View>
   );
-
-  const scrollRef = React.useRef<ScrollView>(null);
-
-  // Scroll to results when they first appear (mobile single-column layout)
-  useEffect(() => {
-    if (calc.showResults) {
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
-    }
-  }, [calc.showResults]);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.cream }]} edges={['top']}>
@@ -453,7 +432,7 @@ export default function FermentsScreen() {
         description="Salt, brine and a day-by-day pH timeline for sauerkraut, kimchi, pickles and hot sauce — adjusted to your ambient temperature. Free, private, open source."
         path="/ferments"
       />
-      <CalculatorShell right={resultsPanel} leftRef={scrollRef}>
+      <CalculatorShell right={resultsPanel}>
         {inputPanels}
       </CalculatorShell>
     </SafeAreaView>
@@ -668,18 +647,6 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     lineHeight: 16,
   },
-  // Calculate
-  calcBtn: {
-    marginVertical: Spacing.lg,
-    paddingVertical: Spacing.md + 2,
-    borderRadius: BorderRadius.lg,
-    alignItems: 'center',
-  },
-  calcBtnText: {
-    fontSize: FontSize.lg,
-    fontWeight: '700',
-  },
-
   // Results
   results: {
     gap: Spacing.lg,

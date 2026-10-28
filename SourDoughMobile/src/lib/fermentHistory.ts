@@ -82,8 +82,16 @@ export function addFerment(
   entries: FermentHistoryEntry[],
   entry: FermentHistoryEntry,
   now: Date = new Date(),
+  /**
+   * An earlier entry this one refines, which is removed first. The calculator
+   * recalculates as you type, so one sitting at the jar can produce several
+   * entries for what is really one ferment; the caller passes the id of the
+   * entry it recorded a moment ago so the list keeps only the latest.
+   */
+  replaceId?: string,
 ): FermentHistoryEntry[] {
-  const rest = entries[0]?.signature === entry.signature ? entries.slice(1) : entries;
+  const base = replaceId ? entries.filter((e) => e.id !== replaceId) : entries;
+  const rest = base[0]?.signature === entry.signature ? base.slice(1) : base;
   return pruneFerments([entry, ...rest], now).slice(0, FERMENT_HISTORY_CAP);
 }
 

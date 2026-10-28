@@ -135,3 +135,29 @@ describe('fermentSummary', () => {
     expect(fermentSummary(entry({ useStarter: true }))).toContain('starter');
   });
 });
+
+
+describe('addFerment while the calculator is live', () => {
+  it('replaces the entry it is told this one refines', () => {
+    const first = entry({ id: 'first', signature: 'sig-1' });
+    const older = entry({ id: 'older', signature: 'sig-0' });
+    // The same jar, tuned a moment later: new signature, but it refines `first`.
+    const refined = entry({ id: 'refined', signature: 'sig-2' });
+    const list = addFerment([first, older], refined, NOW, 'first');
+    expect(list.map((e) => e.id)).toEqual(['refined', 'older']);
+  });
+
+  it('keeps everything when there is nothing to replace', () => {
+    const first = entry({ id: 'first', signature: 'sig-1' });
+    const next = entry({ id: 'next', signature: 'sig-2' });
+    expect(addFerment([first], next, NOW).map((e) => e.id)).toEqual(['next', 'first']);
+    expect(addFerment([first], next, NOW, 'gone').map((e) => e.id)).toEqual(['next', 'first']);
+  });
+
+  it('still merges an identical signature at the top, with or without a replace id', () => {
+    const first = entry({ id: 'first', signature: 'sig-1' });
+    const again = entry({ id: 'again', signature: 'sig-1' });
+    expect(addFerment([first], again, NOW).map((e) => e.id)).toEqual(['again']);
+    expect(addFerment([first], again, NOW, 'first').map((e) => e.id)).toEqual(['again']);
+  });
+});

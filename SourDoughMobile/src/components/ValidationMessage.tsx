@@ -1,6 +1,6 @@
 /**
- * Inline validation error shown above the Calculate button when required
- * inputs are missing. Shared by the yogurt and lacto-fermentation screens.
+ * Inline message shown in place of the results when required inputs are
+ * missing. Shared by the yogurt and lacto-fermentation screens.
  */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';

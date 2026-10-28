@@ -145,6 +145,23 @@ export function resolveFermentFactor(flour: string | FlourBlendEntry[]): number 
 // ── Merge Starter Flour Into Blend ──────────────────────────────────────
 
 /**
+ * The starter's flour as shares summing to 100. Drops non-positive or
+ * non-finite shares; falls back to the single label (or the generic bread
+ * flour) when no usable blend is given.
+ */
+export function normalizeStarterShares(
+  blend: { label: string; share: number }[] | undefined,
+  fallbackLabel: string | undefined,
+): { label: string; share: number }[] {
+  const usable = (blend ?? []).filter((p) => p.label && Number.isFinite(p.share) && p.share > 0);
+  const total = usable.reduce((s, p) => s + p.share, 0);
+  if (usable.length === 0 || total <= 0) {
+    return [{ label: fallbackLabel ?? 'Generic: Bread Flour', share: 100 }];
+  }
+  return usable.map((p) => ({ label: p.label, share: (p.share / total) * 100 }));
+}
+
+/**
  * Merge the fresh flour blend with the flour contributed by the starter.
  * The starter flour's category affects fermentation, so it must be included
  * in the weighted-average ferment factor alongside the fresh flour blend.
@@ -154,11 +171,18 @@ export function mergeBlendWithStarter(
   starterFlourLabel: string | undefined,
   freshFlourWeight: number,
   flourFromStarter: number,
+  /**
+   * The starter can be fed with more than one flour (say white and rye).
+   * `share` is each flour's percent of the starter's flour; shares are
+   * rescaled to sum to 100, so any positive weights work. When this is
+   * given it wins over `starterFlourLabel`.
+   */
+  starterFlourBlend?: { label: string; share: number }[],
 ): FlourBlendEntry[] {
   const totalFlour = freshFlourWeight + flourFromStarter;
   if (totalFlour <= 0) return blend ?? [];
 
-  const starterFlour = findFlour(starterFlourLabel ?? 'Generic: Bread Flour');
+  const starterParts = normalizeStarterShares(starterFlourBlend, starterFlourLabel);
 
   // Build a map keyed by label to merge duplicate flours
   const merged: Record<string, { entry: FlourBlendEntry; grams: number }> = {};
@@ -180,21 +204,25 @@ export function mergeBlendWithStarter(
     // If blend is empty/undefined, the starter flour becomes the only entry.
   }
 
-  // Add starter flour component
-  const starterKey = starterFlour.label;
-  if (merged[starterKey]) {
-    merged[starterKey].grams += flourFromStarter;
-  } else {
-    merged[starterKey] = {
-      entry: {
-        label: starterFlour.label,
-        protein: starterFlour.protein,
-        productNumber: starterFlour.productNumber,
-        category: starterFlour.category,
-        percentage: 0,
-      },
-      grams: flourFromStarter,
-    };
+  // Add the starter's flour component(s)
+  for (const part of starterParts) {
+    const starterFlour = findFlour(part.label);
+    const grams = flourFromStarter * (part.share / 100);
+    const starterKey = starterFlour.label;
+    if (merged[starterKey]) {
+      merged[starterKey].grams += grams;
+    } else {
+      merged[starterKey] = {
+        entry: {
+          label: starterFlour.label,
+          protein: starterFlour.protein,
+          productNumber: starterFlour.productNumber,
+          category: starterFlour.category,
+          percentage: 0,
+        },
+        grams,
+      };
+    }
   }
 
   // Convert back to FlourBlendEntry[] with recalculated percentages

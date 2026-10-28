@@ -38,10 +38,13 @@ function serialized<T>(op: () => Promise<T>): Promise<T> {
 }
 
 /** Record a calculation. Fire-and-forget from the calculator's point of view. */
-export function recordFerment(entry: FermentHistoryEntry): Promise<void> {
+export function recordFerment(entry: FermentHistoryEntry, replaceId?: string): Promise<void> {
   return serialized(async () => {
     const entries = await loadFerments();
-    await AsyncStorage.setItem(FERMENTS_KEY, JSON.stringify(addFerment(entries, entry)));
+    await AsyncStorage.setItem(
+      FERMENTS_KEY,
+      JSON.stringify(addFerment(entries, entry, new Date(), replaceId)),
+    );
   });
 }
 
