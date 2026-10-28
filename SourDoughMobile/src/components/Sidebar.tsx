@@ -4,7 +4,7 @@ import { useRouter, usePathname } from 'expo-router';
 import { Spacing, FontSize, BorderRadius, MaxWidth, useAppTheme } from '../theme';
 import { Icon, type IconName } from './Icon';
 
-type AppRoute = '/bread' | '/yogurt' | '/ferments' | '/history' | '/settings' | '/about';
+type AppRoute = '/bread' | '/starter' | '/yogurt' | '/ferments' | '/history' | '/settings' | '/about';
 
 interface NavItem {
   path: AppRoute;
@@ -14,6 +14,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { path: '/bread', label: 'Sourdough', icon: 'bread-slice-outline' },
+  { path: '/starter', label: 'Starter', icon: 'flask-outline' },
   { path: '/yogurt', label: 'Yogurt', icon: 'cup-outline' },
   { path: '/ferments', label: 'Lacto-ferment', icon: 'barrel-outline' },
   { path: '/history', label: 'History', icon: 'history' },

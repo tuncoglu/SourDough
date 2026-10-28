@@ -15,17 +15,39 @@ import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyle, sectionTitleSt
 import { summaryWithHardnessOverride } from '../../src/lib/location';
 import { buildBlendFromRows } from '../../src/lib/blendUtils';
 import { resolveHardness } from '../../src/lib/hardnessUtils';
-import { formatWeight } from '../../src/lib/unitConversion';
+import { formatTemp, formatWeight } from '../../src/lib/unitConversion';
 import { isValidDecimalInput } from '../../src/lib/inputValidation';
 import { findFlour } from '../../src/lib/flourSearch';
 import {
+  buildFeedStep,
   buildLazySteps,
   lazyBakeSummary,
   LAZY_DEFAULTS,
+  STARTER_FEED_GRAMS,
   type LazyVessel,
 } from '../../src/lib/lazyMethod';
-import { estimateLazyLoaf, LAZY_STARTER_TEMP_C } from '../../src/lib/lazyPlan';
-import { starterTempFor } from '../../src/lib/starterStatus';
+import { estimateLazyLoaf, FRIDGE_HOURS, LAZY_PLAN_MINUTES, LAZY_STARTER_TEMP_C, type ProofMode } from '../../src/lib/lazyPlan';
+import {
+  atClockTime,
+  dayFromNow,
+  earliestReadyAt,
+  ovenOnAt,
+  parseClockTime,
+  scheduleBackward,
+  scheduleFromMix,
+  startsBefore,
+  type ScheduleInput,
+} from '../../src/lib/lazySchedule';
+import {
+  DEFAULT_PEAK_EFFECTIVE_HOURS,
+  starterFeedAmounts,
+  starterPeakWindowHours,
+  starterTempFor,
+  starterTimeToPeakHours,
+} from '../../src/lib/starterStatus';
+import { clockTime } from '../../src/lib/starterFormat';
+import { computeVitalityFactor } from '../../src/lib/calculations';
+import { fedForThisLoaf, peakForecast } from '../../src/lib/starterLog';
 import { isoWithOffset } from '../../src/lib/assist';
 import { getRecipe } from '../../src/store/recipeStore';
 import type { CalculationResults } from '../../src/models/types';
@@ -36,6 +58,8 @@ import { TempRow } from '../../src/components/TempRow';
 import { Seo } from '../../src/components/Seo';
 import { Icon } from '../../src/components/Icon';
 import { AskCard } from '../../src/components/AskCard';
+import { StarterChoiceCard, type StarterMode } from '../../src/components/StarterChoiceCard';
+import { ReadyByCard, whenLabel, type PlanMode } from '../../src/components/ReadyByCard';
 
 import { useCalculatorInputs } from '../../src/hooks/useCalculatorInputs';
 import { useRecipeActions } from '../../src/hooks/useRecipeActions';
@@ -168,41 +192,198 @@ export default function BreadScreen() {
   // The starter's state, from the feeding log. With no usable log it is a
   // fridge-cold starter at full strength, as before.
   const starter = useStarterStatus(roomTempC);
-  const starterTempC = starter.status
-    ? starterTempFor(starter.status, roomTempC, LAZY_STARTER_TEMP_C)
-    : LAZY_STARTER_TEMP_C;
-  const starterHoursSinceFed = starter.status?.effectiveHours;
-  const estimate = useMemo(() => {
+  const [starterMode, setStarterMode] = useState<StarterMode>('fridge');
+  const [feedRatio, setFeedRatio] = useState(1);
+  const modeChosenRef = useRef(false);
+  const chooseMode = useCallback((m: StarterMode) => { modeChosenRef.current = true; setStarterMode(m); }, []);
+  const fed = starterMode === 'fed';
+  const loafFeeding = fedForThisLoaf(starter.feeding, new Date(starter.now)) ? starter.feeding : null;
+
+  // A feeding made for this loaf means the person is already on the feed-first path.
+  useEffect(() => {
+    if (!modeChosenRef.current && loafFeeding) setStarterMode('fed');
+  }, [loafFeeding]);
+
+  // How each choice changes the estimate. Fed first assumes it is mixed at the peak;
+  // from the fridge uses the starter's logged state.
+  const estimateFor = useCallback((mode: StarterMode) => {
     if (!flourRow) return null;
-    return estimateLazyLoaf(
-      {
-        flourGrams,
-        waterPct: parseFloat(waterPct),
-        starterPct: parseFloat(starterPct),
-        saltPct: parseFloat(inputs.saltPct),
-        starterHydration: parseFloat(inputs.starterHydrationStr),
-        roomTempC,
-        waterTempC,
-        starterTempC,
-        starterHoursSinceFed,
-        starterFlourBlend: starter.flourBlend,
-        flour: flourRow.flour,
-        flours: flourRows,
-      },
-      null,
-      resolveHardness(inputs.settings.waterHardnessOverride || 0, inputs.locationData?.hardness),
-      unitSystem,
-    );
+    const isFed = mode === 'fed';
+    const tempC = isFed
+      ? roomTempC
+      : starter.status ? starterTempFor(starter.status, roomTempC, LAZY_STARTER_TEMP_C) : LAZY_STARTER_TEMP_C;
+    // Feed first means mixing at the peak, which is what the plan tells the person to do.
+    const hours = isFed ? DEFAULT_PEAK_EFFECTIVE_HOURS : starter.status?.effectiveHours;
+    return {
+      starterTempC: tempC,
+      starterHoursSinceFed: hours,
+      estimate: estimateLazyLoaf(
+        {
+          flourGrams,
+          waterPct: parseFloat(waterPct),
+          starterPct: parseFloat(starterPct),
+          saltPct: parseFloat(inputs.saltPct),
+          starterHydration: parseFloat(inputs.starterHydrationStr),
+          roomTempC,
+          waterTempC,
+          starterTempC: tempC,
+          starterHoursSinceFed: hours,
+          starterFlourBlend: starter.flourBlend,
+          flour: flourRow.flour,
+          flours: flourRows,
+        },
+        null,
+        resolveHardness(inputs.settings.waterHardnessOverride || 0, inputs.locationData?.hardness),
+        unitSystem,
+      ),
+    };
   }, [
     flourRow, flourRows, flourGrams, waterPct, starterPct,
     inputs.saltPct, inputs.starterHydrationStr, roomTempC, waterTempC,
-    starterTempC, starterHoursSinceFed, starter.flourBlend,
+    starter.status, starter.flourBlend,
     inputs.locationData, inputs.settings.waterHardnessOverride, unitSystem,
   ]);
+  const fridgeCase = useMemo(() => estimateFor('fridge'), [estimateFor]);
+  const fedCase = useMemo(() => estimateFor('fed'), [estimateFor]);
+  const chosenCase = fed ? fedCase : fridgeCase;
+  const estimate = chosenCase?.estimate ?? null;
+  const starterTempC = chosenCase?.starterTempC ?? LAZY_STARTER_TEMP_C;
+  const starterHoursSinceFed = chosenCase?.starterHoursSinceFed;
+
+  // What to feed, and when it peaks, for this loaf's starter.
+  const starterHydrationPct = parseFloat(inputs.starterHydrationStr) || 100;
+  const feedAmounts = useMemo(
+    () => starterFeedAmounts({ neededGrams: starterGrams, ratio: feedRatio, hydration: starterHydrationPct }),
+    [starterGrams, feedRatio, starterHydrationPct],
+  );
+  const timeToPeak = Number.isFinite(roomTempC)
+    ? starterTimeToPeakHours({ roomTempC, dilution: feedAmounts.dilution, peakEffectiveHours: starter.peakEffectiveHours })
+    : null;
+  const peakWindow = timeToPeak !== null ? starterPeakWindowHours(timeToPeak) : null;
+  const loafPeak = loafFeeding
+    ? peakForecast(loafFeeding, { roomTempC, peakEffectiveHours: starter.peakEffectiveHours })
+    : null;
+
+  const feedNow = useCallback(async () => {
+    const shares = starter.flourBlend ?? [{ label: 'Generic: Bread Flour', share: 100 }];
+    await starter.feed({
+      flours: shares.map((s) => ({ label: s.label, grams: String(Math.round((feedAmounts.flourGrams * s.share) / 100)) })),
+      waterGrams: String(feedAmounts.waterGrams),
+      keptGrams: String(feedAmounts.keptGrams),
+    });
+  }, [starter, feedAmounts]);
+
+  /** The lazy loop: after mixing, feed what is left in the jar and put it back in the fridge. */
+  const jarLogged = !!starter.feeding?.fridgeAt && Date.now() - new Date(starter.feeding.timestamp).getTime() < 12 * 3_600_000;
+  const logJarAway = useCallback(async () => {
+    const shares = starter.flourBlend ?? [{ label: 'Generic: Bread Flour', share: 100 }];
+    await starter.feed({
+      flours: shares.map((s) => ({ label: s.label, grams: String(Math.round((STARTER_FEED_GRAMS * s.share) / 100)) })),
+      waterGrams: String(STARTER_FEED_GRAMS),
+      keptGrams: '',
+      intoFridge: true,
+    });
+  }, [starter]);
+
   const results: CalculationResults | null = estimate?.results ?? null;
 
   const bulkHours = estimate?.bulkHours ?? null;
-  const steps = useMemo(() => buildLazySteps(vessel, bulkHours, unitSystem), [vessel, bulkHours, unitSystem]);
+  const steps = useMemo(() => {
+    const base = buildLazySteps(vessel, bulkHours, unitSystem, { starterFed: fed });
+    if (!fed || timeToPeak === null) return base;
+    return [
+      buildFeedStep({
+        leadHours: timeToPeak,
+        roomTempC,
+        keptGrams: feedAmounts.keptGrams,
+        flourGrams: feedAmounts.flourGrams,
+        waterGrams: feedAmounts.waterGrams,
+        neededGrams: starterGrams,
+        unitSystem,
+      }),
+      ...base,
+    ];
+  }, [vessel, bulkHours, unitSystem, fed, timeToPeak, roomTempC, feedAmounts, starterGrams]);
+  // ── The schedule: clock times for every step ─────────────────────────────
+  const nowDate = useMemo(() => new Date(starter.now), [starter.now]);
+  const [planMode, setPlanMode] = useState<PlanMode>('now');
+  const [readyDay, setReadyDay] = useState(1);
+  const [readyTime, setReadyTime] = useState('09:00');
+  const [proofMode, setProofMode] = useState<ProofMode>('counter');
+  const [fridgeHoursStr, setFridgeHoursStr] = useState(String(FRIDGE_HOURS.default));
+  const parsedReadyTime = parseClockTime(readyTime);
+  const wantedReadyAt = planMode === 'readyBy' && parsedReadyTime
+    ? atClockTime(dayFromNow(nowDate, readyDay), parsedReadyTime)
+    : null;
+
+  const schedule = useMemo(() => {
+    if (bulkHours == null) return null;
+    const fridgeHours = parseFloat(fridgeHoursStr);
+    const base: ScheduleInput = {
+      vessel,
+      bulkHours,
+      proofMode,
+      fridgeHours: Number.isFinite(fridgeHours) ? fridgeHours : undefined,
+    };
+    const feed = fed && timeToPeak !== null ? { leadHours: timeToPeak, windowHours: peakWindow ?? undefined } : undefined;
+    const none = { tooEarly: false, earliest: null as Date | null, note: null as string | null };
+
+    // Once mixed, the day runs forward from the moment it really was.
+    if (mixedAt) return { plan: scheduleFromMix({ ...base, mixAt: mixedAt }), ...none };
+
+    // Already fed for this loaf: mix at the peak, whatever was planned.
+    if (fed && loafFeeding && loafPeak) {
+      const plan = scheduleFromMix({ ...base, mixAt: loafPeak.peakAt });
+      let note: string | null = null;
+      if (wantedReadyAt) {
+        const ready = plan.steps.find((x) => x.key === 'cool')!.at.getTime() + LAZY_PLAN_MINUTES.cool * 60_000;
+        if (ready > wantedReadyAt.getTime() + 5 * 60_000) {
+          const earlier = scheduleFromMix({ ...base, mixAt: loafPeak.window.from });
+          const earliestReady = new Date(earlier.steps.find((x) => x.key === 'cool')!.at.getTime() + LAZY_PLAN_MINUTES.cool * 60_000);
+          note = `Mixing at the peak means ready about ${whenLabel(new Date(ready), nowDate)}, later than ${whenLabel(wantedReadyAt, nowDate)}. Mixing as early as ${whenLabel(loafPeak.window.from, nowDate)} gets it to ${whenLabel(earliestReady, nowDate)}.`;
+        } else {
+          note = `On track: mixing at the peak has it ready about ${whenLabel(new Date(ready), nowDate)}.`;
+        }
+      }
+      return { plan, ...none, note };
+    }
+
+    if (planMode === 'readyBy') {
+      if (!wantedReadyAt) return { plan: null, ...none };
+      const plan = scheduleBackward({ ...base, feed, readyAt: wantedReadyAt });
+      return {
+        plan,
+        tooEarly: startsBefore(plan, nowDate),
+        earliest: earliestReadyAt(nowDate, { ...base, feed }),
+        note: null as string | null,
+      };
+    }
+
+    // Start now: feed now and mix at the peak, or just mix.
+    const mixAt = feed ? new Date(nowDate.getTime() + feed.leadHours * 3_600_000) : nowDate;
+    return { plan: scheduleFromMix({ ...base, feed, mixAt }), ...none };
+  }, [bulkHours, vessel, proofMode, fridgeHoursStr, fed, timeToPeak, peakWindow, mixedAt, loafFeeding, loafPeak, wantedReadyAt, planMode, nowDate]);
+
+  const ovenOn = schedule?.plan ? ovenOnAt(schedule.plan, vessel) : null;
+  /** The clock time of each step, for the method list. */
+  const stepWhen = useMemo(() => {
+    const out: Record<string, string> = {};
+    if (!schedule?.plan || schedule.tooEarly) return out;
+    for (const st of schedule.plan.steps) out[st.key] = whenLabel(st.at, nowDate);
+    if (ovenOn && out.bake) out.bake = `${out.bake} · heat the oven at ${whenLabel(ovenOn, nowDate)}`;
+    return out;
+  }, [schedule, ovenOn, nowDate]);
+
+  /** Fill in the earliest time that works. */
+  const useEarliest = useCallback(() => {
+    if (!schedule?.earliest) return;
+    const rounded = new Date(Math.ceil(schedule.earliest.getTime() / 300_000) * 300_000);
+    const start = dayFromNow(nowDate, 0).getTime();
+    const day = Math.round((dayFromNow(rounded, 0).getTime() - start) / 86_400_000);
+    setReadyDay(Math.min(4, Math.max(0, day)));
+    setReadyTime(`${String(rounded.getHours()).padStart(2, '0')}:${String(rounded.getMinutes()).padStart(2, '0')}`);
+  }, [schedule, nowDate]);
+
   const checkAt = mixedAt && bulkHours != null ? new Date(mixedAt.getTime() + bulkHours * 3600000) : null;
   const weightDecimals = unitSystem === 'imperial' ? 1 : 0;
   const w = (g: number | undefined) => (g != null && Number.isFinite(g) ? formatWeight(g, unitSystem, weightDecimals) : '—');
@@ -334,16 +515,58 @@ export default function BreadScreen() {
             <View style={styles.colWeigh} />
           </View>
           <Text style={[styles.hint, { color: colors.muted }]}>
-            Water, starter and salt are percentages of the flour weight (salt also counts the starter's flour); hydration is the starter's own water-to-flour ratio. Assumes the starter comes straight from the fridge.
+            Water, starter and salt are percentages of the flour weight (salt also counts the starter's flour); hydration is the starter's own water-to-flour ratio. How the starter goes in is chosen below.
             {' '}Water temperature is set in the rise step.
           </Text>
         </View>
+
+        {/* ── The starter ── */}
+        <StarterChoiceCard
+          mode={starterMode}
+          onMode={chooseMode}
+          ratio={feedRatio}
+          onRatio={setFeedRatio}
+          status={starter.status}
+          riseHours={{ fridge: fridgeCase?.estimate?.bulkHours ?? null, fed: fedCase?.estimate?.bulkHours ?? null }}
+          activityPct={starterHoursSinceFed !== undefined ? Math.round(computeVitalityFactor(starterHoursSinceFed) * 100) : 100}
+          starterTempText={Number.isFinite(starterTempC) ? formatTemp(starterTempC, unitSystem, 0) + (fed ? ', room temperature' : starterTempC <= LAZY_STARTER_TEMP_C ? ', from the fridge' : '') : '—'}
+          timeToPeakHours={timeToPeak}
+          peakWindowHours={peakWindow}
+          feedText={`Keep ${w(feedAmounts.keptGrams)} of starter, add ${w(feedAmounts.flourGrams)} of flour and ${w(feedAmounts.waterGrams)} of water (${w(feedAmounts.totalGrams)} in all).`}
+          peakText={fed && loafPeak
+            ? `Fed ${clockTime(new Date(loafFeeding!.timestamp))}. Peaks about ${clockTime(loafPeak.peakAt)}; mix between ${clockTime(loafPeak.window.from)} and ${clockTime(loafPeak.window.to)}.`
+            : null}
+        />
+
+        {/* ── When ── */}
+        <ReadyByCard
+          mode={planMode}
+          onMode={setPlanMode}
+          now={nowDate}
+          dayOffset={readyDay}
+          onDay={setReadyDay}
+          time={readyTime}
+          onTime={setReadyTime}
+          timeInvalid={planMode === 'readyBy' && !parsedReadyTime}
+          proofMode={proofMode}
+          onProof={setProofMode}
+          fridgeHours={fridgeHoursStr}
+          onFridgeHours={setFridgeHoursStr}
+          plan={schedule?.plan ?? null}
+          mixed={!!mixedAt}
+          fed={fed}
+          ovenOn={ovenOn}
+          earliest={schedule?.earliest ?? null}
+          tooEarly={schedule?.tooEarly ?? false}
+          onUseEarliest={useEarliest}
+          note={schedule?.note ?? null}
+        />
 
         {/* ── The method ── */}
         <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[sectionTitleStyle, { color: colors.muted }]}>THE METHOD</Text>
           {steps.map((step, i) => {
-            const active = mixedAt ? step.key === 'rise' : step.key === 'mix';
+            const active = mixedAt ? step.key === 'rise' : step.key === (fed && !loafFeeding ? 'feed' : 'mix');
             return (
               <View key={step.key} style={styles.step}>
                 <View style={[styles.stepNum, { backgroundColor: active ? colors.terracotta : colors.badgeBg }]}>
@@ -354,6 +577,9 @@ export default function BreadScreen() {
                     <Text style={[styles.stepTitle, { color: colors.espresso }]}>{step.title}</Text>
                     <Text style={[styles.stepDuration, { color: colors.muted }]}>{step.duration}</Text>
                   </View>
+                  {stepWhen[step.key] && (
+                    <Text style={[styles.stepWhen, { color: colors.terracotta }]}>{stepWhen[step.key]}</Text>
+                  )}
 
                   {step.key === 'rise' && (
                     <>
@@ -421,6 +647,46 @@ export default function BreadScreen() {
 
                   <Text style={[styles.stepText, { color: colors.espresso }]}>{step.body}</Text>
                   {step.aside && <Text style={[styles.stepAside, { color: colors.muted }]}>{step.aside}</Text>}
+
+                  {step.key === 'feed' && !mixedAt && (
+                    loafPeak ? (
+                      <View style={[styles.clock, { backgroundColor: colors.successBg, borderColor: colors.border }]}>
+                        <Text style={[styles.clockLabel, { color: colors.olive }]}>PEAKS ABOUT</Text>
+                        <Text style={[styles.clockTime, { color: colors.espresso }]}>{clockTime(loafPeak.peakAt)}</Text>
+                        <Text style={[styles.clockDate, { color: colors.espresso }]}>
+                          Mix between {clockTime(loafPeak.window.from)} and {clockTime(loafPeak.window.to)}
+                        </Text>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        onPress={feedNow}
+                        accessibilityRole="button"
+                        style={[styles.primaryBtn, { backgroundColor: colors.terracotta }]}
+                      >
+                        <Icon name="flask-outline" size={20} color={colors.white} />
+                        <Text style={[styles.primaryBtnText, { color: colors.white }]}>I've fed it</Text>
+                      </TouchableOpacity>
+                    )
+                  )}
+
+                  {step.key === 'mix' && mixedAt && !fed && !jarLogged && (
+                    <TouchableOpacity
+                      onPress={logJarAway}
+                      accessibilityRole="button"
+                      style={[styles.outlineBtn, { borderColor: colors.terracotta }]}
+                    >
+                      <Text style={[styles.outlineBtnText, { color: colors.terracotta }]}>I've fed the jar and put it away</Text>
+                    </TouchableOpacity>
+                  )}
+                  {step.key === 'mix' && mixedAt && fed && loafFeeding && !loafFeeding.fridgeAt && (
+                    <TouchableOpacity
+                      onPress={() => starter.intoFridge(loafFeeding.id)}
+                      accessibilityRole="button"
+                      style={[styles.outlineBtn, { borderColor: colors.terracotta }]}
+                    >
+                      <Text style={[styles.outlineBtnText, { color: colors.terracotta }]}>The jar is back in the fridge</Text>
+                    </TouchableOpacity>
+                  )}
 
                   {step.key === 'mix' && !mixedAt && (
                     <TouchableOpacity
@@ -540,6 +806,7 @@ const styles = StyleSheet.create({
   stepTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: Spacing.sm, flexWrap: 'wrap' },
   stepTitle: { fontSize: FontSize.lg, fontWeight: '700' },
   stepDuration: { fontSize: FontSize.xs, fontWeight: '600' },
+  stepWhen: { fontSize: FontSize.sm, fontWeight: '700' },
   stepText: { fontSize: FontSize.sm, lineHeight: 22 },
   stepAside: { fontSize: FontSize.xs, lineHeight: 18 },
 
@@ -547,6 +814,8 @@ const styles = StyleSheet.create({
   clockLabel: { fontSize: FontSize.xs, fontWeight: '800', letterSpacing: 1 },
   clockTime: { fontFamily: 'Georgia', fontSize: FontSize.title + 7, fontWeight: '700', marginTop: 2 },
   clockDate: { fontSize: FontSize.sm, marginTop: 2 },
+  outlineBtn: { minHeight: 44, paddingHorizontal: Spacing.lg, borderWidth: 2, borderRadius: BorderRadius.lg, alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-start' },
+  outlineBtnText: { fontSize: FontSize.sm, fontWeight: '700' },
   textBtn: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' },
   textBtnLabel: { fontSize: FontSize.sm, fontWeight: '700' },
 

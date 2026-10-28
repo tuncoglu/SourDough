@@ -62,6 +62,19 @@ export function markPeaked(id: string, at: Date = new Date()): Promise<void> {
   return updateFeeding(id, { peakedAt: at.toISOString() });
 }
 
+/**
+ * Record the jar going into the fridge or coming out of it (now, unless told
+ * otherwise). Going in again clears an earlier "out".
+ */
+export function setFridgeState(id: string, state: 'in' | 'out', at: Date = new Date()): Promise<void> {
+  return updateFeeding(
+    id,
+    state === 'in'
+      ? { fridgeAt: at.toISOString(), outOfFridgeAt: undefined }
+      : { outOfFridgeAt: at.toISOString() },
+  );
+}
+
 /** Generate a unique feeding ID */
 export function generateFeedingId(): string {
   return `feed_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;

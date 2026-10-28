@@ -28,6 +28,7 @@ function TabIcon({ name, focused, color }: { name: IconName; focused: boolean; c
 // Icons shared between sidebar (Sidebar.tsx) and tab bar — keep in sync.
 const TAB_ICONS = {
   calculator: 'bread-slice-outline',
+  starter: 'flask-outline',
   yogurt: 'cup-outline',
   ferments: 'barrel-outline',
   history: 'history',
@@ -65,6 +66,13 @@ export default function TabLayout() {
               options={{
                 title: 'Sourdough',
                 tabBarIcon: ({ focused, color }) => <TabIcon name={TAB_ICONS.calculator} focused={focused} color={color as string} />,
+              }}
+            />
+            <Tabs.Screen
+              name="starter"
+              options={{
+                title: 'Starter',
+                tabBarIcon: ({ focused, color }) => <TabIcon name={TAB_ICONS.starter} focused={focused} color={color as string} />,
               }}
             />
             <Tabs.Screen
