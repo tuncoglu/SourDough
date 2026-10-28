@@ -1,5 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StarterFeeding } from '@sourdough/calc/models/types';
+import {
+  addFeeding,
+  fridgeStateIn,
+  generateFeedingId as newFeedingId,
+  markPeakedIn,
+  patchFeeding,
+  sortFeedings,
+} from '@sourdough/calc/lib/starterLog';
 
 const FEEDINGS_KEY = 'sourdough_feedings';
 const FLOUR_KEY = 'sourdough_starter_flour';
@@ -9,10 +17,7 @@ export async function loadFeedings(): Promise<StarterFeeding[]> {
   try {
     const json = await AsyncStorage.getItem(FEEDINGS_KEY);
     if (!json) return [];
-    const feedings: StarterFeeding[] = JSON.parse(json);
-    return feedings.sort(
-      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-    );
+    return sortFeedings(JSON.parse(json) as StarterFeeding[]);
   } catch {
     return [];
   }
@@ -30,9 +35,8 @@ function serialized<T>(op: () => Promise<T>): Promise<T> {
 export function logFeeding(feeding: StarterFeeding): Promise<void> {
   return serialized(async () => {
     try {
-      const feedings = await loadFeedings();
-      feedings.unshift(feeding);
-      await AsyncStorage.setItem(FEEDINGS_KEY, JSON.stringify(feedings.slice(0, 500)));
+      const feedings = addFeeding(await loadFeedings(), feeding);
+      await AsyncStorage.setItem(FEEDINGS_KEY, JSON.stringify(feedings));
     } catch (err) {
       console.error('logFeeding: failed to persist feeding', err);
       throw err; // re-throw so callers can show feedback
@@ -46,20 +50,21 @@ export async function getLastFeeding(): Promise<StarterFeeding | null> {
   return feedings.length > 0 ? feedings[0] : null;
 }
 
+/** Apply one of the shared log operations to the stored list, one write at a time. */
+function mutate(change: (feedings: StarterFeeding[]) => StarterFeeding[]): Promise<void> {
+  return serialized(async () => {
+    await AsyncStorage.setItem(FEEDINGS_KEY, JSON.stringify(change(await loadFeedings())));
+  });
+}
+
 /** Update an existing feeding by id (merges fields). */
 export function updateFeeding(id: string, patch: Partial<StarterFeeding>): Promise<void> {
-  return serialized(async () => {
-    const feedings = await loadFeedings();
-    const idx = feedings.findIndex((f) => f.id === id);
-    if (idx === -1) return;
-    feedings[idx] = { ...feedings[idx], ...patch };
-    await AsyncStorage.setItem(FEEDINGS_KEY, JSON.stringify(feedings));
-  });
+  return mutate((l) => patchFeeding(l, id, patch));
 }
 
 /** Mark a feeding as having reached its peak (now, unless told otherwise). */
 export function markPeaked(id: string, at: Date = new Date()): Promise<void> {
-  return updateFeeding(id, { peakedAt: at.toISOString() });
+  return mutate((l) => markPeakedIn(l, id, at));
 }
 
 /**
@@ -67,18 +72,11 @@ export function markPeaked(id: string, at: Date = new Date()): Promise<void> {
  * otherwise). Going in again clears an earlier "out".
  */
 export function setFridgeState(id: string, state: 'in' | 'out', at: Date = new Date()): Promise<void> {
-  return updateFeeding(
-    id,
-    state === 'in'
-      ? { fridgeAt: at.toISOString(), outOfFridgeAt: undefined }
-      : { outOfFridgeAt: at.toISOString() },
-  );
+  return mutate((l) => fridgeStateIn(l, id, state, at));
 }
 
 /** Generate a unique feeding ID */
-export function generateFeedingId(): string {
-  return `feed_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-}
+export const generateFeedingId = newFeedingId;
 
 /** Get the persisted starter flour preference (defaults to Generic: Bread Flour) */
 export async function getStarterFlour(): Promise<string> {

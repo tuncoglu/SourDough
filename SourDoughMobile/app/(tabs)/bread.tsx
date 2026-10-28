@@ -13,41 +13,15 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyle, sectionTitleStyle } from '../../src/theme';
 import { summaryWithHardnessOverride } from '../../src/lib/location';
-import { buildBlendFromRows } from '@sourdough/calc/lib/blendUtils';
 import { resolveHardness } from '@sourdough/calc/lib/hardnessUtils';
+import { earliestChoice, planBread, type BreadForm } from '@sourdough/calc/lib/breadPlan';
 import { formatTemp, formatWeight } from '@sourdough/calc/lib/unitConversion';
 import { isValidDecimalInput } from '@sourdough/calc/lib/inputValidation';
 import { findFlour } from '@sourdough/calc/lib/flourSearch';
-import {
-  buildFeedStep,
-  buildLazySteps,
-  lazyBakeSummary,
-  LAZY_DEFAULTS,
-  STARTER_FEED_GRAMS,
-  type LazyVessel,
-} from '@sourdough/calc/lib/lazyMethod';
-import { estimateLazyLoaf, FRIDGE_HOURS, LAZY_PLAN_MINUTES, LAZY_STARTER_TEMP_C, type ProofMode } from '@sourdough/calc/lib/lazyPlan';
-import {
-  atClockTime,
-  dayFromNow,
-  earliestReadyAt,
-  ovenOnAt,
-  parseClockTime,
-  scheduleBackward,
-  scheduleFromMix,
-  startsBefore,
-  type ScheduleInput,
-} from '@sourdough/calc/lib/lazySchedule';
-import {
-  DEFAULT_PEAK_EFFECTIVE_HOURS,
-  starterFeedAmounts,
-  starterPeakWindowHours,
-  starterTempFor,
-  starterTimeToPeakHours,
-} from '@sourdough/calc/lib/starterStatus';
+import { lazyBakeSummary, LAZY_DEFAULTS, STARTER_FEED_GRAMS, type LazyVessel } from '@sourdough/calc/lib/lazyMethod';
+import { FRIDGE_HOURS, LAZY_STARTER_TEMP_C, type ProofMode } from '@sourdough/calc/lib/lazyPlan';
 import { clockTime } from '@sourdough/calc/lib/starterFormat';
 import { computeVitalityFactor } from '@sourdough/calc/lib/calculations';
-import { fedForThisLoaf, peakForecast } from '@sourdough/calc/lib/starterLog';
 import { isoWithOffset } from '../../src/lib/assist';
 import { getRecipe } from '../../src/store/recipeStore';
 import type { CalculationResults } from '@sourdough/calc/models/types';
@@ -59,7 +33,7 @@ import { Seo } from '../../src/components/Seo';
 import { Icon } from '../../src/components/Icon';
 import { AskCard } from '../../src/components/AskCard';
 import { StarterChoiceCard, type StarterMode } from '../../src/components/StarterChoiceCard';
-import { ReadyByCard, whenLabel, type PlanMode } from '../../src/components/ReadyByCard';
+import { ReadyByCard, type PlanMode } from '../../src/components/ReadyByCard';
 
 import { useCalculatorInputs } from '../../src/hooks/useCalculatorInputs';
 import { useRecipeActions } from '../../src/hooks/useRecipeActions';
@@ -166,103 +140,75 @@ export default function BreadScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editRecipeId]);
 
-  // ── Formula → weights and rise estimate (live; nothing to recalculate) ──
-  const flourRows = useMemo(
-    () => inputs.mixRows
-      .map((r) => ({ flour: r.flour, grams: parseFloat(r.grams) || 0 }))
-      .filter((r) => r.grams > 0),
-    [inputs.mixRows],
-  );
-  const flourRow = flourRows[0];
-  const flourGrams = flourRows.reduce((sum, r) => sum + r.grams, 0);
-  const waterGrams = (flourGrams * parseFloat(waterPct)) / 100;
-  const starterGrams = (flourGrams * parseFloat(starterPct)) / 100;
-  const blend = useMemo(() => buildBlendFromRows(flourRows), [flourRows]);
-
+  // ── The formula → weights, the rise, the steps and their clock times ──────
+  // All of it is one pure function in @sourdough/calc, shared with the web apps
+  // (the same rules run in both). Live; nothing to recalculate.
+  //
   // The Room temp field drives the estimate and the flour follows it. The water is at the
   // location's tap temperature when we have one, otherwise at room temperature. No weather
   // forecast is used, so the field, the assistant's tools and this number all agree.
   const roomTempC = parseFloat(inputs.ambientTemp);
   const tapTempC = inputs.locationData?.waterTemp ?? null;
-  const autoWaterC = tapTempC ?? roomTempC;
   const overrideC = waterOverride !== null ? parseFloat(waterOverride) : NaN;
-  const waterTempC = Number.isFinite(overrideC) ? overrideC : autoWaterC;
   const waterIsAuto = !Number.isFinite(overrideC);
 
   // The starter's state, from the feeding log. With no usable log it is a
   // fridge-cold starter at full strength, as before.
   const starter = useStarterStatus(roomTempC);
   const [starterMode, setStarterMode] = useState<StarterMode>('fridge');
+  // Once the person chooses, a recent feeding no longer switches the path for them.
+  const [modeChosen, setModeChosen] = useState(false);
   const [feedRatio, setFeedRatio] = useState(1);
-  const modeChosenRef = useRef(false);
-  const chooseMode = useCallback((m: StarterMode) => { modeChosenRef.current = true; setStarterMode(m); }, []);
-  const fed = starterMode === 'fed';
-  const loafFeeding = fedForThisLoaf(starter.feeding, new Date(starter.now)) ? starter.feeding : null;
+  const chooseMode = useCallback((m: StarterMode) => { setModeChosen(true); setStarterMode(m); }, []);
 
-  // A feeding made for this loaf means the person is already on the feed-first path.
-  useEffect(() => {
-    if (!modeChosenRef.current && loafFeeding) setStarterMode('fed');
-  }, [loafFeeding]);
+  const nowDate = useMemo(() => new Date(starter.now), [starter.now]);
+  const [planMode, setPlanMode] = useState<PlanMode>('now');
+  const [readyDay, setReadyDay] = useState(1);
+  const [readyTime, setReadyTime] = useState('09:00');
+  const [proofMode, setProofMode] = useState<ProofMode>('counter');
+  const [fridgeHoursStr, setFridgeHoursStr] = useState(String(FRIDGE_HOURS.default));
 
-  // How each choice changes the estimate. Fed first assumes it is mixed at the peak;
-  // from the fridge uses the starter's logged state.
-  const estimateFor = useCallback((mode: StarterMode) => {
-    if (!flourRow) return null;
-    const isFed = mode === 'fed';
-    const tempC = isFed
-      ? roomTempC
-      : starter.status ? starterTempFor(starter.status, roomTempC, LAZY_STARTER_TEMP_C) : LAZY_STARTER_TEMP_C;
-    // Feed first means mixing at the peak, which is what the plan tells the person to do.
-    const hours = isFed ? DEFAULT_PEAK_EFFECTIVE_HOURS : starter.status?.effectiveHours;
-    return {
-      starterTempC: tempC,
-      starterHoursSinceFed: hours,
-      estimate: estimateLazyLoaf(
-        {
-          flourGrams,
-          waterPct: parseFloat(waterPct),
-          starterPct: parseFloat(starterPct),
-          saltPct: parseFloat(inputs.saltPct),
-          starterHydration: parseFloat(inputs.starterHydrationStr),
-          roomTempC,
-          waterTempC,
-          starterTempC: tempC,
-          starterHoursSinceFed: hours,
-          starterFlourBlend: starter.flourBlend,
-          flour: flourRow.flour,
-          flours: flourRows,
-        },
-        null,
-        resolveHardness(inputs.settings.waterHardnessOverride || 0, inputs.locationData?.hardness),
-        unitSystem,
-      ),
-    };
-  }, [
-    flourRow, flourRows, flourGrams, waterPct, starterPct,
-    inputs.saltPct, inputs.starterHydrationStr, roomTempC, waterTempC,
-    starter.status, starter.flourBlend,
-    inputs.locationData, inputs.settings.waterHardnessOverride, unitSystem,
+  const form = useMemo<BreadForm>(() => ({
+    flours: inputs.mixRows.map((r) => ({ key: r.key, label: r.flour.label, grams: r.grams })),
+    waterPct,
+    starterPct,
+    saltPct: inputs.saltPct,
+    starterHydration: inputs.starterHydrationStr,
+    waterTempOverride: waterOverride ?? '',
+    vessel,
+    starterMode,
+    modeChosen,
+    feedRatio,
+    planMode,
+    readyDay,
+    readyTime,
+    proofMode,
+    fridgeHours: fridgeHoursStr,
+  }), [
+    inputs.mixRows, waterPct, starterPct, inputs.saltPct, inputs.starterHydrationStr, waterOverride, vessel,
+    starterMode, modeChosen, feedRatio, planMode, readyDay, readyTime, proofMode, fridgeHoursStr,
   ]);
-  const fridgeCase = useMemo(() => estimateFor('fridge'), [estimateFor]);
-  const fedCase = useMemo(() => estimateFor('fed'), [estimateFor]);
-  const chosenCase = fed ? fedCase : fridgeCase;
-  const estimate = chosenCase?.estimate ?? null;
-  const starterTempC = chosenCase?.starterTempC ?? LAZY_STARTER_TEMP_C;
-  const starterHoursSinceFed = chosenCase?.starterHoursSinceFed;
+  const plan = useMemo(() => planBread(form, {
+    now: nowDate,
+    roomTempC,
+    hardness: resolveHardness(inputs.settings.waterHardnessOverride || 0, inputs.locationData?.hardness),
+    tapTempC,
+    unitSystem,
+    starter,
+    mixedAt,
+  }), [form, nowDate, roomTempC, inputs.settings.waterHardnessOverride, inputs.locationData, tapTempC, unitSystem, starter, mixedAt]);
 
-  // What to feed, and when it peaks, for this loaf's starter.
-  const starterHydrationPct = parseFloat(inputs.starterHydrationStr) || 100;
-  const feedAmounts = useMemo(
-    () => starterFeedAmounts({ neededGrams: starterGrams, ratio: feedRatio, hydration: starterHydrationPct }),
-    [starterGrams, feedRatio, starterHydrationPct],
-  );
-  const timeToPeak = Number.isFinite(roomTempC)
-    ? starterTimeToPeakHours({ roomTempC, dilution: feedAmounts.dilution, peakEffectiveHours: starter.peakEffectiveHours })
-    : null;
-  const peakWindow = timeToPeak !== null ? starterPeakWindowHours(timeToPeak) : null;
-  const loafPeak = loafFeeding
-    ? peakForecast(loafFeeding, { roomTempC, peakEffectiveHours: starter.peakEffectiveHours })
-    : null;
+  const {
+    flourRows, flourGrams, waterGrams, starterGrams, blend, waterTempC, fed,
+    loafFeeding, loafPeak, fridgeCase, fedCase, feedAmounts, timeToPeak, peakWindow,
+    steps, schedule, ovenOn, stepWhen, checkAt,
+  } = plan;
+  const flourRow = flourRows[0];
+  const estimate = plan.chosen?.estimate ?? null;
+  const starterTempC = plan.chosen?.starterTempC ?? LAZY_STARTER_TEMP_C;
+  const starterHoursSinceFed = plan.chosen?.starterHoursSinceFed;
+  const results: CalculationResults | null = estimate?.results ?? null;
+  const bulkHours = estimate?.bulkHours ?? null;
 
   const feedNow = useCallback(async () => {
     const shares = starter.flourBlend ?? [{ label: 'Generic: Bread Flour', share: 100 }];
@@ -285,106 +231,14 @@ export default function BreadScreen() {
     });
   }, [starter]);
 
-  const results: CalculationResults | null = estimate?.results ?? null;
-
-  const bulkHours = estimate?.bulkHours ?? null;
-  const steps = useMemo(() => {
-    const base = buildLazySteps(vessel, bulkHours, unitSystem, { starterFed: fed });
-    if (!fed || timeToPeak === null) return base;
-    return [
-      buildFeedStep({
-        leadHours: timeToPeak,
-        roomTempC,
-        keptGrams: feedAmounts.keptGrams,
-        flourGrams: feedAmounts.flourGrams,
-        waterGrams: feedAmounts.waterGrams,
-        neededGrams: starterGrams,
-        unitSystem,
-      }),
-      ...base,
-    ];
-  }, [vessel, bulkHours, unitSystem, fed, timeToPeak, roomTempC, feedAmounts, starterGrams]);
-  // ── The schedule: clock times for every step ─────────────────────────────
-  const nowDate = useMemo(() => new Date(starter.now), [starter.now]);
-  const [planMode, setPlanMode] = useState<PlanMode>('now');
-  const [readyDay, setReadyDay] = useState(1);
-  const [readyTime, setReadyTime] = useState('09:00');
-  const [proofMode, setProofMode] = useState<ProofMode>('counter');
-  const [fridgeHoursStr, setFridgeHoursStr] = useState(String(FRIDGE_HOURS.default));
-  const parsedReadyTime = parseClockTime(readyTime);
-  const wantedReadyAt = planMode === 'readyBy' && parsedReadyTime
-    ? atClockTime(dayFromNow(nowDate, readyDay), parsedReadyTime)
-    : null;
-
-  const schedule = useMemo(() => {
-    if (bulkHours == null) return null;
-    const fridgeHours = parseFloat(fridgeHoursStr);
-    const base: ScheduleInput = {
-      vessel,
-      bulkHours,
-      proofMode,
-      fridgeHours: Number.isFinite(fridgeHours) ? fridgeHours : undefined,
-    };
-    const feed = fed && timeToPeak !== null ? { leadHours: timeToPeak, windowHours: peakWindow ?? undefined } : undefined;
-    const none = { tooEarly: false, earliest: null as Date | null, note: null as string | null };
-
-    // Once mixed, the day runs forward from the moment it really was.
-    if (mixedAt) return { plan: scheduleFromMix({ ...base, mixAt: mixedAt }), ...none };
-
-    // Already fed for this loaf: mix at the peak, whatever was planned.
-    if (fed && loafFeeding && loafPeak) {
-      const plan = scheduleFromMix({ ...base, mixAt: loafPeak.peakAt });
-      let note: string | null = null;
-      if (wantedReadyAt) {
-        const ready = plan.steps.find((x) => x.key === 'cool')!.at.getTime() + LAZY_PLAN_MINUTES.cool * 60_000;
-        if (ready > wantedReadyAt.getTime() + 5 * 60_000) {
-          const earlier = scheduleFromMix({ ...base, mixAt: loafPeak.window.from });
-          const earliestReady = new Date(earlier.steps.find((x) => x.key === 'cool')!.at.getTime() + LAZY_PLAN_MINUTES.cool * 60_000);
-          note = `Mixing at the peak means ready about ${whenLabel(new Date(ready), nowDate)}, later than ${whenLabel(wantedReadyAt, nowDate)}. Mixing as early as ${whenLabel(loafPeak.window.from, nowDate)} gets it to ${whenLabel(earliestReady, nowDate)}.`;
-        } else {
-          note = `On track: mixing at the peak has it ready about ${whenLabel(new Date(ready), nowDate)}.`;
-        }
-      }
-      return { plan, ...none, note };
-    }
-
-    if (planMode === 'readyBy') {
-      if (!wantedReadyAt) return { plan: null, ...none };
-      const plan = scheduleBackward({ ...base, feed, readyAt: wantedReadyAt });
-      return {
-        plan,
-        tooEarly: startsBefore(plan, nowDate),
-        earliest: earliestReadyAt(nowDate, { ...base, feed }),
-        note: null as string | null,
-      };
-    }
-
-    // Start now: feed now and mix at the peak, or just mix.
-    const mixAt = feed ? new Date(nowDate.getTime() + feed.leadHours * 3_600_000) : nowDate;
-    return { plan: scheduleFromMix({ ...base, feed, mixAt }), ...none };
-  }, [bulkHours, vessel, proofMode, fridgeHoursStr, fed, timeToPeak, peakWindow, mixedAt, loafFeeding, loafPeak, wantedReadyAt, planMode, nowDate]);
-
-  const ovenOn = schedule?.plan ? ovenOnAt(schedule.plan, vessel) : null;
-  /** The clock time of each step, for the method list. */
-  const stepWhen = useMemo(() => {
-    const out: Record<string, string> = {};
-    if (!schedule?.plan || schedule.tooEarly) return out;
-    for (const st of schedule.plan.steps) out[st.key] = whenLabel(st.at, nowDate);
-    if (ovenOn && out.bake) out.bake = `${out.bake} · heat the oven at ${whenLabel(ovenOn, nowDate)}`;
-    return out;
-  }, [schedule, ovenOn, nowDate]);
-
   /** Fill in the earliest time that works. */
   const useEarliest = useCallback(() => {
     if (!schedule?.earliest) return;
-    const rounded = new Date(Math.ceil(schedule.earliest.getTime() / 300_000) * 300_000);
-    const start = dayFromNow(nowDate, 0).getTime();
-    const day = Math.round((dayFromNow(rounded, 0).getTime() - start) / 86_400_000);
-    setReadyDay(Math.min(4, Math.max(0, day)));
-    setReadyTime(`${String(rounded.getHours()).padStart(2, '0')}:${String(rounded.getMinutes()).padStart(2, '0')}`);
+    const pick = earliestChoice(schedule.earliest, nowDate);
+    setReadyDay(pick.day);
+    setReadyTime(pick.time);
   }, [schedule, nowDate]);
 
-  const checkAt = mixedAt && bulkHours != null ? new Date(mixedAt.getTime() + bulkHours * 3600000) : null;
   const weightDecimals = unitSystem === 'imperial' ? 1 : 0;
   const w = (g: number | undefined) => (g != null && Number.isFinite(g) ? formatWeight(g, unitSystem, weightDecimals) : '—');
   const ing = results?.ingredients;
@@ -522,7 +376,7 @@ export default function BreadScreen() {
 
         {/* ── The starter ── */}
         <StarterChoiceCard
-          mode={starterMode}
+          mode={plan.mode}
           onMode={chooseMode}
           ratio={feedRatio}
           onRatio={setFeedRatio}
@@ -547,7 +401,7 @@ export default function BreadScreen() {
           onDay={setReadyDay}
           time={readyTime}
           onTime={setReadyTime}
-          timeInvalid={planMode === 'readyBy' && !parsedReadyTime}
+          timeInvalid={!plan.readyTimeValid}
           proofMode={proofMode}
           onProof={setProofMode}
           fridgeHours={fridgeHoursStr}

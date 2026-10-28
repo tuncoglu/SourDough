@@ -1,8 +1,8 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { FermentType, FermentMethod, SaltCrystal, FermentResults, FermentHistoryEntry, LactoDayPoint, PrepSize, WaterHardness } from '@sourdough/calc/models/types';
-import { FERMENT_PRESETS, PRESET_DEFAULT_VEG, VEG_COMBOS, VegCombo } from '@sourdough/calc/data/fermentPresets';
-import { VEGETABLES, findVeg, VEG_RELEASE_FACTOR, VegEntry } from '@sourdough/calc/data/vegetables';
+import { FERMENT_PRESETS, VEG_COMBOS, VegCombo } from '@sourdough/calc/data/fermentPresets';
+import { VegEntry } from '@sourdough/calc/data/vegetables';
 import {
   computeFermentTemp,
   acidBalanceVerdict,
@@ -11,13 +11,27 @@ import {
   FermentTempResult,
   FermentTiming,
 } from '@sourdough/calc/lib/lactoCalculations';
-import { planLacto } from '@sourdough/calc/lib/lactoPlan';
+import {
+  DEFAULT_LACTO_FORM,
+  applyCombo as applyComboTo,
+  clearMix as clearMixIn,
+  comboOf,
+  historyDraft,
+  methodOf,
+  planFromForm,
+  resolveVeg,
+  restoreFrom as restoreFormFrom,
+  selectPreset as selectPresetIn,
+  selectVeg as selectVegIn,
+  toggleVegInMix as toggleVegIn,
+  updateMixGrams as updateMixGramsIn,
+  type LactoForm,
+} from '@sourdough/calc/lib/lactoForm';
 import { useLocation } from './useLocation';
 import { isValidDecimalInput } from '@sourdough/calc/lib/inputValidation';
-import { buildComboSetup, effectivePrepSize, recommendedSaltPct, DEFAULT_BRINE_WATER_G } from '@sourdough/calc/lib/fermentSetup';
 import { getSettings } from '../store/settingsCache';
 import { recordFerment } from '../store/fermentHistoryStore';
-import { fermentSignature, generateFermentHistoryId } from '@sourdough/calc/lib/fermentHistory';
+import { generateFermentHistoryId } from '@sourdough/calc/lib/fermentHistory';
 import { classifyHardness } from '@sourdough/calc/data/ukWaterHardness';
 import { FALLBACK_HARDNESS } from '@sourdough/calc/lib/hardnessUtils';
 import { useAppTheme } from '../theme';
@@ -113,13 +127,10 @@ export function useLactoCalculator(): LactoCalculatorState {
   const { locationData, locLoading, locError, onRefreshLocation, onPostcodeSubmit } = useLocation();
   const { unitSystem } = useAppTheme();
 
-  const [fermentType, setFermentType] = useState<FermentType>('sauerkraut');
-  const [vegId, setVegId] = useState('green-cabbage');
-  const [vegWeight, setVegWeight] = useState('1000');
-  const [vegMix, setVegMix] = useState<{ vegId: string; grams: string }[]>([]);
-  const [waterAmount, setWaterAmount] = useState('500');
-  const [saltPct, setSaltPct] = useState('2.0');
-  const [saltType, setSaltType] = useState<SaltCrystal>('maldon-flake');
+  // Everything the person has chosen, as one value. The rules for changing it (picking a
+  // style resets the vegetable and salt, a combo brings its own method...) are pure
+  // functions in @sourdough/calc, shared with the web app.
+  const [form, setForm] = useState<LactoForm>(DEFAULT_LACTO_FORM);
   /**
    * Whether the user has touched the calculator. Results are live from the
    * first render, but a ferment is only recorded in the history once the
@@ -129,156 +140,42 @@ export function useLactoCalculator(): LactoCalculatorState {
   const [waterHardnessOverride, setWaterHardnessOverride] = useState(0);
   /** Manual fermentation temperature (°C); 0 = use the local forecast. */
   const [fermTempOverride, setFermTempOverride] = useState(0);
-  /**
-   * Method override for curated combos, which carry their own method.
-   * `null` = follow the selected preset (see `method` below).
-   */
-  const [methodOverride, setMethodOverride] = useState<FermentMethod | null>(null);
-  /** How the user cut the vegetables; reset to the recipe's own prep on apply. */
-  const [prepSize, setPrepSize] = useState<PrepSize>('shredded');
-  /** Starter culture used — shortens the lag phase (additive, not a ratio). */
-  const [useStarter, setUseStarter] = useState(false);
-  /**
-   * The curated combo currently loaded, if any. Combos run as the `custom`
-   * preset, so without this they lose their identity and every label falls
-   * back to "Custom" (see `presetName` / `presetEmoji` below).
-   */
-  const [activeCombo, setActiveCombo] = useState<VegCombo | null>(null);
 
-  /** Sets a value and records that the user has touched the calculator. */
-  const touching = <T,>(set: (v: T) => void) => (v: T) => {
-    set(v);
+  /** Applies a change to the form and records that the user has touched the calculator. */
+  const change = useCallback((f: (prev: LactoForm) => LactoForm) => {
+    setForm(f);
     setTouched(true);
-  };
+  }, []);
 
   // Derived
-  const veg = useMemo(() => findVeg(vegId), [vegId]);
-  const preset = FERMENT_PRESETS[fermentType]!;
+  const preset = FERMENT_PRESETS[form.fermentType]!;
+  const activeCombo = comboOf(form);
   /** The preset's method, unless a curated combo overrode it. */
-  const method = methodOverride ?? preset.method;
+  const method = methodOf(form);
+  const { veg: effectiveVeg, isMultiVeg, totalMixGrams, mixEntries: vegMixEntries } = useMemo(() => resolveVeg(form), [form]);
 
-  // Multi-veg mix: derived array with full VegEntry data
-  const vegMixEntries = useMemo(() =>
-    vegMix.map(m => ({ ...m, veg: findVeg(m.vegId) })),
-    [vegMix],
-  );
-  const isMultiVeg = vegMixEntries.length > 1;
-  const totalMixGrams = useMemo(() =>
-    vegMixEntries.reduce((s, m) => s + (parseFloat(m.grams) || 0), 0),
-    [vegMixEntries],
-  );
-
-  // Weighted properties from the mix (or fall back to single veg)
-  const effectiveVeg = useMemo(() => {
-    if (!isMultiVeg) {
-      return { ...veg, releaseFactor: VEG_RELEASE_FACTOR[veg.category] };
-    }
-    const total = totalMixGrams || 1;
-    const waterContentPct = vegMixEntries.reduce((s, m) =>
-      s + m.veg.waterContentPct * (parseFloat(m.grams) || 0), 0) / total;
-    const speedFactor = vegMixEntries.reduce((s, m) =>
-      s + m.veg.speedFactor * (parseFloat(m.grams) || 0), 0) / total;
-    const typicalBrineSaltPct = vegMixEntries.reduce((s, m) =>
-      s + m.veg.typicalBrineSaltPct * (parseFloat(m.grams) || 0), 0) / total;
-    const typicalDrySaltPct = vegMixEntries.reduce((s, m) =>
-      s + m.veg.typicalDrySaltPct * (parseFloat(m.grams) || 0), 0) / total;
-    const releaseFactor = vegMixEntries.reduce((s, m) =>
-      s + VEG_RELEASE_FACTOR[m.veg.category] * (parseFloat(m.grams) || 0), 0) / total;
-    const firmnessCounts = { soft: 0, medium: 0, firm: 0 };
-    vegMixEntries.forEach(m => { firmnessCounts[m.veg.firmness]++; });
-    const firmness = firmnessCounts.firm >= firmnessCounts.soft && firmnessCounts.firm >= firmnessCounts.medium
-      ? 'firm' : firmnessCounts.medium >= firmnessCounts.soft ? 'medium' : 'soft';
-    // Compose the acid balance across the mix, by mass. Only possible when
-    // EVERY component has been titrated — otherwise the verdict stays unknown
-    // rather than extrapolating from a partial picture.
-    const measured = vegMixEntries.filter(m => m.veg.acidBalance);
-    const acidBalance = measured.length === vegMixEntries.length && measured.length > 0
-      ? {
-          acidDemandMmolL: vegMixEntries.reduce((s, m) => s + m.veg.acidBalance!.acidDemandMmolL * (parseFloat(m.grams) || 0), 0) / total,
-          sugarSupplyMmolL: vegMixEntries.reduce((s, m) => s + m.veg.acidBalance!.sugarSupplyMmolL * (parseFloat(m.grams) || 0), 0) / total,
-          // The endpoint of a novel mix has not been measured — omit it.
-          measuredEndPH: undefined,
-        }
-      : undefined;
-
-    return {
-      ...veg,
-      acidBalance,
-      bloaterProne: vegMixEntries.some(m => m.veg.bloaterProne),
-      waterContentPct: Math.round(waterContentPct),
-      speedFactor: Math.round(speedFactor * 100) / 100,
-      typicalBrineSaltPct: Math.round(typicalBrineSaltPct * 10) / 10,
-      typicalDrySaltPct: Math.round(typicalDrySaltPct * 10) / 10,
-      releaseFactor: Math.round(releaseFactor * 100) / 100,
-      firmness: firmness as VegEntry['firmness'],
-      name: vegMixEntries.map(m => m.veg.name).join(' + '),
-      emoji: vegMixEntries.map(m => m.veg.emoji).join(''),
-    };
-  }, [isMultiVeg, veg, vegMixEntries, totalMixGrams]);
-
-  const toggleVegInMix = useCallback((id: string) => {
-    setVegMix(prev => {
-      const exists = prev.find(m => m.vegId === id);
-      if (exists) {
-        const next = prev.filter(m => m.vegId !== id);
-        // If down to 1 veg, switch back to single-veg mode
-        if (next.length === 1) {
-          setVegId(next[0].vegId);
-          setVegWeight(next[0].grams);
-          return [];
-        }
-        return next;
-      }
-      const entry = findVeg(id);
-      const currentSingle = vegId;
-      // First veg being added — start mix with existing single veg + new veg
-      if (prev.length === 0) {
-        // Guard: tapping the already-selected veg in single mode is a no-op
-        if (id === currentSingle) return prev;
-        const singleGrams = vegWeight;
-        return [
-          { vegId: currentSingle, grams: singleGrams },
-          { vegId: id, grams: String(entry.typicalWeight) },
-        ];
-      }
-      return [...prev, { vegId: id, grams: String(entry.typicalWeight) }];
-    });
-    // Hand-editing the mix means it is no longer the curated combo.
-    setActiveCombo(null);
-    setTouched(true);
-  }, [vegId, vegWeight]);
-
+  const selectPreset = useCallback((type: FermentType) => change((f) => selectPresetIn(f, type)), [change]);
+  const selectVeg = useCallback((id: string) => change((f) => selectVegIn(f, id)), [change]);
+  const toggleVegInMix = useCallback((id: string) => change((f) => toggleVegIn(f, id)), [change]);
+  const clearMix = useCallback(() => change(clearMixIn), [change]);
+  const applyCombo = useCallback((combo: VegCombo) => change((f) => applyComboTo(f, combo)), [change]);
   const updateMixGrams = useCallback((id: string, grams: string) => {
     // Sanitize: digits + at most one decimal point (same rule as NumberInput)
     if (!isValidDecimalInput(grams)) return;
-    setVegMix(prev => prev.map(m => m.vegId === id ? { ...m, grams } : m));
-    setTouched(true);
-  }, []);
+    change((f) => updateMixGramsIn(f, id, grams));
+  }, [change]);
+  /** Load a past ferment back into the calculator, with its method and combo restored together with the numbers. */
+  const restoreFrom = useCallback((entry: FermentHistoryEntry) => change((f) => restoreFormFrom(f, entry)), [change]);
 
-  /** Reset the multi-veg mix and return to the primary single-veg mode.
-   *  (Previously "Clear selection" looped toggleVegInMix, whose updater had
-   *  side effects and left the last veg selected.) */
-  const clearMix = useCallback(() => {
-    setVegMix([]);
-    setActiveCombo(null);
-    setTouched(true);
-  }, []);
-
-  const applyCombo = useCallback((combo: VegCombo) => {
-    // A combo brings its own method — a mash combo must not inherit the
-    // custom preset's brine, and a brine combo must not inherit the 0 g
-    // water left behind by a mash preset.
-    const setup = buildComboSetup(combo);
-    setFermentType(setup.fermentType);
-    setMethodOverride(setup.method);
-    setActiveCombo(combo);
-    setVegId(setup.vegId);
-    setVegMix(setup.vegMix);
-    setSaltPct(setup.saltPct);
-    setPrepSize(combo.referencePrep);
-    setWaterAmount(setup.waterAmount);
-    setTouched(true);
-  }, []);
+  // Manual input setters: stable, so memoised children are not re-rendered on every keystroke.
+  const setters = useMemo(() => ({
+    setVegWeight: (v: string) => change((f) => ({ ...f, vegWeight: v })),
+    setWaterAmount: (v: string) => change((f) => ({ ...f, waterAmount: v })),
+    setSaltPct: (v: string) => change((f) => ({ ...f, saltPct: v })),
+    setSaltType: (t: SaltCrystal) => change((f) => ({ ...f, saltType: t })),
+    setPrepSize: (p: PrepSize) => change((f) => ({ ...f, prepSize: p })),
+    setUseStarter: (v: boolean) => change((f) => ({ ...f, useStarter: v })),
+  }), [change]);
 
   // Load water hardness override from settings
   useFocusEffect(useCallback(() => {
@@ -322,139 +219,30 @@ export function useLactoCalculator(): LactoCalculatorState {
     ? `Using your set temperature ${formatTemp(fermTempOverride, unitSystem, 1)} — the local forecast would have been ${formatTemp(tempResult.effectiveTemp, unitSystem, 1)}`
     : `${tempResult.summary} · fermenting indoors? Set your kitchen temperature in Settings`;
 
-  // When preset changes, update method + default veg + salt%
-  const selectPreset = useCallback((type: FermentType) => {
-    const p = FERMENT_PRESETS[type]!;
-    setFermentType(type);
-    setMethodOverride(null); // back to the preset's own method
-    setActiveCombo(null); // a preset is not a curated combo
-    setTouched(true);
-    setVegMix([]); // reset multi-veg mix when switching presets
-
-    const defaultVegId = PRESET_DEFAULT_VEG[type] ?? 'green-cabbage';
-    const defaultVeg = findVeg(defaultVegId);
-    setVegId(defaultVegId);
-
-    setSaltPct(String(recommendedSaltPct(defaultVeg, p.method)));
-    setPrepSize(p.referencePrep);
-    setVegWeight(String(defaultVeg.typicalWeight));
-
-    if (p.method === 'brine') {
-      setWaterAmount(String(DEFAULT_BRINE_WATER_G));
-    } else {
-      setWaterAmount('0');
-    }
-  }, []);
-
-  // When veg changes, auto-update salt % recommendation
-  const selectVeg = useCallback((id: string) => {
-    const v = findVeg(id);
-    setVegId(id);
-    setTouched(true);
-    setVegWeight(String(v.typicalWeight));
-
-    setSaltPct(String(recommendedSaltPct(v, method)));
-    setWaterAmount(method === 'brine' ? String(DEFAULT_BRINE_WATER_G) : '0');
-  }, [method]);
-
-  /**
-   * Load a past ferment back into the calculator.
-   *
-   * One action rather than ten setters at the call site, so the method
-   * override and the combo identity are restored together with the numbers —
-   * restoring a pepper mash must not leave it looking like a brine ferment.
-   */
-  const restoreFrom = useCallback((entry: FermentHistoryEntry) => {
-    const presetForType = FERMENT_PRESETS[entry.fermentType]!;
-    const combo = entry.comboId ? VEG_COMBOS.find((c) => c.id === entry.comboId) ?? null : null;
-    setFermentType(entry.fermentType);
-    setMethodOverride(entry.method === presetForType.method ? null : entry.method);
-    setActiveCombo(combo);
-    setVegId(entry.vegId);
-    setVegWeight(entry.vegWeight);
-    setVegMix(entry.vegMix ?? []);
-    setWaterAmount(entry.waterAmount);
-    setSaltPct(entry.saltPct);
-    setSaltType(entry.saltType);
-    setPrepSize(entry.prepSize);
-    setUseStarter(entry.useStarter);
-    setTouched(true);
-  }, []);
-
   // Everything the page shows, recalculated whenever an input changes. The
   // maths lives in lib/lactoPlan.ts; nothing in here has side effects.
   const hardness = useMemo(() => getHardness(), [getHardness]);
-  const plan = useMemo(() => planLacto({
-    fermentType,
-    method,
-    preset,
-    combo: activeCombo,
-    veg: effectiveVeg,
-    isMultiVeg,
-    totalMixGrams,
-    vegWeight,
-    waterAmount,
-    saltPct,
-    saltType,
-    prepSize,
-    useStarter,
+  const plan = useMemo(() => planFromForm(form, {
     hourlyForecast: locationData?.hourlyForecast ?? null,
     currentTemp: locationData?.ambientTemp ?? null,
     fermTempOverride,
     hardness,
     unitSystem,
-  }), [fermentType, method, preset, activeCombo, effectiveVeg, isMultiVeg, totalMixGrams, vegWeight, waterAmount, saltPct, saltType, prepSize, useStarter, locationData, fermTempOverride, hardness, unitSystem]);
+  }), [form, locationData, fermTempOverride, hardness, unitSystem]);
 
   // History has no save button: a ferment you worked out is a ferment you
   // made. The calculator is live, so this waits for the inputs to settle and
   // only then records, replacing the entry it recorded a moment ago for the
   // same ferment instead of adding one row per edit. Fire-and-forget, so
   // storage can never block or break the calculation.
-  const historyDraft = useMemo(() => {
-    if (!plan.ok) return null;
-    const prep = effectivePrepSize(method, (activeCombo ?? preset).referencePrep, prepSize);
-    const vegW = isMultiVeg ? String(totalMixGrams) : vegWeight;
-    return {
-      presetName: activeCombo?.name ?? preset.name,
-      presetEmoji: activeCombo?.emoji ?? preset.emoji,
-      method,
-      vegName: effectiveVeg.name,
-      fermentType,
-      comboId: activeCombo?.id,
-      vegId,
-      vegWeight: vegW,
-      waterAmount,
-      saltPct,
-      saltType,
-      prepSize: prep,
-      useStarter,
-      vegMix,
-      results: {
-        saltGrams: plan.results.saltGrams,
-        estimatedDays: plan.results.estimatedDays,
-        tempC: Math.round(plan.tempC * 10) / 10,
-      },
-      signature: fermentSignature({
-        fermentType,
-        method,
-        vegId,
-        vegWeight: isMultiVeg ? String(Math.round(totalMixGrams)) : vegWeight,
-        waterAmount,
-        saltPct,
-        saltType,
-        prepSize: prep,
-        useStarter,
-        vegMix,
-      }),
-    };
-  }, [plan, method, activeCombo, preset, prepSize, isMultiVeg, totalMixGrams, vegWeight, effectiveVeg, fermentType, vegId, waterAmount, saltPct, saltType, useStarter, vegMix]);
+  const draft = useMemo(() => historyDraft(form, plan), [form, plan]);
 
   const lastRecorded = useRef<{ id: string; at: number; what: string } | null>(null);
   useEffect(() => {
-    if (!touched || !historyDraft) return;
+    if (!touched || !draft) return;
     const timer = setTimeout(() => {
       const entry: FermentHistoryEntry = {
-        ...historyDraft,
+        ...draft,
         id: generateFermentHistoryId(),
         createdAt: new Date().toISOString(),
       };
@@ -469,24 +257,24 @@ export function useLactoCalculator(): LactoCalculatorState {
       recordFerment(entry, replaceId).catch(() => {});
     }, HISTORY_SETTLE_MS);
     return () => clearTimeout(timer);
-  }, [touched, historyDraft]);
+  }, [touched, draft]);
 
   return {
-    fermentType,
+    fermentType: form.fermentType,
     method,
-    vegId,
+    vegId: form.vegId,
     veg: effectiveVeg,
-    vegWeight,
-    prepSize,
-    useStarter,
+    vegWeight: form.vegWeight,
+    prepSize: form.prepSize,
+    useStarter: form.useStarter,
     acidBalance: acidBalanceVerdict(effectiveVeg),
-    vegMix,
+    vegMix: form.vegMix,
     vegMixEntries,
     isMultiVeg,
     totalMixGrams,
-    waterAmount,
-    saltPct,
-    saltType,
+    waterAmount: form.waterAmount,
+    saltPct: form.saltPct,
+    saltType: form.saltType,
     effectiveTemp,
     tempResult,
     tempSummary,
@@ -518,13 +306,8 @@ export function useLactoCalculator(): LactoCalculatorState {
     applyCombo,
     VEG_COMBOS,
     selectVeg,
-    // Manual input setters: each one also marks the calculator as touched.
-    setVegWeight: touching(setVegWeight),
-    setWaterAmount: touching(setWaterAmount),
-    setSaltPct: touching(setSaltPct),
-    setSaltType: touching(setSaltType),
-    setPrepSize: touching(setPrepSize),
-    setUseStarter: touching(setUseStarter),
+    // Each of these also marks the calculator as touched.
+    ...setters,
     restoreFrom,
   };
 }

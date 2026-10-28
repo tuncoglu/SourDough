@@ -2,14 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import type { StarterFeeding, StarterStatus } from '@sourdough/calc/models/types';
 import { generateFeedingId, loadFeedings, logFeeding, markPeaked, setFridgeState } from '../store/starterStore';
-import {
-  DEFAULT_PEAK_EFFECTIVE_HOURS,
-  computeStarterStatus,
-  learnedPeakEffectiveHours,
-  starterFlourBlendFromFeeding,
-  usableStarterStatus,
-} from '@sourdough/calc/lib/starterStatus';
-import { buildFeeding, type FeedingDraft } from '@sourdough/calc/lib/starterLog';
+import { buildFeeding, starterStateFrom, type FeedingDraft } from '@sourdough/calc/lib/starterLog';
 
 /** How often the starter's age is recomputed while the screen is open. */
 const REFRESH_MS = 60_000;
@@ -71,17 +64,10 @@ export function useStarterStatus(roomTempC?: number): StarterState {
     return () => clearInterval(id);
   }, []);
 
-  const feeding = feedings[0] ?? null;
   const temp = roomTempC !== undefined && Number.isFinite(roomTempC) ? roomTempC : undefined;
-
-  const learned = useMemo(() => learnedPeakEffectiveHours(feedings, temp), [feedings, temp]);
-  const peakEffectiveHours = learned?.effectiveHours ?? DEFAULT_PEAK_EFFECTIVE_HOURS;
-
-  const status = useMemo(
-    () => usableStarterStatus(computeStarterStatus(feeding, { roomTempC: temp, peakEffectiveHours, now })),
-    [feeding, temp, peakEffectiveHours, now],
-  );
-  const flourBlend = useMemo(() => starterFlourBlendFromFeeding(feeding), [feeding]);
+  // The same rules as the web apps: newest first, the learned peak, and a status that ignores a stale log.
+  const state = useMemo(() => starterStateFrom(feedings, temp, new Date(now)), [feedings, temp, now]);
+  const { feeding, status, flourBlend, peakEffectiveHours, learnedFromPeaks } = state;
 
   const feed = useCallback(async (draft: Omit<FeedingDraft, 'id' | 'now' | 'roomTempC'>) => {
     const record = buildFeeding({ ...draft, id: generateFeedingId(), now: new Date(), roomTempC: temp });
@@ -104,7 +90,7 @@ export function useStarterStatus(roomTempC?: number): StarterState {
     status,
     flourBlend,
     peakEffectiveHours,
-    learnedFromPeaks: learned?.count ?? null,
+    learnedFromPeaks,
     now,
     feed,
     markPeaked: useCallback((id: string) => afterChange(markPeaked(id)), [afterChange]),

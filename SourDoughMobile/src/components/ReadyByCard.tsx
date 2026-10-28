@@ -4,7 +4,8 @@ import { Spacing, FontSize, BorderRadius, cardStyle, sectionTitleStyle, useAppTh
 import { Chip } from './Chip';
 import type { LazyPlan, ProofMode } from '@sourdough/calc/lib/lazyPlan';
 import { LAZY_PLAN_MINUTES, FRIDGE_HOURS } from '@sourdough/calc/lib/lazyPlan';
-import { clockTime, shortDay } from '@sourdough/calc/lib/starterFormat';
+import { clockTime } from '@sourdough/calc/lib/starterFormat';
+import { whenLabel } from '@sourdough/calc/lib/breadPlan';
 import { dayFromNow } from '@sourdough/calc/lib/lazySchedule';
 
 export type PlanMode = 'now' | 'readyBy';
@@ -36,12 +37,6 @@ interface Props {
   onUseEarliest: () => void;
   /** Something to tell the person about the plan (for example, it will be ready later than asked). */
   note: string | null;
-}
-
-/** When a moment falls, with the day only if it is not today. */
-export function whenLabel(d: Date, now: Date): string {
-  const sameDay = d.toDateString() === now.toDateString();
-  return sameDay ? clockTime(d) : `${shortDay(d)}, ${clockTime(d)}`;
 }
 
 /** Start now, or say when it should be ready to slice and get every clock time worked back from that. */

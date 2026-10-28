@@ -1,77 +1,90 @@
 name: Web apps
 
-# Checks the standalone web calculators (apps/*) and the packages they share.
-# It does not deploy anything: each app is its own Cloudflare Pages project.
+# Checks the standalone web calculators (apps/*) and the packages they share, and on
+# a push to main deploys each one to its own Cloudflare Pages project:
+#
+#   apps/hub      -> hub          (sourdoughcalculator.uk)
+#   apps/bread    -> bread        (bread.sourdoughcalculator.uk)
+#   apps/yogurt   -> yogurt       (yogurt.sourdoughcalculator.uk)
+#   apps/lacto    -> lactoferment (lactoferment.sourdoughcalculator.uk)
+#
+# Deploys only run after every app's checks pass. The pasta app deploys from its own
+# repository. Uses the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID repository
+# secrets; the token needs "Cloudflare Pages: Edit" on the account.
 on:
   push:
     branches: [main]
-    paths: ['apps/**', 'packages/core/**', 'packages/ui/**', 'packages/calc/**', '.github/workflows/web-apps.yml']
+    paths:
+      - 'apps/**'
+      - 'packages/core/**'
+      - 'packages/ui/**'
+      - 'packages/calc/**'
+      # The hub renders its /privacy page from the app's privacy policy.
+      - 'SourDoughMobile/PRIVACY.md'
+      - '.github/workflows/web-apps.yml'
   pull_request:
-    paths: ['apps/**', 'packages/core/**', 'packages/ui/**', 'packages/calc/**', '.github/workflows/web-apps.yml']
+    paths:
+      - 'apps/**'
+      - 'packages/core/**'
+      - 'packages/ui/**'
+      - 'packages/calc/**'
+      - 'SourDoughMobile/PRIVACY.md'
+      - '.github/workflows/web-apps.yml'
+  workflow_dispatch:
 
 jobs:
-  yogurt:
+  check:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [yogurt, lacto, bread, hub]
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: apps/yogurt/package-lock.json
+          cache-dependency-path: apps/${{ matrix.app }}/package-lock.json
       - run: npm ci
-        working-directory: apps/yogurt
-      # Type-checks the app and the core and ui packages it imports.
+        working-directory: apps/${{ matrix.app }}
+      # Type-checks the app and the shared packages it imports, then builds it.
       - run: npm run build
-        working-directory: apps/yogurt
+        working-directory: apps/${{ matrix.app }}
       - run: npm test
-        working-directory: apps/yogurt
+        working-directory: apps/${{ matrix.app }}
 
-  lacto:
+  deploy:
+    # Only from main, and only once every app has passed.
+    needs: check
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    # One deploy at a time, and never cancel one half way through an upload.
+    concurrency:
+      group: deploy-web-${{ matrix.app }}
+      cancel-in-progress: false
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { app: hub, project: hub }
+          - { app: bread, project: bread }
+          - { app: yogurt, project: yogurt }
+          - { app: lacto, project: lactoferment }
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: apps/lacto/package-lock.json
+          cache-dependency-path: apps/${{ matrix.app }}/package-lock.json
       - run: npm ci
-        working-directory: apps/lacto
+        working-directory: apps/${{ matrix.app }}
       - run: npm run build
-        working-directory: apps/lacto
-      - run: npm test
-        working-directory: apps/lacto
-
-  bread:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: apps/bread/package-lock.json
-      - run: npm ci
-        working-directory: apps/bread
-      - run: npm run build
-        working-directory: apps/bread
-      - run: npm test
-        working-directory: apps/bread
-
-  hub:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: apps/hub/package-lock.json
-      - run: npm ci
-        working-directory: apps/hub
-      - run: npm run build
-        working-directory: apps/hub
-      - run: npm test
-        working-directory: apps/hub
-
+        working-directory: apps/${{ matrix.app }}
+      - name: Deploy to Cloudflare Pages
+        run: npx --yes wrangler@4 pages deploy apps/${{ matrix.app }}/dist --project-name=${{ matrix.project }} --branch=main --commit-dirty=true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WRANGLER_SEND_METRICS: 'false'
