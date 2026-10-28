@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Typechecks and tests the mobile app, the calculation package and the Cloudflare
+# Function. This workflow used to build the Expo web export and deploy it to the
+# `sourdough` Pages project; sourdoughcalculator.uk is now the hub page (apps/hub)
+# and each calculator is its own app (apps/*), so nothing is deployed from here.
+# The web apps are checked by web-apps.yml.
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: SourDoughMobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: SourDoughMobile
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+        working-directory: SourDoughMobile
+
+      # Also runs the Pages Function tests in ../functions (see jest.config.js).
+      - name: Run tests
+        run: npx jest --silent
+        working-directory: SourDoughMobile
+
+      # The Functions have no npm dependencies; check them with this package's TypeScript.
+      - name: Typecheck Pages Functions
+        run: npx tsc -p ../functions
+        working-directory: SourDoughMobile
+
+      # The calculation package (packages/calc) has none either, and its tests ran above.
+      - name: Typecheck calculation package
+        run: npx tsc -p ../packages/calc
+        working-directory: SourDoughMobile

@@ -1,5 +1,13 @@
 # Ask the baker: launch runbook
 
+> **Status (2026-10-28): not live, and the route below no longer works as written.**
+> sourdoughcalculator.uk now serves the hub page (`apps/hub`), not the Expo web app, so
+> the `/api/assist` Function that used to run there is gone, and `.github/workflows/deploy.yml`
+> no longer exists (it became `ci.yml`, which only tests). Bringing the feature back needs a new
+> home for the Function (for example a Pages project that has `functions/`) and an app that
+> calls it. Until then the app hides the card and the privacy policy says it is unavailable.
+> The runbook is kept for that day.
+
 For a Claude Code session on the owner's own computer, which has the DeepSeek API key.
 The feature itself is built and deployed dark (PR tuncoglu/SourDough#1, merge `1c1fc30`).
 Design and every product decision: `ASSISTANT_SPEC.md`. Code: `functions/api/assist.ts`,
@@ -14,8 +22,8 @@ it on. Do the steps in order and stop at each **Stop** to report to the owner.
   in `.dev.vars` (git-ignored) for local runs and in Cloudflare secrets for production.
   Read it from wherever it already lives on this computer (an env var such as
   `DEEPSEEK_API_KEY`, or a file the owner points you to); never print it.
-- **A push to `main` deploys to production** (`.github/workflows/deploy.yml`). Code changes
-  go through a branch and a PR; merge only when the owner says so.
+- **(Historical, see the status note.)** A push to `main` used to deploy to production via
+  `deploy.yml`. Code changes go through a branch and a PR; merge only when the owner says so.
 - Real model calls cost money. Steps 1–3 need roughly 50–100 requests in total; that is
   cents, not dollars. Do not loop the eval more than the steps below say.
 - Do not change the design (scope, schema, actions, copy, privacy text) without asking.

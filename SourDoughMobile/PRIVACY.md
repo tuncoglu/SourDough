@@ -1,6 +1,6 @@
 # Privacy Policy for Just Dough It
 
-**Last updated:** October 16, 2026
+**Last updated:** October 28, 2026
 
 Just Dough It ("the App") is a baking tool with calculators for sourdough
 bread, yogurt, and lacto-fermentation. This policy explains what data the
@@ -10,27 +10,14 @@ App handles and how it is used.
 
 **The App does not require an account and does not collect personal
 identifiers for the calculators.** The native apps do not include an
-analytics SDK. The website may use optional Cloudflare Web Analytics;
-see below.
+analytics SDK, and neither do the websites (see "The web calculators"
+below).
 
 All your app data — starter feeding history, saved recipes, fermentation
 history, and settings — is stored **only on your device** using local
 storage. Ferments you calculate are recorded automatically (there is no save
 button) and are rotated out after 12 months. We do not have access to this
 data.
-
-### Optional waitlist email
-
-If you choose to join the launch waitlist on the website, we collect the
-email address you provide for the sole purpose of notifying you when the
-iOS and Android apps are available. You can unsubscribe or ask us to delete
-it at any time by emailing info@sourdoughcalculator.uk.
-
-If the website is configured with a waitlist endpoint (for example, a
-form service or Cloudflare Worker), your email is sent directly to that
-processor. If no endpoint is configured, your email is not transmitted to
-us automatically — the site opens a pre-filled email in your mail app, and
-you choose whether to send it.
 
 ## Location data
 
@@ -55,14 +42,6 @@ when you tap its location refresh control. You can decline permission
 and enter temperature values manually. Entering a postcode uses
 geocoding to refine the local conditions.
 
-## Optional website analytics
-
-If enabled for the website, Cloudflare Web Analytics receives page-view
-and performance data from a browser beacon. Cloudflare says this feature
-does not use cookies or local storage to measure visits and does not
-track individual visitors across customer sites. It does not receive
-your saved recipes or starter logs.
-
 ## Google Calendar links (optional)
 
 The lacto-fermentation calculator can add a ferment to your calendar. This
@@ -75,35 +54,27 @@ whatever your Google account does with them is governed by
 itself does not connect to Google — it only hands the link to your device's
 browser. Skip the button and nothing is transmitted.
 
-## Ask the baker (optional)
+## Ask the baker (not currently available)
 
-The bread page can show an "Ask the baker" box for questions about the lazy
-sourdough method. It is off unless you use it: nothing is sent until you
-type a question, press **Ask** and agree to the consent note the first time.
+"Ask the baker" was an optional box for questions about the lazy sourdough
+method, answered by an AI service. It is switched off: it does not appear in
+the App, and the website no longer runs the service it needs, so nothing is
+sent anywhere for it. If it ever returns, this policy will be updated first to
+say exactly what would be sent and to whom, and you would be asked before
+anything is.
 
-**What is sent:** your question (and earlier questions and answers in the
-same conversation, which are kept only on the page until you leave it),
-this loaf's formula (flour weight, water, starter and salt percentages,
-starter hydration), room temperature, baking vessel, the time you started
-the mix clock if you did, your device's current time and its time zone.
-No location, postcode, water hardness, saved recipes, history, account or
-device identifiers are sent.
+## The web calculators
 
-**To whom:** the request goes to a Cloudflare Pages Function on this
-website, which forwards it to [DeepSeek](https://www.deepseek.com/), an AI
-service, to write the answer. DeepSeek processes and stores data in the
-People's Republic of China under its own
-[privacy policy](https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html).
-
-**What we keep:** we store no questions or answers. To limit how often the
-service can be used, the function keeps a salted hash of your IP address
-(never the address itself) with a count of questions for that day, plus a
-site-wide daily count. Both expire after 48 hours.
+The calculators are also available in a web browser, at sourdoughcalculator.uk
+and its subdomains (bread, yogurt, lactoferment and pasta). They work the same
+way: no account, no analytics, everything you save stays in your browser, and
+location is only used, and the services above only contacted, when you tap
+the button for it. Their own section, with details, is at
+https://sourdoughcalculator.uk/privacy.
 
 ## Data sharing
 
-Beyond the location, optional calendar, Ask the baker, waitlist, and
-website analytics flows described above, the App does not sell your data or transmit your
+Beyond the location and optional calendar flows described above, the App does not sell your data or transmit your
 saved recipes and starter logs to third parties. There are no advertising
 networks or analytics SDKs in the native apps.
 
@@ -111,8 +82,8 @@ networks or analytics SDKs in the native apps.
 
 All locally stored data (recipes, starter history, settings) remains on
 your device until you delete the App or clear its storage. We keep no
-copy of it. The only data our website's server side holds is the Ask the
-baker rate-limit counters described above, which expire after 48 hours.
+copy of it. Our websites and the App hold no data about you on any server of
+ours.
 
 ## Children's privacy
 

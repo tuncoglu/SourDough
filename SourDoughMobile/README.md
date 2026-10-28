@@ -101,16 +101,11 @@ Then:
 - Press `w` for web
 - Scan the QR code with [Expo Go](https://expo.dev/go) to run on a physical device
 
-### Web Deployment
+### Web
 
-The web version deploys automatically to Cloudflare Pages on every push to `main`.
-To deploy manually:
-
-```bash
-npx expo export --platform web
-cp -f public/_headers dist/_headers
-npx wrangler pages deploy dist --project-name=sourdough
-```
+The Expo web build is no longer deployed. sourdoughcalculator.uk is the hub page, and each
+calculator is its own web app in `../apps/` (see their READMEs), sharing the calculation code
+in `../packages/calc`. `npx expo start --web` still works for developing the mobile app in a browser.
 
 ---
 
