@@ -167,7 +167,7 @@ export default function BreadScreen() {
 
   // The starter's state, from the feeding log. With no usable log it is a
   // fridge-cold starter at full strength, as before.
-  const starter = useStarterStatus();
+  const starter = useStarterStatus(roomTempC);
   const starterTempC = starter.status
     ? starterTempFor(starter.status, roomTempC, LAZY_STARTER_TEMP_C)
     : LAZY_STARTER_TEMP_C;

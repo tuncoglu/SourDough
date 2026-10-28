@@ -140,10 +140,26 @@ export interface LazyPlanInput {
   proofMode: ProofMode;
   fridgeHours?: number;   // fridge only; default 12; clamped to [8, 16]
   vessel: LazyVessel;
+  /**
+   * Feed the starter first so it is at its peak at the mix. `leadHours` is the
+   * time from the feed to the peak (see `starterTimeToPeakHours`), which
+   * depends on the kitchen and the size of the feed; `windowHours` is the
+   * stretch after the feed in which it is still at its peak. Left out, the
+   * starter comes straight from the fridge and there is no feed step.
+   */
+  feed?: { leadHours: number; windowHours?: { from: number; to: number } };
 }
 
 export interface LazyPlanStep { key: LazyStep['key']; at: Date; }
-export interface LazyPlan { mixAt: Date; steps: LazyPlanStep[]; totalHours: number; }
+export interface LazyPlan {
+  mixAt: Date;
+  /** When to feed the starter (only when the plan has a feed step). */
+  feedAt?: Date;
+  /** The stretch of time in which mixing keeps the starter at its peak. */
+  mixWindow?: { from: Date; to: Date };
+  steps: LazyPlanStep[];
+  totalHours: number;
+}
 
 /** Fixed step durations, in minutes. Preheating overlaps the proof. */
 export const LAZY_PLAN_MINUTES = { mix: 5, shape: 2, cool: 60 } as const;
@@ -183,5 +199,18 @@ export function planLazyBake(input: LazyPlanInput): LazyPlan {
     { key: 'bake', at: new Date(bakeAt) },
     { key: 'cool', at: new Date(coolAt) },
   ];
-  return { mixAt: new Date(mixAt), steps, totalHours: (ready - mixAt) / HOUR };
+  const plan: LazyPlan = { mixAt: new Date(mixAt), steps, totalHours: (ready - mixAt) / HOUR };
+
+  const lead = input.feed?.leadHours;
+  if (input.feed && finite(lead) && lead > 0) {
+    const feedAt = mixAt - lead * HOUR;
+    plan.feedAt = new Date(feedAt);
+    plan.steps = [{ key: 'feed', at: new Date(feedAt) }, ...steps];
+    plan.totalHours = (ready - feedAt) / HOUR;
+    const w = input.feed.windowHours;
+    if (w && finite(w.from) && finite(w.to) && w.to >= w.from) {
+      plan.mixWindow = { from: new Date(feedAt + w.from * HOUR), to: new Date(feedAt + w.to * HOUR) };
+    }
+  }
+  return plan;
 }

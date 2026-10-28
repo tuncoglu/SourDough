@@ -113,7 +113,7 @@ export async function askBaker(
 }
 
 const STEP_TITLES: Record<LazyStep['key'], string> = {
-  mix: 'Mix', rise: 'Rise', shape: 'Shape', proof: 'Proof', bake: 'Bake', cool: 'Cool',
+  feed: 'Feed', mix: 'Mix', rise: 'Rise', shape: 'Shape', proof: 'Proof', bake: 'Bake', cool: 'Cool',
 };
 
 export function planStepTitle(key: string): string {

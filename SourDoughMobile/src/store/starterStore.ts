@@ -57,6 +57,11 @@ export function updateFeeding(id: string, patch: Partial<StarterFeeding>): Promi
   });
 }
 
+/** Mark a feeding as having reached its peak (now, unless told otherwise). */
+export function markPeaked(id: string, at: Date = new Date()): Promise<void> {
+  return updateFeeding(id, { peakedAt: at.toISOString() });
+}
+
 /** Generate a unique feeding ID */
 export function generateFeedingId(): string {
   return `feed_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;

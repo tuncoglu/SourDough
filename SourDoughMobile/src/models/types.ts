@@ -194,6 +194,12 @@ export interface StarterFeeding {
   /** When the feed used several flours: each flour and its grams (they add up to flourGrams). */
   flours?: { label: string; grams: number }[];
   waterGrams: number;         // g of water used to feed
+  /** g of starter left in the jar when it was fed. With the flour and water it sets the feed ratio; missing on older records (read as 1:1:1). */
+  starterKeptGrams?: number;
+  /** Room temperature (°C) when it was fed; the starter works faster when warm, so this sets how fast its clock ran. */
+  roomTempC?: number;
+  /** When the user marked it at its peak (ISO). Three of these teach the app how fast this starter peaks. */
+  peakedAt?: string;
   notes?: string;
   /** If the starter went into the fridge after this feeding, when (ISO). */
   fridgeAt?: string;

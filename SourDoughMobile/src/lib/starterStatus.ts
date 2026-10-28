@@ -25,10 +25,119 @@ const FRIDGE_RATE = 0.06;
 /** Hours after coming out of fridge before starter reaches full activity. */
 const FRIDGE_WARMUP_HOURS = 3;
 
-export function computeStarterStatus(lastFeeding: StarterFeeding | null): StarterStatus | null {
+// ── How fast a starter works ───────────────────────────────────────────
+
+/**
+ * Temperature at which "effective hours" are measured: the same 22 °C the
+ * fridge rate above is stated against. An effective hour is an hour of a
+ * 1 : 1 : 1 feed on a 22 °C counter.
+ */
+export const STARTER_REFERENCE_TEMP_C = 22;
+
+/** Rate multiplier per 10 °C: the same ×2.5 the rise estimate uses. */
+export const STARTER_Q10 = 2.5;
+
+/** Above this the model stops speeding up, as the rise estimate does. */
+export const STARTER_MAX_EFFECTIVE_TEMP_C = 38;
+
+/**
+ * Effective hours from a feed to its peak, for a 1 : 1 : 1 feed. This is the
+ * app's own figure (the vitality model peaks here and the zones centre on it),
+ * and baker guides only roughly agree (6–8 h at 1:1:1). So it is a default,
+ * replaced by the user's own median once they have marked a few peaks.
+ */
+export const DEFAULT_PEAK_EFFECTIVE_HOURS = 6;
+
+/** The peak zone, in effective hours at the default peak (see getZone). */
+export const PEAK_ZONE_START_HOURS = 4;
+export const PEAK_ZONE_END_HOURS = 8;
+
+/** Marked peaks needed at similar feed sizes before the app uses the user's own. */
+export const PEAKS_NEEDED_TO_LEARN = 3;
+
+/** A "peak" marked longer than this after the feed is not believed. */
+export const MAX_PEAK_CLOCK_HOURS = 48;
+
+/** A learned peak is kept inside a sane range, so one odd tap cannot wreck the plan. */
+export const LEARNED_PEAK_RANGE_HOURS = { min: 3, max: 12 } as const;
+
+/**
+ * How fast a starter works at a temperature, against the 22 °C reference
+ * (×2.5 per 10 °C). A heuristic: bakers agree on the direction and rough size.
+ */
+export function starterPace(tempC: number): number {
+  if (!Number.isFinite(tempC)) return 1;
+  const capped = Math.min(tempC, STARTER_MAX_EFFECTIVE_TEMP_C);
+  return Math.pow(STARTER_Q10, (capped - STARTER_REFERENCE_TEMP_C) / 10);
+}
+
+/**
+ * How many times the feed dilutes the starter: everything in the jar after
+ * feeding over the starter that was left. 1 : 1 : 1 is 3. A record that does
+ * not say how much was kept is read as 1 : 1 : 1.
+ */
+export function feedDilution(feed: {
+  starterKeptGrams?: number;
+  flourGrams: number;
+  waterGrams: number;
+}): number {
+  const kept = feed.starterKeptGrams;
+  if (!(typeof kept === 'number' && Number.isFinite(kept) && kept > 0)) return 3;
+  const total = kept + Math.max(0, feed.flourGrams) + Math.max(0, feed.waterGrams);
+  const dilution = total / kept;
+  return dilution > 1 ? dilution : 3;
+}
+
+/**
+ * How much longer a feed takes to peak than a 1 : 1 : 1 feed. A bigger feed
+ * needs more doublings to refill the jar, so peak time grows with the log of
+ * the dilution: 1 : 2 : 2 about ×1.5, 1 : 5 : 5 about ×2.2. A reasoned
+ * estimate, not a measurement.
+ */
+export function feedSizeFactor(dilution: number): number {
+  if (!(dilution > 1)) return 1;
+  return Math.log2(dilution) / Math.log2(3);
+}
+
+/** Clock hours from a feed to its peak, in a kitchen at `roomTempC`. */
+export function starterTimeToPeakHours(opts: {
+  roomTempC: number;
+  /** Dilution of the feed (see feedDilution); default 1 : 1 : 1. */
+  dilution?: number;
+  /** This starter's peak in effective hours; default is the app's 6. */
+  peakEffectiveHours?: number;
+}): number {
+  const peak = opts.peakEffectiveHours ?? DEFAULT_PEAK_EFFECTIVE_HOURS;
+  return (peak * feedSizeFactor(opts.dilution ?? 3)) / starterPace(opts.roomTempC);
+}
+
+/** The stretch of clock time, from a feed, in which the starter is at its peak. */
+export function starterPeakWindowHours(timeToPeakHours: number): { from: number; to: number } {
+  return {
+    from: (timeToPeakHours * PEAK_ZONE_START_HOURS) / DEFAULT_PEAK_EFFECTIVE_HOURS,
+    to: (timeToPeakHours * PEAK_ZONE_END_HOURS) / DEFAULT_PEAK_EFFECTIVE_HOURS,
+  };
+}
+
+export interface StarterStatusOptions {
+  /**
+   * Room temperature now (°C). Counter time is scaled to it. Left out, the
+   * counter runs at the 22 °C reference, which changes nothing.
+   */
+  roomTempC?: number;
+  /** This starter's own peak in effective hours (see learnedPeak); default 6. */
+  peakEffectiveHours?: number;
+  /** The clock, for tests. */
+  now?: number;
+}
+
+export function computeStarterStatus(
+  lastFeeding: StarterFeeding | null,
+  options: StarterStatusOptions = {},
+): StarterStatus | null {
   if (!lastFeeding) return null;
 
-  const now = Date.now();
+  const now = options.now ?? Date.now();
   const fedAt = new Date(lastFeeding.timestamp).getTime();
   if (isNaN(fedAt)) return null; // corrupt timestamp — refuse to guess
   const hoursSinceFed = (now - fedAt) / 3600000;
@@ -41,8 +150,13 @@ export function computeStarterStatus(lastFeeding: StarterFeeding | null): Starte
   // It's in the fridge if fridgeAt is set and outOfFridgeAt is either unset or earlier than fridgeAt
   const isInFridge = fridgeAt !== null && (outOfFridgeAt === null || outOfFridgeAt < fridgeAt);
 
-  // Effective hours: counter time counts 1:1, fridge time counts FRIDGE_RATE
-  let effectiveHours = 0;
+  // How fast the counter ran: at the temperature it was fed in until it went
+  // in the fridge, and at today's temperature once it is back out.
+  const fedPace = starterPace(lastFeeding.roomTempC ?? options.roomTempC ?? STARTER_REFERENCE_TEMP_C);
+  const nowPace = starterPace(options.roomTempC ?? lastFeeding.roomTempC ?? STARTER_REFERENCE_TEMP_C);
+
+  // Effective hours: counter time at its pace, fridge time at FRIDGE_RATE
+  let rawEffectiveHours = 0;
   let hoursSinceFridgeOut = 0;
 
   if (fridgeAt && outOfFridgeAt) {
@@ -51,20 +165,27 @@ export function computeStarterStatus(lastFeeding: StarterFeeding | null): Starte
     const fridgeTime = Math.max(0, (outOfFridgeAt - fridgeAt) / 3600000);
     const counterAfterFridge = Math.max(0, (now - outOfFridgeAt) / 3600000);
 
-    effectiveHours = counterBeforeFridge + fridgeTime * FRIDGE_RATE + counterAfterFridge;
+    rawEffectiveHours = counterBeforeFridge * fedPace + fridgeTime * FRIDGE_RATE + counterAfterFridge * nowPace;
     hoursSinceFridgeOut = counterAfterFridge;
   } else if (fridgeAt && !outOfFridgeAt) {
     // Fed → counter → fridge (still there)
     const counterBeforeFridge = Math.max(0, (fridgeAt - fedAt) / 3600000);
     const fridgeTime = Math.max(0, (now - fridgeAt) / 3600000);
 
-    effectiveHours = counterBeforeFridge + fridgeTime * FRIDGE_RATE;
+    rawEffectiveHours = counterBeforeFridge * fedPace + fridgeTime * FRIDGE_RATE;
     hoursSinceFridgeOut = 0;
   } else {
     // Fed → counter (never fridged)
-    effectiveHours = hoursSinceFed;
+    rawEffectiveHours = hoursSinceFed * fedPace;
     hoursSinceFridgeOut = 0;
   }
+
+  // A bigger feed takes longer to peak, and a starter that is slower or faster
+  // than the default is stretched to the default so the zones below stay put.
+  const peak = options.peakEffectiveHours ?? DEFAULT_PEAK_EFFECTIVE_HOURS;
+  const effectiveHours =
+    (rawEffectiveHours / feedSizeFactor(feedDilution(lastFeeding))) *
+    (DEFAULT_PEAK_EFFECTIVE_HOURS / peak);
 
   // Determine zone based on effective hours
   const zone = getZone(effectiveHours, isInFridge, hoursSinceFridgeOut);
@@ -79,6 +200,74 @@ export function computeStarterStatus(lastFeeding: StarterFeeding | null): Starte
     emoji,
     label,
   };
+}
+
+/**
+ * This starter's own peak, in effective hours, from the feedings the user
+ * marked as peaked. Each is the clock time to the mark, turned into effective
+ * hours for that day's kitchen and that feed's size, so a warm day and a cool
+ * day, or a small feed and a big one, count the same. Only feeds of a similar
+ * size to the latest marked one are used, and it takes three of them.
+ * Returns null until then, and callers use the default.
+ */
+export function learnedPeakEffectiveHours(
+  feedings: StarterFeeding[],
+  fallbackRoomTempC?: number,
+): { effectiveHours: number; count: number } | null {
+  const marked = feedings
+    .map((f) => {
+      if (!f.peakedAt) return null;
+      const fedAt = new Date(f.timestamp).getTime();
+      const peakedAt = new Date(f.peakedAt).getTime();
+      const clockHours = (peakedAt - fedAt) / 3600000;
+      if (!Number.isFinite(clockHours) || clockHours <= 0 || clockHours > MAX_PEAK_CLOCK_HOURS) return null;
+      const temp = f.roomTempC ?? fallbackRoomTempC;
+      if (temp === undefined || !Number.isFinite(temp)) return null;
+      const size = feedSizeFactor(feedDilution(f));
+      return { fedAt, size, effective: (clockHours * starterPace(temp)) / size };
+    })
+    .filter((m): m is { fedAt: number; size: number; effective: number } => m !== null)
+    .sort((a, b) => b.fedAt - a.fedAt);
+
+  if (marked.length === 0) return null;
+  const reference = marked[0].size;
+  const similar = marked.filter((m) => Math.abs(m.size / reference - 1) <= 0.25);
+  if (similar.length < PEAKS_NEEDED_TO_LEARN) return null;
+
+  const sorted = similar.map((m) => m.effective).sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  const { min, max } = LEARNED_PEAK_RANGE_HOURS;
+  return {
+    effectiveHours: Math.round(Math.min(max, Math.max(min, median)) * 10) / 10,
+    count: similar.length,
+  };
+}
+
+/**
+ * Feed amounts that leave `neededGrams` of peaked starter for the dough plus
+ * `keepGrams` to stay in the jar, at a 1 : r : r feed (default 1 : 1 : 1).
+ * With the starter at 100 % hydration the flour and water are equal.
+ */
+export function starterFeedAmounts(opts: {
+  neededGrams: number;
+  keepGrams?: number;
+  /** r in 1 : r : r. */
+  ratio?: number;
+  /** Starter hydration %, default 100. */
+  hydration?: number;
+}): { keptGrams: number; flourGrams: number; waterGrams: number; totalGrams: number; dilution: number } {
+  const keep = opts.keepGrams ?? 50;
+  const r = opts.ratio && opts.ratio > 0 ? opts.ratio : 1;
+  const hydration = opts.hydration && opts.hydration > 0 ? opts.hydration : 100;
+  const total = Math.max(0, opts.neededGrams) + Math.max(0, keep);
+  // starter + r·starter flour + r·starter·(hydration/100) water = total
+  const starter = total / (1 + r + (r * hydration) / 100);
+  const keptGrams = Math.max(1, Math.round(starter));
+  const flourGrams = Math.max(1, Math.round(keptGrams * r));
+  const waterGrams = Math.max(1, Math.round(flourGrams * (hydration / 100)));
+  const totalGrams = keptGrams + flourGrams + waterGrams;
+  return { keptGrams, flourGrams, waterGrams, totalGrams, dilution: totalGrams / keptGrams };
 }
 
 type Zone = StarterStatus['zone'];

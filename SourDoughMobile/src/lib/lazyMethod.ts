@@ -14,7 +14,7 @@ import type { UnitSystem } from '../models/types';
 export type LazyVessel = 'cocotte' | 'tin';
 
 export interface LazyStep {
-  key: 'mix' | 'rise' | 'shape' | 'proof' | 'bake' | 'cool';
+  key: 'feed' | 'mix' | 'rise' | 'shape' | 'proof' | 'bake' | 'cool';
   title: string;
   /** Short duration label shown beside the title. */
   duration: string;
@@ -52,6 +52,13 @@ export function buildLazySteps(
   vessel: LazyVessel,
   bulkHours: number | null,
   unitSystem: UnitSystem,
+  options: {
+    /**
+     * The starter was fed to its peak beforehand (see `buildFeedStep`), so the
+     * jar needs no second feed after mixing.
+     */
+    starterFed?: boolean;
+  } = {},
 ): LazyStep[] {
   const rise = bulkHours != null ? `about ${formatHours(bulkHours)}` : 'several hours';
   const proof = bulkHours != null
@@ -85,7 +92,9 @@ export function buildLazySteps(
       title: 'Mix',
       duration: 'about 5 min',
       body: "Stir the starter, water and salt together in a large bowl. Add the flour and mix with a spoon or your hand until no dry flour is left. It will look shaggy. That's fine. Cover the bowl.",
-      aside: `Feed what's left in your starter jar with equal weights of flour and water (about ${formatWeight(STARTER_FEED_GRAMS, unitSystem, unitSystem === 'imperial' ? 1 : 0)} of each), stir, and put it back in the fridge.`,
+      aside: options.starterFed
+        ? 'The starter left in the jar was fed with it and is at its peak too. It goes straight back into the fridge. No second feed.'
+        : `Feed what's left in your starter jar with equal weights of flour and water (about ${formatWeight(STARTER_FEED_GRAMS, unitSystem, unitSystem === 'imperial' ? 1 : 0)} of each), stir, and put it back in the fridge.`,
     },
     {
       key: 'rise',
@@ -116,4 +125,37 @@ export function lazyBakeSummary(vessel: LazyVessel, unitSystem: UnitSystem): str
   return vessel === 'cocotte'
     ? `Bake in a preheated cocotte at ${formatTemp(LAZY_BAKE.cocotte.ovenTempC, unitSystem, 0)}: ${LAZY_BAKE.cocotte.lidOnMinutes} min lid on, ${LAZY_BAKE.cocotte.lidOffMinutes} min lid off`
     : `Bake in a paper-lined loaf tin at ${formatTemp(LAZY_BAKE.tin.ovenTempC, unitSystem, 0)} for ${LAZY_BAKE.tin.bakeMinutes} min`;
+}
+
+/**
+ * The optional first step: feed the starter so it is at its peak when the
+ * dough is mixed. It comes before the six fixed steps and is part of choosing
+ * how to use the starter, not a second bread method; the six steps stay as
+ * they are.
+ */
+export function buildFeedStep(opts: {
+  /** Hours from the feed to the starter's peak (see starterTimeToPeakHours). */
+  leadHours: number;
+  roomTempC: number;
+  /** What to feed (see starterFeedAmounts). */
+  keptGrams: number;
+  flourGrams: number;
+  waterGrams: number;
+  /** Peaked starter the dough takes. */
+  neededGrams: number;
+  unitSystem: UnitSystem;
+}): LazyStep {
+  const { unitSystem } = opts;
+  const decimals = unitSystem === 'imperial' ? 1 : 0;
+  const g = (n: number) => formatWeight(n, unitSystem, decimals);
+  const lead = formatHours(opts.leadHours);
+  return {
+    key: 'feed',
+    title: 'Feed',
+    duration: `about ${lead} to peak`,
+    body:
+      `Take the jar out of the fridge. Keep ${g(opts.keptGrams)} of starter in it, stir in ${g(opts.flourGrams)} of flour and ${g(opts.waterGrams)} of water, ` +
+      `cover loosely and leave it on the counter. At ${formatTemp(opts.roomTempC, unitSystem, 0)} it peaks after about ${lead}, domed and bubbly. ` +
+      `Then ${g(opts.neededGrams)} goes in the dough and the rest stays in the jar. A warmer kitchen gets there sooner.`,
+  };
 }
