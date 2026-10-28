@@ -4,13 +4,14 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "dev": "node scripts/render-privacy.mjs && vite",
+    "build": "node scripts/render-privacy.mjs && tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "node scripts/render-privacy.mjs && vitest run"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
+    "marked": "^18.1.2",
     "typescript": "^7.0.2",
     "vite": "^8.3.5",
     "vitest": "^5.0.5"

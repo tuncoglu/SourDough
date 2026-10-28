@@ -1,0 +1,10 @@
+# The old combined app lived at these paths. Each calculator now has its own address.
+# (/privacy and /about are served by privacy.html and about.html, so they need no rule.
+# The Play Store listing points at /privacy.)
+/bread        https://bread.sourdoughcalculator.uk/         301
+/starter      https://bread.sourdoughcalculator.uk/         301
+/recipe/*     https://bread.sourdoughcalculator.uk/         301
+/yogurt       https://yogurt.sourdoughcalculator.uk/        301
+/ferments     https://lactoferment.sourdoughcalculator.uk/  301
+/history      /                                             302
+/settings     /                                             302

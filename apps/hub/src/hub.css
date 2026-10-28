@@ -16,3 +16,9 @@
 .prose ul { padding-left: 1.2em; }
 .back { display: inline-flex; align-items: center; min-height: 44px; color: var(--focus); }
 .app { padding-bottom: 24px; }
+.policy table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; font-size: 0.9rem; margin: 8px 0; }
+.policy th, .policy td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.policy h2 { margin-top: 0; }
+.policy h3 { margin-top: 1.1rem; }
+.policy p, .policy li { font-size: 1rem; }
+.policy hr { border: 0; border-top: 1px solid var(--line); margin: 1.2rem 0; }
