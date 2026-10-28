@@ -11,16 +11,16 @@ follow the spec; where the spec is silent, follow `SourDoughMobile/AGENTS.md`.
 The bread section was simplified on 2026-10-12 (commit `4d27739`). There is exactly one
 bread page, `/bread` (`SourDoughMobile/app/(tabs)/bread.tsx`): a lazy-sourdough formula
 (flour weight in grams plus water, starter and salt as baker's %) and six fixed steps
-from `SourDoughMobile/src/lib/lazyMethod.ts` (mix, rise, shape, proof, bake, cool). The
+from `packages/calc/src/lib/lazyMethod.ts` (mix, rise, shape, proof, bake, cool). The
 rise estimate is computed live with `runAllCalculations` from
-`SourDoughMobile/src/lib/calculations.ts`. "I've mixed: start the clock" stores the mix
+`packages/calc/src/lib/calculations.ts`. "I've mixed: start the clock" stores the mix
 time in AsyncStorage under `sourdough_lazy_mixed_at`.
 
 Rules that already exist and bind this work:
 
 - **Do not reintroduce a second bread mode, route, or a form-heavy planner.** (AGENTS.md)
 - **The engine owns every number.** Durations, temperatures and weights shown to the user
-  come from `src/lib/` functions, never from model-generated text.
+  come from `packages/calc/src/lib/` functions, never from model-generated text.
 - **Private by design.** No accounts. Nothing leaves the device unless the user acts.
 - **No emoji as icons.** Use `Icon` (MaterialCommunityIcons); `__tests__/iconNames.test.ts`
   checks every name.
@@ -55,7 +55,7 @@ PWA (bread.tsx)                       Cloudflare Pages Function                D
             {context, messages}     - origin + size checks                     (tools: engine)
             ◀── {reply, actions} ── - KV rate limits / daily cap
                                     - tool loop runs engine code from
-                                      SourDoughMobile/src/lib (pure TS)
+                                      packages/calc/src/lib (pure TS)
 ```
 
 - The Function lives at the **repository root**: `functions/api/assist.ts`. The deploy runs
@@ -117,7 +117,7 @@ export function chat(env: Env, messages: LlmMessage[], tools: ToolDef[]): Promis
 
 ## 4. Shared engine helpers (new pure code, used by BOTH the page and the Function)
 
-Create `SourDoughMobile/src/lib/lazyPlan.ts`. It must have no React or React Native
+Create `packages/calc/src/lib/lazyPlan.ts`. It must have no React or React Native
 imports. Unit-test it in `SourDoughMobile/__tests__/lazyPlan.test.ts`.
 
 ### 4.1 `estimateLazyLoaf`

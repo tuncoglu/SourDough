@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme, AppColors, cardStyleLg } from '../theme';
-import { FermentResults } from '../models/types';
-import { weightUnit } from '../lib/unitConversion';
+import { FermentResults } from '@sourdough/calc/models/types';
+import { weightUnit } from '@sourdough/calc/lib/unitConversion';
 
 interface Props {
   results: FermentResults;

@@ -2,8 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyleLg } from '../theme';
 import { Icon } from './Icon';
-import { YogurtResults, YogurtCultureType } from '../models/types';
-import { weightUnit } from '../lib/unitConversion';
+import { YogurtResults, YogurtCultureType } from '@sourdough/calc/models/types';
+import { weightUnit } from '@sourdough/calc/lib/unitConversion';
 
 interface Props {
   results: YogurtResults;

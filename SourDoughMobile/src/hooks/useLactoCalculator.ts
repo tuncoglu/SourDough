@@ -1,8 +1,8 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { FermentType, FermentMethod, SaltCrystal, FermentResults, FermentHistoryEntry, LactoDayPoint, PrepSize, WaterHardness } from '../models/types';
-import { FERMENT_PRESETS, PRESET_DEFAULT_VEG, VEG_COMBOS, VegCombo } from '../data/fermentPresets';
-import { VEGETABLES, findVeg, VEG_RELEASE_FACTOR, VegEntry } from '../data/vegetables';
+import { FermentType, FermentMethod, SaltCrystal, FermentResults, FermentHistoryEntry, LactoDayPoint, PrepSize, WaterHardness } from '@sourdough/calc/models/types';
+import { FERMENT_PRESETS, PRESET_DEFAULT_VEG, VEG_COMBOS, VegCombo } from '@sourdough/calc/data/fermentPresets';
+import { VEGETABLES, findVeg, VEG_RELEASE_FACTOR, VegEntry } from '@sourdough/calc/data/vegetables';
 import {
   computeFermentTemp,
   acidBalanceVerdict,
@@ -10,18 +10,18 @@ import {
   DailyTempSummary,
   FermentTempResult,
   FermentTiming,
-} from '../lib/lactoCalculations';
-import { planLacto } from '../lib/lactoPlan';
+} from '@sourdough/calc/lib/lactoCalculations';
+import { planLacto } from '@sourdough/calc/lib/lactoPlan';
 import { useLocation } from './useLocation';
-import { isValidDecimalInput } from '../lib/inputValidation';
-import { buildComboSetup, effectivePrepSize, recommendedSaltPct, DEFAULT_BRINE_WATER_G } from '../lib/fermentSetup';
+import { isValidDecimalInput } from '@sourdough/calc/lib/inputValidation';
+import { buildComboSetup, effectivePrepSize, recommendedSaltPct, DEFAULT_BRINE_WATER_G } from '@sourdough/calc/lib/fermentSetup';
 import { getSettings } from '../store/settingsCache';
 import { recordFerment } from '../store/fermentHistoryStore';
-import { fermentSignature, generateFermentHistoryId } from '../lib/fermentHistory';
-import { classifyHardness } from '../data/ukWaterHardness';
-import { FALLBACK_HARDNESS } from '../lib/hardnessUtils';
+import { fermentSignature, generateFermentHistoryId } from '@sourdough/calc/lib/fermentHistory';
+import { classifyHardness } from '@sourdough/calc/data/ukWaterHardness';
+import { FALLBACK_HARDNESS } from '@sourdough/calc/lib/hardnessUtils';
 import { useAppTheme } from '../theme';
-import { formatTemp } from '../lib/unitConversion';
+import { formatTemp } from '@sourdough/calc/lib/unitConversion';
 import type { LocationData } from '../lib/location';
 
 export interface LactoCalculatorState {

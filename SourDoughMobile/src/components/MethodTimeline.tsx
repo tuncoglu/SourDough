@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyle, sectionTitleStyle } from '../theme';
-import { formatTemp } from '../lib/unitConversion';
-import { RecipePreset } from '../models/types';
-import { PROOF_FRACTION } from '../lib/calculations';
+import { formatTemp } from '@sourdough/calc/lib/unitConversion';
+import { RecipePreset } from '@sourdough/calc/models/types';
+import { PROOF_FRACTION } from '@sourdough/calc/lib/calculations';
 
 interface Props {
   preset: RecipePreset;
@@ -18,7 +18,7 @@ interface Step {
   time: string;
 }
 
-function buildSteps(preset: RecipePreset, fermentHours: number, unitSystem: import('../models/types').UnitSystem): Step[] {
+function buildSteps(preset: RecipePreset, fermentHours: number, unitSystem: import('@sourdough/calc/models/types').UnitSystem): Step[] {
   const steps: Step[] = [];
   const { process, bake, dough } = preset;
   let n = 0;

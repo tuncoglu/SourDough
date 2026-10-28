@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
-import type { StarterFeeding, StarterStatus } from '../models/types';
+import type { StarterFeeding, StarterStatus } from '@sourdough/calc/models/types';
 import { generateFeedingId, loadFeedings, logFeeding, markPeaked, setFridgeState } from '../store/starterStore';
 import {
   DEFAULT_PEAK_EFFECTIVE_HOURS,
@@ -8,8 +8,8 @@ import {
   learnedPeakEffectiveHours,
   starterFlourBlendFromFeeding,
   usableStarterStatus,
-} from '../lib/starterStatus';
-import { buildFeeding, type FeedingDraft } from '../lib/starterLog';
+} from '@sourdough/calc/lib/starterStatus';
+import { buildFeeding, type FeedingDraft } from '@sourdough/calc/lib/starterLog';
 
 /** How often the starter's age is recomputed while the screen is open. */
 const REFRESH_MS = 60_000;

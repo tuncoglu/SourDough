@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyle, sectionTitleStyle } from '../theme';
-import { formatTempValue, formatTemp } from '../lib/unitConversion';
-import { DynamicFermentation, RecipePreset } from '../models/types';
-import { PROOF_FRACTION, computeProcessHours } from '../lib/calculations';
+import { formatTempValue, formatTemp } from '@sourdough/calc/lib/unitConversion';
+import { DynamicFermentation, RecipePreset } from '@sourdough/calc/models/types';
+import { PROOF_FRACTION, computeProcessHours } from '@sourdough/calc/lib/calculations';
 
 interface Props {
   dynamic?: DynamicFermentation | null;

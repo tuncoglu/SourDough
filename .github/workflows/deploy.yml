@@ -43,6 +43,11 @@ jobs:
         run: npx tsc -p ../functions
         working-directory: SourDoughMobile
 
+      # The calculation package (packages/calc) has none either, and its tests ran above.
+      - name: Typecheck calculation package
+        run: npx tsc -p ../packages/calc
+        working-directory: SourDoughMobile
+
       - name: Build web export
         run: npx expo export --platform web
         working-directory: SourDoughMobile

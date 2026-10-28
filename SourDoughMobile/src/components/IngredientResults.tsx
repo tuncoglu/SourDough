@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyle, sectionTitleStyle } from '../theme';
-import { formatWeight, formatWeightValue, weightUnit } from '../lib/unitConversion';
-import { shortenLabel } from '../lib/blendUtils';
-import { IngredientResults as IngredientResultsType, FlourBlendEntry } from '../models/types';
+import { formatWeight, formatWeightValue, weightUnit } from '@sourdough/calc/lib/unitConversion';
+import { shortenLabel } from '@sourdough/calc/lib/blendUtils';
+import { IngredientResults as IngredientResultsType, FlourBlendEntry } from '@sourdough/calc/models/types';
 
 interface Props {
   ingredients: IngredientResultsType;

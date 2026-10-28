@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyleLg } from '../theme';
-import { LactoDayPoint, FermentResults } from '../models/types';
-import { FINAL_PH, TARGET_PH, SAFETY_PH, readinessPH, FermentTiming } from '../lib/lactoCalculations';
-import { formatTemp } from '../lib/unitConversion';
+import { LactoDayPoint, FermentResults } from '@sourdough/calc/models/types';
+import { FINAL_PH, TARGET_PH, SAFETY_PH, readinessPH, FermentTiming } from '@sourdough/calc/lib/lactoCalculations';
+import { formatTemp } from '@sourdough/calc/lib/unitConversion';
 
 /** Recipes are written at 22 °C — shown in the user's own units. */
 const REFERENCE_TEMP_C = 22;

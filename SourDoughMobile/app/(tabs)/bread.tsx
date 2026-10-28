@@ -13,11 +13,11 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyle, sectionTitleStyle } from '../../src/theme';
 import { summaryWithHardnessOverride } from '../../src/lib/location';
-import { buildBlendFromRows } from '../../src/lib/blendUtils';
-import { resolveHardness } from '../../src/lib/hardnessUtils';
-import { formatTemp, formatWeight } from '../../src/lib/unitConversion';
-import { isValidDecimalInput } from '../../src/lib/inputValidation';
-import { findFlour } from '../../src/lib/flourSearch';
+import { buildBlendFromRows } from '@sourdough/calc/lib/blendUtils';
+import { resolveHardness } from '@sourdough/calc/lib/hardnessUtils';
+import { formatTemp, formatWeight } from '@sourdough/calc/lib/unitConversion';
+import { isValidDecimalInput } from '@sourdough/calc/lib/inputValidation';
+import { findFlour } from '@sourdough/calc/lib/flourSearch';
 import {
   buildFeedStep,
   buildLazySteps,
@@ -25,8 +25,8 @@ import {
   LAZY_DEFAULTS,
   STARTER_FEED_GRAMS,
   type LazyVessel,
-} from '../../src/lib/lazyMethod';
-import { estimateLazyLoaf, FRIDGE_HOURS, LAZY_PLAN_MINUTES, LAZY_STARTER_TEMP_C, type ProofMode } from '../../src/lib/lazyPlan';
+} from '@sourdough/calc/lib/lazyMethod';
+import { estimateLazyLoaf, FRIDGE_HOURS, LAZY_PLAN_MINUTES, LAZY_STARTER_TEMP_C, type ProofMode } from '@sourdough/calc/lib/lazyPlan';
 import {
   atClockTime,
   dayFromNow,
@@ -37,20 +37,20 @@ import {
   scheduleFromMix,
   startsBefore,
   type ScheduleInput,
-} from '../../src/lib/lazySchedule';
+} from '@sourdough/calc/lib/lazySchedule';
 import {
   DEFAULT_PEAK_EFFECTIVE_HOURS,
   starterFeedAmounts,
   starterPeakWindowHours,
   starterTempFor,
   starterTimeToPeakHours,
-} from '../../src/lib/starterStatus';
-import { clockTime } from '../../src/lib/starterFormat';
-import { computeVitalityFactor } from '../../src/lib/calculations';
-import { fedForThisLoaf, peakForecast } from '../../src/lib/starterLog';
+} from '@sourdough/calc/lib/starterStatus';
+import { clockTime } from '@sourdough/calc/lib/starterFormat';
+import { computeVitalityFactor } from '@sourdough/calc/lib/calculations';
+import { fedForThisLoaf, peakForecast } from '@sourdough/calc/lib/starterLog';
 import { isoWithOffset } from '../../src/lib/assist';
 import { getRecipe } from '../../src/store/recipeStore';
-import type { CalculationResults } from '../../src/models/types';
+import type { CalculationResults } from '@sourdough/calc/models/types';
 
 import { LocationBar } from '../../src/components/LocationBar';
 import { FlourMix } from '../../src/components/FlourMix';

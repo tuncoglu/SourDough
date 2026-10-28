@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SavedRecipe } from '../models/types';
+import { SavedRecipe } from '@sourdough/calc/models/types';
 
 const RECIPES_KEY = 'sourdough_recipes';
 

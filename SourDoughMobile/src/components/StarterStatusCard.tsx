@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Spacing, FontSize, BorderRadius, cardStyle, sectionTitleStyle, useAppTheme } from '../theme';
-import type { StarterFeeding, StarterStatus } from '../models/types';
-import { starterPace, starterZoneColor } from '../lib/starterStatus';
-import { clockTime, dayAndTime, hoursLabel, shortDay } from '../lib/starterFormat';
-import type { PeakForecast } from '../lib/starterLog';
-import { computeVitalityFactor } from '../lib/calculations';
+import type { StarterFeeding, StarterStatus } from '@sourdough/calc/models/types';
+import { starterPace, starterZoneColor } from '@sourdough/calc/lib/starterStatus';
+import { clockTime, dayAndTime, hoursLabel, shortDay } from '@sourdough/calc/lib/starterFormat';
+import type { PeakForecast } from '@sourdough/calc/lib/starterLog';
+import { computeVitalityFactor } from '@sourdough/calc/lib/calculations';
 
 interface Props {
   status: StarterStatus | null;

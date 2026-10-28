@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { UserSettings, DEFAULT_SETTINGS } from '../models/types';
+import { UserSettings, DEFAULT_SETTINGS } from '@sourdough/calc/models/types';
 
 const SETTINGS_KEY = 'sourdough_settings';
 

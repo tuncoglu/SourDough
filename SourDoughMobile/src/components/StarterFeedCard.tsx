@@ -4,11 +4,11 @@ import { Spacing, FontSize, BorderRadius, cardStyle, sectionTitleStyle, useAppTh
 import { Chip } from './Chip';
 import { FlourMix } from './FlourMix';
 import { NumberInput } from './NumberInput';
-import { findFlour } from '../lib/flourSearch';
-import { feedDilution, starterPeakWindowHours, starterTimeToPeakHours } from '../lib/starterStatus';
-import { DEFAULT_KEPT_GRAMS, FEED_RATIOS, amountsForRatio, ratioLabel } from '../lib/starterLog';
-import { clockTime, hoursLabel } from '../lib/starterFormat';
-import type { FlourEntry } from '../models/types';
+import { findFlour } from '@sourdough/calc/lib/flourSearch';
+import { feedDilution, starterPeakWindowHours, starterTimeToPeakHours } from '@sourdough/calc/lib/starterStatus';
+import { DEFAULT_KEPT_GRAMS, FEED_RATIOS, amountsForRatio, ratioLabel } from '@sourdough/calc/lib/starterLog';
+import { clockTime, hoursLabel } from '@sourdough/calc/lib/starterFormat';
+import type { FlourEntry } from '@sourdough/calc/models/types';
 import type { MixRow } from '../hooks/useCalculatorInputs';
 
 interface Props {

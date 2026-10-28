@@ -11,8 +11,8 @@
 import React, { useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme, AppColors, cardStyleLg } from '../theme';
-import { FermentMethod, FermentResults, LactoDayPoint } from '../models/types';
-import { FermentTiming } from '../lib/lactoCalculations';
+import { FermentMethod, FermentResults, LactoDayPoint } from '@sourdough/calc/models/types';
+import { FermentTiming } from '@sourdough/calc/lib/lactoCalculations';
 import { Icon, IconName } from './Icon';
 import {
   FermentCalendarInput,
@@ -21,7 +21,8 @@ import {
   buildFermentCalendarUrl,
   fermentReadyDate,
   formatEventDate,
-} from '../lib/calendar';
+} from '@sourdough/calc/lib/calendar';
+import { SITE_URL } from '../lib/site';
 import { useFeedback } from '../lib/feedback';
 
 interface Props {
@@ -68,6 +69,7 @@ export function AddToCalendarCard(props: Props) {
     timeline,
     timing,
     unitSystem,
+    siteUrl: SITE_URL,
   }), [
     presetName, presetEmoji, vegName, method, vegWeightG, waterG, saltG,
     saltPct, saltLabel, tempC, results, timeline, timing, unitSystem,

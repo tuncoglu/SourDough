@@ -1,5 +1,5 @@
-import { WaterHardness, HourlyPoint, UnitSystem } from '../models/types';
-import { lookupWaterHardness } from '../data/waterHardness';
+import { WaterHardness, HourlyPoint, UnitSystem } from '@sourdough/calc/models/types';
+import { lookupWaterHardness } from '@sourdough/calc/data/waterHardness';
 import {
   getAmbientTemp,
   fetchHourlyForecast,
@@ -7,8 +7,8 @@ import {
   reverseGeocode,
   NominatimResult,
 } from './api';
-import { formatTemp } from './unitConversion';
-import { buildManualHardness } from './hardnessUtils';
+import { formatTemp } from '@sourdough/calc/lib/unitConversion';
+import { buildManualHardness } from '@sourdough/calc/lib/hardnessUtils';
 
 export interface LocationData {
   location: NominatimResult;

@@ -2,7 +2,7 @@
  * In-memory cache for user settings to reduce AsyncStorage reads.
  * Invalidated on save. TTL: 60 seconds.
  */
-import { UserSettings } from '../models/types';
+import { UserSettings } from '@sourdough/calc/models/types';
 import { loadSettings, saveSettings } from './settingsStore';
 
 let cache: { settings: UserSettings; loadedAt: number } | null = null;

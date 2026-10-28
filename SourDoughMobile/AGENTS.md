@@ -13,7 +13,8 @@
 - **Settings** (settings.tsx) — Default values, water hardness override, theme (light/dark/system), units (metric/imperial)
 - **About** (about.tsx) — App overview, privacy notice, and acknowledgements
 
-## Calculation Engines (src/lib/)
+## Calculation Engines (the `@sourdough/calc` package)
+The engines, the data they read (flours, vegetables, presets, cultures, water hardness) and the types live in `../packages/calc/src/` (`lib/`, `data/`, `models/`) and are imported as `@sourdough/calc/lib/...`, `@sourdough/calc/data/...` and `@sourdough/calc/models/types`. The package is pure TypeScript with no React, storage or network, and no npm dependencies, so the standalone web calculators and the Cloudflare Function can share it. Its tests are in `../packages/calc/__tests__/`; Jest here runs them (see `jest.config.js`), and `npx tsc -p ../packages/calc` typechecks it. Metro and TypeScript find it through `metro.config.js` and the `paths` entry in `tsconfig.json`, with no npm workspace, so installs and the lockfile are unchanged. Stay in `src/lib/` (the app, not the package): `api.ts`, `assist.ts`, `clipboard.ts`, `errors.ts`, `location.ts` (network and platform), `site.ts` (environment) and `feedback.tsx` (UI). Paths below are relative to the package's `src/`.
 - **calculations.ts** — Bread FDT (mass-weighted specific heat), ingredient weights, Q10 fermentation model, cold proof
 - **yogurtCalculations.ts** — Yogurt incubation (Q10), yield (evaporation + straining), nutrition, timeline
 - **lazyMethod.ts** — The lazy bread method: step copy, bake temperatures per vessel (cocotte/tin), proof estimate from bulk hours.

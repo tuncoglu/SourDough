@@ -4,11 +4,13 @@ module.exports = {
   testEnvironment: 'node',
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
+    '^@sourdough/calc/(.*)$': '<rootDir>/../packages/calc/src/$1',
   },
   // Only test pure-logic files (no React Native components / JSX).
   // ../functions holds the Cloudflare Pages Functions, which have no npm
-  // dependencies of their own, so their tests run here too.
-  roots: ['<rootDir>', '<rootDir>/../functions'],
+  // dependencies of their own, so their tests run here too. So do the tests of
+  // ../packages/calc, the calculation engines, data and models shared with them.
+  roots: ['<rootDir>', '<rootDir>/../functions', '<rootDir>/../packages/calc'],
   testMatch: ['**/__tests__/**/*.test.ts', '**/functions/api/**/*.test.ts'],
   transform: {
     '^.+\\.tsx?$': ['ts-jest', { tsconfig: 'tsconfig.jest.json' }],

@@ -1,4 +1,4 @@
-import { HourlyPoint } from '../models/types';
+import { HourlyPoint } from '@sourdough/calc/models/types';
 import { getErrorMessage } from './errors';
 
 /**

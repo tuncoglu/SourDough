@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
 import { useBreakpoint } from '../hooks/useBreakpoint';
-import { tempUnit, celsiusToFahrenheit, fahrenheitToCelsius } from '../lib/unitConversion';
+import { tempUnit, celsiusToFahrenheit, fahrenheitToCelsius } from '@sourdough/calc/lib/unitConversion';
 import { useExternalValueSync } from '../hooks/useExternalValueSync';
-import { isValidDecimalInput } from '../lib/inputValidation';
+import { isValidDecimalInput } from '@sourdough/calc/lib/inputValidation';
 
 interface Props {
   label: string;

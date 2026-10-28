@@ -13,7 +13,7 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 }));
 
 import { loadFeedings, logFeeding, markPeaked, getLastFeeding } from '../src/store/starterStore';
-import type { StarterFeeding } from '../src/models/types';
+import type { StarterFeeding } from '@sourdough/calc/models/types';
 
 const feed = (id: string, timestamp: string, over: Partial<StarterFeeding> = {}): StarterFeeding => ({
   id,

@@ -12,7 +12,7 @@ import { Spacing, FontSize, BorderRadius, MaxWidth, useAppTheme, cardStyle, sect
 import { Seo } from '../../src/components/Seo';
 import { useFeedback } from '../../src/lib/feedback';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
-import { UserSettings, DEFAULT_SETTINGS, ThemeMode, UnitSystem } from '../../src/models/types';
+import { UserSettings, DEFAULT_SETTINGS, ThemeMode, UnitSystem } from '@sourdough/calc/models/types';
 import { getSettings, updateSettings } from '../../src/store/settingsCache';
 import { NumberInput } from '../../src/components/NumberInput';
 import { FlourPicker } from '../../src/components/FlourPicker';

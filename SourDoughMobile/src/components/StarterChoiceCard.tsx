@@ -3,10 +3,10 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Spacing, FontSize, BorderRadius, cardStyle, sectionTitleStyle, useAppTheme } from '../theme';
 import { Chip } from './Chip';
-import type { StarterStatus } from '../models/types';
-import { FEED_RATIOS } from '../lib/starterLog';
-import { hoursLabel } from '../lib/starterFormat';
-import { formatHours } from '../lib/lazyMethod';
+import type { StarterStatus } from '@sourdough/calc/models/types';
+import { FEED_RATIOS } from '@sourdough/calc/lib/starterLog';
+import { hoursLabel } from '@sourdough/calc/lib/starterFormat';
+import { formatHours } from '@sourdough/calc/lib/lazyMethod';
 
 export type StarterMode = 'fridge' | 'fed';
 

@@ -9,14 +9,14 @@ import {
   YogurtThickness,
   MilkEntry,
   StarterSource,
-} from '../models/types';
-import { YOGURT_CULTURES, YOGURT_TYPE_ORDER, findMilk, DEFAULT_MILK_ID } from '../data/yogurtCultures';
-import { calculateSachets } from '../lib/yogurtCalculations';
-import { planYogurt } from '../lib/yogurtPlan';
-import { computeFermentTemp, DailyTempSummary, FermentTempResult } from '../lib/lactoCalculations';
+} from '@sourdough/calc/models/types';
+import { YOGURT_CULTURES, YOGURT_TYPE_ORDER, findMilk, DEFAULT_MILK_ID } from '@sourdough/calc/data/yogurtCultures';
+import { calculateSachets } from '@sourdough/calc/lib/yogurtCalculations';
+import { planYogurt } from '@sourdough/calc/lib/yogurtPlan';
+import { computeFermentTemp, DailyTempSummary, FermentTempResult } from '@sourdough/calc/lib/lactoCalculations';
 import { useLocation } from './useLocation';
 import { getSettings } from '../store/settingsCache';
-import { formatTemp } from '../lib/unitConversion';
+import { formatTemp } from '@sourdough/calc/lib/unitConversion';
 import type { LocationData } from '../lib/location';
 import { useAppTheme } from '../theme';
 

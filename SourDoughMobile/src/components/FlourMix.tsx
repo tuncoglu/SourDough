@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Spacing, FontSize, useAppTheme } from '../theme';
 import { FlourPicker } from './FlourPicker';
 import { NumberInput } from './NumberInput';
-import type { FlourEntry } from '../models/types';
+import type { FlourEntry } from '@sourdough/calc/models/types';
 import type { MixRow } from '../hooks/useCalculatorInputs';
 
 interface Props {

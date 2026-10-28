@@ -138,7 +138,7 @@ Cloudflare Pages.
 
 > **Note:** The original Python CLI/GUI (`optimizer.py`) has been retired.
 > The mobile/web app is the canonical SourDough experience. The baking science
-> lives in `SourDoughMobile/src/lib/calculations.ts`.
+> lives in `packages/calc/src/lib/calculations.ts`.
 
 ---
 
@@ -156,7 +156,7 @@ feature idea:
 
 ### What makes a good contribution?
 
-- **New flours** — add entries to `SourDoughMobile/src/data/flours.ts`
+- **New flours** — add entries to `packages/calc/src/data/flours.ts`
 - **Bug fixes** — include steps to reproduce in your PR description
 - **New features** — open an issue first to discuss the approach
 - **Docs** — improvements to READMEs, comments, or error messages

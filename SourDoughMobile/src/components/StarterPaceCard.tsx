@@ -8,9 +8,9 @@ import {
   PEAK_ZONE_START_HOURS,
   starterPace,
   starterTimeToPeakHours,
-} from '../lib/starterStatus';
-import { FEED_RATIOS } from '../lib/starterLog';
-import { hoursLabel } from '../lib/starterFormat';
+} from '@sourdough/calc/lib/starterStatus';
+import { FEED_RATIOS } from '@sourdough/calc/lib/starterLog';
+import { hoursLabel } from '@sourdough/calc/lib/starterFormat';
 
 const TEMPS = [18, 20, 24, 27] as const;
 /** Upper ends of the four zones, in effective hours (the last is open). */

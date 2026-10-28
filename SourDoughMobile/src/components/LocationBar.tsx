@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
 import { Icon } from './Icon';
-import { FALLBACK_HARDNESS } from '../lib/hardnessUtils';
+import { FALLBACK_HARDNESS } from '@sourdough/calc/lib/hardnessUtils';
 
 interface Props {
   summary: string | null;

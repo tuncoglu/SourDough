@@ -10,7 +10,7 @@ import { StarterPaceCard } from '../../src/components/StarterPaceCard';
 import { StarterLogCard } from '../../src/components/StarterLogCard';
 import { useStarterStatus } from '../../src/hooks/useStarterStatus';
 import { useKitchenTemp } from '../../src/hooks/useKitchenTemp';
-import { peakForecast } from '../../src/lib/starterLog';
+import { peakForecast } from '@sourdough/calc/lib/starterLog';
 import { getStarterFlour, setStarterFlour } from '../../src/store/starterStore';
 import { getSettings } from '../../src/store/settingsCache';
 

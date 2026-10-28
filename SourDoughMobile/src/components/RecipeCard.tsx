@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
-import { SavedRecipe } from '../models/types';
-import { getTempZoneInfo, tempZoneColor } from '../models/types';
-import { getBlendDisplayLabel } from '../lib/blendUtils';
-import { formatTemp } from '../lib/unitConversion';
-import { PROOF_FRACTION } from '../lib/calculations';
+import { SavedRecipe } from '@sourdough/calc/models/types';
+import { getTempZoneInfo, tempZoneColor } from '@sourdough/calc/models/types';
+import { getBlendDisplayLabel } from '@sourdough/calc/lib/blendUtils';
+import { formatTemp } from '@sourdough/calc/lib/unitConversion';
+import { PROOF_FRACTION } from '@sourdough/calc/lib/calculations';
 
 interface Props {
   recipe: SavedRecipe;

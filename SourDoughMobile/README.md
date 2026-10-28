@@ -163,7 +163,7 @@ A **landing page** (`app/index.tsx`) greets users with three cards — bread, yo
 - **Settings** (`settings.tsx`) — defaults, water hardness override, theme, units
 - **About** (`about.tsx`) — app overview, privacy notice, and acknowledgements
 
-**Calculation engines** (`src/lib/`) are pure, React-free functions — `calculations.ts` (bread FDT, Q10 fermentation, cold proof), `yogurtCalculations.ts`, `lactoCalculations.ts`, `blendUtils.ts`, `unitConversion.ts` — fully unit-testable without the RN runtime. **Hooks** (`src/hooks/`) orchestrate UI state; **stores** (`src/store/`) persist to AsyncStorage (recipes, settings, starter) with an in-memory settings cache (60s TTL). The **theme system** (`src/theme/`) provides light/dark palettes, a `useAppTheme()` hook, and design tokens (spacing, font sizes, radii, `cardStyle`/`cardStyleLg`/`sectionTitleStyle`).
+**Calculation engines** (the `@sourdough/calc` package in `../packages/calc/`, imported as `@sourdough/calc/lib/...`) are pure, React-free functions — `calculations.ts` (bread FDT, Q10 fermentation, cold proof), `yogurtCalculations.ts`, `lactoCalculations.ts`, `blendUtils.ts`, `unitConversion.ts` — fully unit-testable without the RN runtime. **Hooks** (`src/hooks/`) orchestrate UI state; **stores** (`src/store/`) persist to AsyncStorage (recipes, settings, starter) with an in-memory settings cache (60s TTL). The **theme system** (`src/theme/`) provides light/dark palettes, a `useAppTheme()` hook, and design tokens (spacing, font sizes, radii, `cardStyle`/`cardStyleLg`/`sectionTitleStyle`).
 
 All internal math is metric (g, °C); unit conversion happens only at the display boundary.
 

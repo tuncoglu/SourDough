@@ -6,7 +6,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useColorScheme } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { ThemeMode, UnitSystem } from '../models/types';
+import type { ThemeMode, UnitSystem } from '@sourdough/calc/models/types';
 
 const THEME_MODE_KEY = 'sourdough_theme_mode';
 const UNIT_SYSTEM_KEY = 'sourdough_unit_system';

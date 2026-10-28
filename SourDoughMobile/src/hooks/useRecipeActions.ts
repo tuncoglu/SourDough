@@ -5,10 +5,10 @@ import {
   CalculationResults,
   SavedRecipe,
   FlourBlendEntry,
-} from '../models/types';
+} from '@sourdough/calc/models/types';
 import { saveRecipe, updateRecipe, generateRecipeId } from '../store/recipeStore';
-import { getBlendProtein, buildFlourTypeLabel, buildPrefermentConfig, POOLISH_HYDRATION, BIGA_HYDRATION } from '../lib/blendUtils';
-import { formatRecipeTextFromState } from '../lib/recipeFormatter';
+import { getBlendProtein, buildFlourTypeLabel, buildPrefermentConfig, POOLISH_HYDRATION, BIGA_HYDRATION } from '@sourdough/calc/lib/blendUtils';
+import { formatRecipeTextFromState } from '@sourdough/calc/lib/recipeFormatter';
 import { copyToClipboard } from '../lib/clipboard';
 import { useAppTheme } from '../theme';
 import { useFeedback } from '../lib/feedback';
@@ -55,7 +55,7 @@ interface ShareParams {
   results: CalculationResults;
   locationSummary: string;
   bakeInfo?: string;
-  unitSystem: import('../models/types').UnitSystem;
+  unitSystem: import('@sourdough/calc/models/types').UnitSystem;
   coldProofEnabled: boolean;
   coldProofHours: string;
 }

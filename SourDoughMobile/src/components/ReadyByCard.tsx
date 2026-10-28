@@ -2,10 +2,10 @@ import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Spacing, FontSize, BorderRadius, cardStyle, sectionTitleStyle, useAppTheme } from '../theme';
 import { Chip } from './Chip';
-import type { LazyPlan, ProofMode } from '../lib/lazyPlan';
-import { LAZY_PLAN_MINUTES, FRIDGE_HOURS } from '../lib/lazyPlan';
-import { clockTime, shortDay } from '../lib/starterFormat';
-import { dayFromNow } from '../lib/lazySchedule';
+import type { LazyPlan, ProofMode } from '@sourdough/calc/lib/lazyPlan';
+import { LAZY_PLAN_MINUTES, FRIDGE_HOURS } from '@sourdough/calc/lib/lazyPlan';
+import { clockTime, shortDay } from '@sourdough/calc/lib/starterFormat';
+import { dayFromNow } from '@sourdough/calc/lib/lazySchedule';
 
 export type PlanMode = 'now' | 'readyBy';
 

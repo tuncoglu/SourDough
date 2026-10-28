@@ -2,7 +2,7 @@
  * POST /api/assist: "Ask the baker" on the bread page.
  *
  * Answers questions about the lazy sourdough method in plain language. Every
- * number comes from the app's own engine (SourDoughMobile/src/lib), which the
+ * number comes from the app's own engine (packages/calc/src/lib), which the
  * model can only reach through the tools below; the model never computes a
  * time, duration, temperature or weight itself. Spec: ASSISTANT_SPEC.md.
  *
@@ -11,10 +11,10 @@
  * after 48 h.
  */
 import { chat, type LlmEnv, type LlmMessage, type ToolDef } from './llm';
-import { estimateLazyLoaf, planLazyBake, type LazyPlan, type ProofMode } from '../../SourDoughMobile/src/lib/lazyPlan';
-import { roundToHalfHour, type LazyVessel } from '../../SourDoughMobile/src/lib/lazyMethod';
-import { FALLBACK_HARDNESS } from '../../SourDoughMobile/src/lib/hardnessUtils';
-import { findFlour } from '../../SourDoughMobile/src/lib/flourSearch';
+import { estimateLazyLoaf, planLazyBake, type LazyPlan, type ProofMode } from '../../packages/calc/src/lib/lazyPlan';
+import { roundToHalfHour, type LazyVessel } from '../../packages/calc/src/lib/lazyMethod';
+import { FALLBACK_HARDNESS } from '../../packages/calc/src/lib/hardnessUtils';
+import { findFlour } from '../../packages/calc/src/lib/flourSearch';
 
 // ── Types ───────────────────────────────────────────────────────────────
 

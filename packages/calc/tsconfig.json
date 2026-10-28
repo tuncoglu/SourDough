@@ -1,0 +1,16 @@
+{
+  // Type-checked with SourDoughMobile's TypeScript (this package has no npm
+  // dependencies of its own): SourDoughMobile/node_modules/.bin/tsc -p packages/calc
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "typeRoots": ["../../SourDoughMobile/node_modules/@types"],
+    "types": ["jest", "node"]
+  },
+  "include": ["src/**/*.ts", "__tests__/**/*.ts"]
+}

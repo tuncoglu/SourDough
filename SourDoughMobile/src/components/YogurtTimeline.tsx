@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyleLg } from '../theme';
-import { YogurtStepPoint, YogurtResults } from '../models/types';
+import { YogurtStepPoint, YogurtResults } from '@sourdough/calc/models/types';
 
 interface Props {
   timeline: YogurtStepPoint[];

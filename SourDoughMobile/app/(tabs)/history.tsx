@@ -15,15 +15,15 @@ import { Seo } from '../../src/components/Seo';
 import { Icon } from '../../src/components/Icon';
 import { useFeedback } from '../../src/lib/feedback';
 import { useBreakpoint } from '../../src/hooks/useBreakpoint';
-import { SavedRecipe, BreadType, FermentHistoryEntry } from '../../src/models/types';
+import { SavedRecipe, BreadType, FermentHistoryEntry } from '@sourdough/calc/models/types';
 import { loadRecipes, deleteRecipe, saveRecipe, generateRecipeId } from '../../src/store/recipeStore';
 import { RecipeCard } from '../../src/components/RecipeCard';
 import { EmptyState } from '../../src/components/EmptyState';
 import { Chip } from '../../src/components/Chip';
-import { RECIPE_PRESETS, getPreset } from '../../src/data/recipePresets';
+import { RECIPE_PRESETS, getPreset } from '@sourdough/calc/data/recipePresets';
 import { FermentHistoryCard } from '../../src/components/FermentHistoryCard';
 import { deleteFerment, loadFerments } from '../../src/store/fermentHistoryStore';
-import { FERMENT_RETENTION_DAYS } from '../../src/lib/fermentHistory';
+import { FERMENT_RETENTION_DAYS } from '@sourdough/calc/lib/fermentHistory';
 
 export default function HistoryScreen() {
   const [recipes, setRecipes] = useState<SavedRecipe[]>([]);

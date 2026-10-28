@@ -11,8 +11,8 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Spacing, FontSize, BorderRadius, Breakpoints, useAppTheme } from '../theme';
-import { SHIPTON_MILL_FLOURS, FLOURS_BY_CATEGORY } from '../data/flours';
-import { FlourEntry, FlourCategory } from '../models/types';
+import { SHIPTON_MILL_FLOURS, FLOURS_BY_CATEGORY } from '@sourdough/calc/data/flours';
+import { FlourEntry, FlourCategory } from '@sourdough/calc/models/types';
 
 interface Props {
   value: string;

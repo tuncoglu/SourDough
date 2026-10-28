@@ -7,8 +7,8 @@
  * unit-tested; this module only does storage.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { FermentHistoryEntry } from '../models/types';
-import { addFerment, pruneFerments } from '../lib/fermentHistory';
+import { FermentHistoryEntry } from '@sourdough/calc/models/types';
+import { addFerment, pruneFerments } from '@sourdough/calc/lib/fermentHistory';
 
 const FERMENTS_KEY = 'sourdough_ferments';
 

@@ -19,7 +19,7 @@ import {
   type AssistContext,
   type AssistTurn,
 } from '../lib/assist';
-import type { LazyVessel } from '../lib/lazyMethod';
+import type { LazyVessel } from '@sourdough/calc/lib/lazyMethod';
 
 /** Same origin on the web; the full site URL elsewhere. */
 const ASSIST_URL = Platform.OS === 'web' ? '/api/assist' : `${SITE_URL}/api/assist`;

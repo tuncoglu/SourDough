@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { StarterFeeding } from '../models/types';
+import { StarterFeeding } from '@sourdough/calc/models/types';
 
 const FEEDINGS_KEY = 'sourdough_feedings';
 const FLOUR_KEY = 'sourdough_starter_flour';

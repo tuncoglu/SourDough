@@ -4,9 +4,9 @@
  * Pure TypeScript: request building, response checking and action labels.
  * The UI lives in components/AskCard.tsx; the server in functions/api/assist.ts.
  */
-import { formatTemp } from './unitConversion';
-import type { LazyStep, LazyVessel } from './lazyMethod';
-import type { UnitSystem } from '../models/types';
+import { formatTemp } from '@sourdough/calc/lib/unitConversion';
+import type { LazyStep, LazyVessel } from '@sourdough/calc/lib/lazyMethod';
+import type { UnitSystem } from '@sourdough/calc/models/types';
 
 export const ASSISTANT_CONSENT_KEY = 'sourdough_assistant_consent_v1';
 export const ASSIST_MAX_USER_TURNS = 6;

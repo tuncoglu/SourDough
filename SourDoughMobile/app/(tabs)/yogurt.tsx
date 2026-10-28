@@ -22,12 +22,12 @@ import { YogurtScience } from '@/src/components/YogurtScience';
 import { LocationBar } from '@/src/components/LocationBar';
 import { NumberInput } from '@/src/components/NumberInput';
 import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyleLg } from '@/src/theme';
-import { formatTemp } from '@/src/lib/unitConversion';
+import { formatTemp } from '@sourdough/calc/lib/unitConversion';
 import { summaryWithHardnessOverride } from '@/src/lib/location';
 import { Seo } from '@/src/components/Seo';
-import { PREHEAT_TEMP_C } from '@/src/lib/yogurtCalculations';
-import { YogurtType, StarterSource } from '@/src/models/types';
-import { MILK_TYPES } from '@/src/data/yogurtCultures';
+import { PREHEAT_TEMP_C } from '@sourdough/calc/lib/yogurtCalculations';
+import { YogurtType, StarterSource } from '@sourdough/calc/models/types';
+import { MILK_TYPES } from '@sourdough/calc/data/yogurtCultures';
 
 export default function YogurtScreen() {
   const router = useRouter();

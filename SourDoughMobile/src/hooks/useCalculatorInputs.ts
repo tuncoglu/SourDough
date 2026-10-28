@@ -1,9 +1,9 @@
 import { useState, useCallback, useEffect, useRef, useMemo, useDeferredValue } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { UserSettings, DEFAULT_SETTINGS, FlourEntry, FlourBlendEntry } from '../models/types';
+import { UserSettings, DEFAULT_SETTINGS, FlourEntry, FlourBlendEntry } from '@sourdough/calc/models/types';
 import { getSettings } from '../store/settingsCache';
-import { findFlour } from '../lib/flourSearch';
-import { buildBlendFromRows } from '../lib/blendUtils';
+import { findFlour } from '@sourdough/calc/lib/flourSearch';
+import { buildBlendFromRows } from '@sourdough/calc/lib/blendUtils';
 import { useLocation } from './useLocation';
 import { getAutoTemps, LocationData } from '../lib/location';
 

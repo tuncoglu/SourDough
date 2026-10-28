@@ -8,10 +8,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyle } from '../theme';
-import { FermentHistoryEntry } from '../models/types';
-import { fermentSummary } from '../lib/fermentHistory';
+import { FermentHistoryEntry } from '@sourdough/calc/models/types';
+import { fermentSummary } from '@sourdough/calc/lib/fermentHistory';
 import { Icon } from './Icon';
-import { formatTemp } from '../lib/unitConversion';
+import { formatTemp } from '@sourdough/calc/lib/unitConversion';
 
 interface Props {
   entry: FermentHistoryEntry;

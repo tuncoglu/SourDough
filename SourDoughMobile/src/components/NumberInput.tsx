@@ -8,9 +8,9 @@ import {
 } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
 import { useBreakpoint } from '../hooks/useBreakpoint';
-import { weightUnit, gramsToOz, ozToGrams } from '../lib/unitConversion';
+import { weightUnit, gramsToOz, ozToGrams } from '@sourdough/calc/lib/unitConversion';
 import { useExternalValueSync } from '../hooks/useExternalValueSync';
-import { isValidDecimalInput } from '../lib/inputValidation';
+import { isValidDecimalInput } from '@sourdough/calc/lib/inputValidation';
 
 interface Props extends Omit<TextInputProps, 'onChangeText'> {
   label: string;

@@ -9,8 +9,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Spacing, FontSize, BorderRadius, useAppTheme } from '../theme';
-import { DailyTempSummary, FermentTempResult } from '../lib/lactoCalculations';
-import { formatTempValue } from '../lib/unitConversion';
+import { DailyTempSummary, FermentTempResult } from '@sourdough/calc/lib/lactoCalculations';
+import { formatTempValue } from '@sourdough/calc/lib/unitConversion';
 
 interface Props {
   dailyTemps: DailyTempSummary[];

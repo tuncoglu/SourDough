@@ -18,7 +18,6 @@
 import { FermentMethod, LactoDayPoint, UnitSystem } from '../models/types';
 import { FermentTiming, readinessPH } from './lactoCalculations';
 import { formatTemp, formatWeight } from './unitConversion';
-import { SITE_URL } from './site';
 
 /** Google Calendar "add event" template endpoint. */
 export const GOOGLE_CALENDAR_RENDER_URL =
@@ -171,7 +170,12 @@ export interface FermentCalendarInput {
   unitSystem?: UnitSystem;
   /** Day 0. Defaults to today (local). */
   startDate?: Date;
+  /** The site the event links back to. The app passes its own; this is only the default. */
+  siteUrl?: string;
 }
+
+/** Where a calendar event links back to when the caller does not say. */
+export const DEFAULT_SITE_URL = 'https://sourdoughcalculator.uk';
 
 export interface FermentScheduleEntry {
   day: number;
@@ -264,7 +268,7 @@ function buildFermentDetails(
   );
   lines.push('Keep everything submerged. Skim kahm yeast (harmless); discard if fuzzy mould appears.');
   lines.push('');
-  lines.push(`From Just Dough It — ${SITE_URL}/ferments`);
+  lines.push(`From Just Dough It — ${input.siteUrl ?? DEFAULT_SITE_URL}/ferments`);
 
   return lines.join('\n');
 }

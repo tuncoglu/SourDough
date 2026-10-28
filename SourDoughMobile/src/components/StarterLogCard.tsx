@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Spacing, FontSize, BorderRadius, cardStyle, sectionTitleStyle, useAppTheme } from '../theme';
-import type { StarterFeeding } from '../models/types';
-import { ratioLabel } from '../lib/starterLog';
-import { dayAndTime, spanLabel } from '../lib/starterFormat';
-import { feedDilution, feedSizeFactor, starterPace } from '../lib/starterStatus';
+import type { StarterFeeding } from '@sourdough/calc/models/types';
+import { ratioLabel } from '@sourdough/calc/lib/starterLog';
+import { dayAndTime, spanLabel } from '@sourdough/calc/lib/starterFormat';
+import { feedDilution, feedSizeFactor, starterPace } from '@sourdough/calc/lib/starterStatus';
 
 /** How many feedings the list shows (the store keeps many more). */
 const SHOWN = 12;
