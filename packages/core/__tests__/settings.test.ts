@@ -5,13 +5,15 @@ import { serviceWorkerSource } from '../src/precache';
 
 describe('normalizeSettings', () => {
   it('keeps valid values', () => {
-    expect(normalizeSettings({ theme: 'dark', units: 'imperial', kitchenTempC: 21.5 })).toEqual({ theme: 'dark', units: 'imperial', kitchenTempC: 21.5 });
+    expect(normalizeSettings({ theme: 'dark', units: 'imperial', kitchenTempC: 21.5, waterHardnessMgL: 280 })).toEqual({ theme: 'dark', units: 'imperial', kitchenTempC: 21.5, waterHardnessMgL: 280 });
   });
   it('defaults anything unknown, wrong or out of range', () => {
     expect(normalizeSettings(null)).toEqual(DEFAULT_SETTINGS);
     expect(normalizeSettings({ theme: 'neon', units: 'cubits', kitchenTempC: 'warm' })).toEqual(DEFAULT_SETTINGS);
     expect(normalizeSettings({ kitchenTempC: 400 }).kitchenTempC).toBe(0);
     expect(normalizeSettings({ kitchenTempC: NaN }).kitchenTempC).toBe(0);
+    expect(normalizeSettings({ waterHardnessMgL: -5 }).waterHardnessMgL).toBe(0);
+    expect(normalizeSettings({ waterHardnessMgL: 99999 }).waterHardnessMgL).toBe(0);
   });
 });
 
@@ -42,8 +44,8 @@ describe('storage that never throws', () => {
   it('round-trips through a working store', () => {
     const data = new Map<string, string>();
     g.localStorage = { getItem: (k: string) => data.get(k) ?? null, setItem: (k: string, v: string) => void data.set(k, v) };
-    saveSettings('k', { theme: 'light', units: 'imperial', kitchenTempC: 20 });
-    expect(loadSettings('k')).toEqual({ theme: 'light', units: 'imperial', kitchenTempC: 20 });
+    saveSettings('k', { theme: 'light', units: 'imperial', kitchenTempC: 20, waterHardnessMgL: 0 });
+    expect(loadSettings('k')).toEqual({ theme: 'light', units: 'imperial', kitchenTempC: 20, waterHardnessMgL: 0 });
   });
 });
 

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { applyTheme, type Settings, type ThemeMode, type Units } from '@sourdough/core/settings';
-import { NumField } from './components';
+import { KitchenTempField } from './KitchenTempField';
 
 const THEMES: Array<{ id: ThemeMode; label: string }> = [
   { id: 'system', label: 'System' },
@@ -35,16 +35,14 @@ function Radios<T extends string>({
   );
 }
 
-const cToF = (c: number) => (c * 9) / 5 + 32;
-const fToC = (f: number) => ((f - 32) * 5) / 9;
-const round1 = (n: number) => Math.round(n * 10) / 10;
-
 interface Props {
   settings: Settings;
   onChange: (s: Settings) => void;
   onReset: () => void;
   /** Sections particular to one app (default values, water hardness…). */
   children?: ReactNode;
+  /** Cards after the kitchen temperature (water hardness...). */
+  afterKitchen?: ReactNode;
   /** The kitchen temperature card; omit for apps it does not affect. */
   kitchenTemp?: { explain: string; forecastNote?: string };
   /** Whether the settings could be written to this browser. */
@@ -52,9 +50,7 @@ interface Props {
   links: ReactNode;
 }
 
-export function SettingsScreen({ settings, onChange, onReset, children, kitchenTemp, saved, links }: Props) {
-  const imperial = settings.units === 'imperial';
-  const tempShown = settings.kitchenTempC === 0 ? '0' : String(round1(imperial ? cToF(settings.kitchenTempC) : settings.kitchenTempC));
+export function SettingsScreen({ settings, onChange, onReset, children, afterKitchen, kitchenTemp, saved, links }: Props) {
   return (
     <div className="stack">
       {children}
@@ -65,16 +61,7 @@ export function SettingsScreen({ settings, onChange, onReset, children, kitchenT
           <p className="hint" style={{ marginTop: 0 }}>
             {kitchenTemp.explain}
           </p>
-          <NumField
-            label="Temperature"
-            value={tempShown}
-            suffix={imperial ? '°F' : '°C'}
-            onChange={(v) => {
-              const n = parseFloat(v);
-              if (!Number.isFinite(n) || n === 0) return onChange({ ...settings, kitchenTempC: 0 });
-              onChange({ ...settings, kitchenTempC: round1(imperial ? fToC(n) : n) });
-            }}
-          />
+          <KitchenTempField settings={settings} onChange={onChange} />
           {kitchenTemp.forecastNote && (
             <div className="converted">
               <p>{kitchenTemp.forecastNote}</p>
@@ -82,6 +69,8 @@ export function SettingsScreen({ settings, onChange, onReset, children, kitchenT
           )}
         </fieldset>
       )}
+
+      {afterKitchen}
 
       <fieldset className="card">
         <legend>Appearance</legend>

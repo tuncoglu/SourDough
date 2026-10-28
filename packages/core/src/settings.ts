@@ -8,9 +8,11 @@ export interface Settings {
   units: Units;
   /** The temperature where the jar sits, in °C. 0 means "use the local forecast". */
   kitchenTempC: number;
+  /** Local water hardness in mg/L CaCO₃. 0 means unknown (a moderate value is assumed). */
+  waterHardnessMgL: number;
 }
 
-export const DEFAULT_SETTINGS: Settings = { theme: 'system', units: 'metric', kitchenTempC: 0 };
+export const DEFAULT_SETTINGS: Settings = { theme: 'system', units: 'metric', kitchenTempC: 0, waterHardnessMgL: 0 };
 
 /** Accept anything that was stored, keep what is valid, default the rest. */
 export function normalizeSettings(raw: unknown): Settings {
@@ -21,6 +23,7 @@ export function normalizeSettings(raw: unknown): Settings {
     units: r.units === 'imperial' ? 'imperial' : 'metric',
     // Outside this range it is a typo, and the forecast is the better guess.
     kitchenTempC: temp >= -10 && temp <= 60 ? temp : 0,
+    waterHardnessMgL: typeof r.waterHardnessMgL === 'number' && r.waterHardnessMgL > 0 && r.waterHardnessMgL <= 2000 ? r.waterHardnessMgL : 0,
   };
 }
 
