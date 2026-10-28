@@ -1,0 +1,18 @@
+.pick {
+  display: flex; align-items: center; gap: 14px; padding: 14px; min-height: 88px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+  color: var(--ink); text-decoration: none;
+}
+.pick:hover { border-color: var(--brand); }
+.pick .ico { flex: none; width: 48px; height: 48px; display: block; }
+.pick .txt { flex: 1; min-width: 0; }
+.pick h2 { margin: 0; font-size: 1.2rem; }
+.pick .addr { margin: 0; color: var(--muted); font-size: 0.85rem; overflow-wrap: anywhere; }
+.pick .hint { margin: 4px 0 0; }
+.pick .go { flex: none; color: var(--brand); font-size: 1.6rem; line-height: 1; }
+.legend { font-weight: 700; margin: 0 0 4px; }
+.prose h2 { margin-top: 1.2rem; }
+.prose p, .prose li { font-size: 1rem; }
+.prose ul { padding-left: 1.2em; }
+.back { display: inline-flex; align-items: center; min-height: 44px; color: var(--focus); }
+.app { padding-bottom: 24px; }
