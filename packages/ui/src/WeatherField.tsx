@@ -10,6 +10,10 @@ interface Props {
   onAutoDetect: (on: boolean) => void;
   /** What the reading is used for, e.g. "the room temperature". */
   purpose: string;
+  /** Also find your town, for water hardness (one more request, to OpenStreetMap's Nominatim). */
+  place?: boolean;
+  /** Also estimate the tap-water temperature (Open-Meteo's archive). */
+  tapTemp?: boolean;
 }
 
 // One automatic lookup per page load, however many times this field mounts.
@@ -20,7 +24,7 @@ let autoRan = false;
  * only when they ask (or have turned on auto-detect). It never runs on its own
  * otherwise, and says plainly what is sent.
  */
-export function WeatherField({ weather, onWeather, autoDetect, onAutoDetect, purpose }: Props) {
+export function WeatherField({ weather, onWeather, autoDetect, onAutoDetect, purpose, place, tapTemp }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const onWeatherRef = useRef(onWeather);
@@ -29,9 +33,9 @@ export function WeatherField({ weather, onWeather, autoDetect, onAutoDetect, pur
   const detect = async () => {
     setBusy(true);
     setError(null);
-    const r = await detectWeather();
+    const r = await detectWeather({}, { place, tapTemp });
     setBusy(false);
-    if (r.ok) onWeatherRef.current({ tempC: r.tempC, hourly: r.hourly, at: r.at });
+    if (r.ok) onWeatherRef.current({ tempC: r.tempC, hourly: r.hourly, at: r.at, place: r.place, tapTempC: r.tapTempC });
     else setError(failureMessage(r.reason));
   };
 
@@ -65,8 +69,10 @@ export function WeatherField({ weather, onWeather, autoDetect, onAutoDetect, pur
       )}
       <Check checked={autoDetect} onChange={onAutoDetect} title="Detect automatically when I open the app" />
       <p className="hint">
-        Sends your approximate location (rounded to about 1 km) to open-meteo.com to read the forecast. Nothing is stored
-        on a server, and nothing is sent unless you tap the button or turn this on.
+        Sends your approximate location (rounded to about 1 km) to open-meteo.com to read the forecast
+        {place ? ', and to nominatim.openstreetmap.org (OpenStreetMap) to find your town for the water hardness' : ''}
+        {tapTemp ? ', and asks Open-Meteo for the last three weeks of temperatures to estimate your tap water' : ''}.
+        Nothing is stored on a server, and nothing is sent unless you tap the button or turn this on.
       </p>
     </div>
   );

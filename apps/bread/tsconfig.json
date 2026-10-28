@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "types": ["vite/client", "node"],
+    "paths": {
+      "@sourdough/calc/*": ["../../packages/calc/src/*"],
+      "@sourdough/core/*": ["../../packages/core/src/*"],
+      "@sourdough/ui/*": ["../../packages/ui/src/*"],
+      "vitest": ["./node_modules/vitest"],
+      "react": ["./node_modules/@types/react"],
+      "react/jsx-runtime": ["./node_modules/@types/react/jsx-runtime"],
+      "react-dom": ["./node_modules/@types/react-dom"],
+      "react-dom/server": ["./node_modules/@types/react-dom/server"],
+      "react-dom/client": ["./node_modules/@types/react-dom/client"]
+    }
+  },
+  "include": ["src", "vite.config.ts", "../../packages/core/src", "../../packages/core/__tests__", "../../packages/ui/src", "../../packages/ui/__tests__"]
+}

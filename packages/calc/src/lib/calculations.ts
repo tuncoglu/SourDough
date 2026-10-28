@@ -16,13 +16,7 @@ import {
 } from '../models/types';
 import { getTempZone } from '../models/types';
 import { findFlour } from './flourSearch';
-import {
-  getFlourFermentFactor,
-  getBlendFermentFactor,
-  getBlendProtein,
-  mergeBlendWithStarter,
-  resolveFermentFactor,
-} from './blendUtils';
+import { mergeBlendWithStarter, resolveFermentFactor } from './blendUtils';
 import { formatTemp } from './unitConversion';
 
 /** Format a temperature difference (delta) in the display unit system. */

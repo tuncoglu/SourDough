@@ -2,12 +2,16 @@
  * Starter feeding log: the pure parts of the Starter screen and the bread
  * page's starter choice. No React or storage imports.
  */
-import type { StarterFeeding } from '../models/types';
+import type { StarterFeeding, StarterStatus } from '../models/types';
 import {
   DEFAULT_PEAK_EFFECTIVE_HOURS,
+  computeStarterStatus,
   feedDilution,
+  learnedPeakEffectiveHours,
+  starterFlourBlendFromFeeding,
   starterPeakWindowHours,
   starterTimeToPeakHours,
+  usableStarterStatus,
 } from './starterStatus';
 
 /** Feed ratios offered as one-tap choices (the r in 1 : r : r). */
@@ -123,4 +127,64 @@ export function fedForThisLoaf(feeding: StarterFeeding | null, now: Date = new D
   if (!Number.isFinite(fedAt)) return false;
   const inFridge = !!feeding.fridgeAt && !feeding.outOfFridgeAt;
   return !inFridge && now.getTime() - fedAt >= 0 && now.getTime() - fedAt < withinHours * HOUR;
+}
+
+// ── The log itself ──────────────────────────────────────────────────────
+// Pure list operations, so the mobile app (AsyncStorage) and the web apps
+// (localStorage) change the log by the same rules.
+
+/** The most feedings kept. */
+export const FEEDING_LOG_CAP = 500;
+
+/** Newest first, whatever order they were stored in. */
+export const sortFeedings = (list: StarterFeeding[]): StarterFeeding[] =>
+  [...list].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+export const addFeeding = (list: StarterFeeding[], f: StarterFeeding): StarterFeeding[] =>
+  sortFeedings([f, ...list]).slice(0, FEEDING_LOG_CAP);
+
+export const patchFeeding = (list: StarterFeeding[], id: string, patch: Partial<StarterFeeding>): StarterFeeding[] =>
+  list.map((f) => (f.id === id ? { ...f, ...patch } : f));
+
+export const markPeakedIn = (list: StarterFeeding[], id: string, at: Date = new Date()): StarterFeeding[] =>
+  patchFeeding(list, id, { peakedAt: at.toISOString() });
+
+/** The jar going into the fridge or coming out (now, unless told otherwise). Going in again clears an earlier "out". */
+export const fridgeStateIn = (list: StarterFeeding[], id: string, state: 'in' | 'out', at: Date = new Date()): StarterFeeding[] =>
+  patchFeeding(list, id, state === 'in' ? { fridgeAt: at.toISOString(), outOfFridgeAt: undefined } : { outOfFridgeAt: at.toISOString() });
+
+export const deleteFeeding = (list: StarterFeeding[], id: string): StarterFeeding[] => list.filter((f) => f.id !== id);
+
+export function generateFeedingId(): string {
+  return `feed_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+}
+
+/** What the log says about the starter now. */
+export interface StarterState {
+  feedings: StarterFeeding[];
+  feeding: StarterFeeding | null;
+  /** Null when there is no log, or the last feeding is too old to trust (callers assume a fridge-cold starter at full strength). */
+  status: StarterStatus | null;
+  /** The flours the last feeding used, as shares of its flour. */
+  flourBlend: { label: string; share: number }[] | undefined;
+  /** This starter's peak in effective hours: its own median once learned, else the default. */
+  peakEffectiveHours: number;
+  /** How many marked peaks the learned figure rests on, or null while using the default. */
+  learnedFromPeaks: number | null;
+}
+
+export function starterStateFrom(feedings: StarterFeeding[], roomTempC: number | undefined, now: Date): StarterState {
+  const list = sortFeedings(feedings);
+  const feeding = list[0] ?? null;
+  const temp = roomTempC !== undefined && Number.isFinite(roomTempC) ? roomTempC : undefined;
+  const learned = learnedPeakEffectiveHours(list, temp);
+  const peakEffectiveHours = learned?.effectiveHours ?? DEFAULT_PEAK_EFFECTIVE_HOURS;
+  return {
+    feedings: list,
+    feeding,
+    status: usableStarterStatus(computeStarterStatus(feeding, { roomTempC: temp, peakEffectiveHours, now: now.getTime() })),
+    flourBlend: starterFlourBlendFromFeeding(feeding),
+    peakEffectiveHours,
+    learnedFromPeaks: learned?.count ?? null,
+  };
 }

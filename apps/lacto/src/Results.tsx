@@ -280,7 +280,7 @@ export function WaterCard({ lines }: { lines: string[] }) {
       <h2 id="water-h">Water</h2>
       <ul className="plain">
         {lines.map((l) => (
-          <li key={l}>{l.replace(/^→\s*/, '')}</li>
+          <li key={l}>{l.replace(/^\s*→\s*/, '')}</li>
         ))}
       </ul>
     </section>

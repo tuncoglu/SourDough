@@ -5,7 +5,7 @@
 import type { StarterSource, YogurtType } from '@sourdough/calc/models/types';
 import { DEFAULT_MILK_ID, MILK_TYPES, YOGURT_CULTURES } from '@sourdough/calc/data/yogurtCultures';
 import { calculateSachets } from '@sourdough/calc/lib/yogurtCalculations';
-import type { Weather } from '@sourdough/core/weather';
+import { normalizeWeather, type Weather } from '@sourdough/core/weather';
 
 /** Grams of previous-batch yogurt per litre of milk (about two tablespoons). */
 export const BATCH_GRAMS_PER_LITRE = 30;
@@ -92,15 +92,7 @@ export function normalizeState(raw: unknown): AppState {
   const base = { ...DEFAULT_FORM, ...defaultsFor(type), yogurtType: type };
   const str = (v: unknown, d: string) => (typeof v === 'string' && /^\d*\.?\d*$/.test(v) ? v : d);
   const bool = (v: unknown, d: boolean) => (typeof v === 'boolean' ? v : d);
-  const w = r.weather as Partial<Weather> | null | undefined;
-  const weather: Weather | null =
-    w && typeof w.tempC === 'number' && Number.isFinite(w.tempC) && typeof w.at === 'number' && Array.isArray(w.hourly)
-      ? {
-          tempC: w.tempC,
-          at: w.at,
-          hourly: w.hourly.filter((h) => h && typeof h.datetime === 'string' && typeof h.tempC === 'number'),
-        }
-      : null;
+  const weather = normalizeWeather(r.weather);
   return {
     form: {
       ...base,

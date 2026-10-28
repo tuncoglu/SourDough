@@ -122,6 +122,42 @@ export function NumField({
   );
 }
 
+/** A slider with its value shown beside the label. */
+export function RangeField({
+  label,
+  value,
+  min,
+  max,
+  step = 1,
+  unit = '%',
+  onChange,
+  hint,
+}: {
+  label: string;
+  value: string;
+  min: number;
+  max: number;
+  step?: number;
+  unit?: string;
+  onChange: (v: string) => void;
+  hint?: string;
+}) {
+  const id = useId();
+  const n = parseFloat(value);
+  return (
+    <div className="slider">
+      <div className="slider-head">
+        <label htmlFor={id}>{label}</label>
+        <output htmlFor={id}>
+          {Number.isFinite(n) ? n : '—'} {unit}
+        </output>
+      </div>
+      <input id={id} type="range" min={min} max={max} step={step} value={Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : min} onChange={(e) => onChange(e.target.value)} />
+      {hint && <p className="hint">{hint}</p>}
+    </div>
+  );
+}
+
 export function Check({
   checked,
   onChange,

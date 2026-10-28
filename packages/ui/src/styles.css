@@ -156,6 +156,36 @@ input[type='text'], select {
 .fc .tt { text-align: right; font-variant-numeric: tabular-nums; }
 .link { background: none; border: 0; color: var(--focus); text-decoration: underline; font: inherit; cursor: pointer; padding: 8px 0; min-height: 44px; }
 .mixrow { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
+.slider { margin: 10px 0; }
+.slider-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.slider-head label { margin: 0; }
+.slider-head output { font-weight: 700; font-variant-numeric: tabular-nums; }
+.slider input[type='range'] { width: 100%; height: 32px; accent-color: var(--brand); }
+details.sum > summary { list-style: none; cursor: pointer; min-height: 44px; display: flex; align-items: center; }
+details.sum > summary::-webkit-details-marker { display: none; }
+details.sum > summary::after { content: '+'; margin-left: auto; font-weight: 700; font-size: 1.4rem; color: var(--brand); }
+details.sum[open] > summary::after { content: '−'; }
+.s-title { display: block; font-weight: 700; font-size: 1.05rem; }
+.s-line { display: block; color: var(--muted); font-size: 0.9rem; }
+.zone { font-weight: 700; font-size: 1.1rem; margin: 0; }
+.step { padding: 12px 0; border-top: 1px solid var(--line); }
+.step:first-of-type { border-top: 0; padding-top: 0; }
+.step-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.step-head h3 { margin: 0; }
+.dur { color: var(--muted); font-size: 0.9rem; text-align: right; }
+.when { color: var(--brand); font-weight: 700; font-size: 0.95rem; margin: 2px 0; }
+.body { margin: 6px 0; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 8px; }
+.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 8px; }
+.kv .total { font-size: 1.05rem; }
+.bakers { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.bakers th, .bakers td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+.bakers th:not(:first-child), .bakers td:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bakers tr.now td, .bakers td.hl { background: var(--accent); font-weight: 700; }
+.entry.active { border-color: var(--brand); border-width: 2px; }
+.entry-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tag { display: inline-block; font-size: 0.8rem; background: var(--accent); border-radius: 8px; padding: 1px 8px; }
+.tag-active { background: var(--brand); color: var(--brand-ink); }
 .group { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); margin: 10px 0 0; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
 .chip {

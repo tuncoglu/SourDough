@@ -10,9 +10,16 @@ export interface Settings {
   kitchenTempC: number;
   /** Local water hardness in mg/L CaCO₃. 0 means unknown (a moderate value is assumed). */
   waterHardnessMgL: number;
+  /** A UK postcode, to look the water hardness up from. Empty means none. */
+  postcode: string;
 }
 
-export const DEFAULT_SETTINGS: Settings = { theme: 'system', units: 'metric', kitchenTempC: 0, waterHardnessMgL: 0 };
+export const DEFAULT_SETTINGS: Settings = { theme: 'system', units: 'metric', kitchenTempC: 0, waterHardnessMgL: 0, postcode: '' };
+
+/** A UK postcode as typed: upper case, letters and digits and one space, at most 8 characters. */
+export function normalizePostcode(text: string): string {
+  return text.toUpperCase().replace(/[^A-Z0-9 ]/g, '').replace(/\s+/g, ' ').trimStart().slice(0, 8);
+}
 
 /** Accept anything that was stored, keep what is valid, default the rest. */
 export function normalizeSettings(raw: unknown): Settings {
@@ -23,6 +30,7 @@ export function normalizeSettings(raw: unknown): Settings {
     units: r.units === 'imperial' ? 'imperial' : 'metric',
     // Outside this range it is a typo, and the forecast is the better guess.
     kitchenTempC: temp >= -10 && temp <= 60 ? temp : 0,
+    postcode: typeof r.postcode === 'string' ? normalizePostcode(r.postcode) : '',
     waterHardnessMgL: typeof r.waterHardnessMgL === 'number' && r.waterHardnessMgL > 0 && r.waterHardnessMgL <= 2000 ? r.waterHardnessMgL : 0,
   };
 }

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FermentHistoryEntry } from '@sourdough/calc/models/types';
 import { historyDraft, planFromForm, restoreFrom, type LactoForm } from '@sourdough/calc/lib/lactoForm';
-import { resolveHardness } from '@sourdough/calc/lib/hardnessUtils';
+import { hardnessFor } from '@sourdough/calc/lib/hardnessFor';
 import { DEFAULT_SETTINGS, applyTheme, loadSettings, saveSettings, type Settings } from '@sourdough/core/settings';
 import type { Weather } from '@sourdough/core/weather';
 import { Header, TabBar, type TabDef } from '@sourdough/ui/components';
@@ -53,11 +53,11 @@ export default function App() {
       hourlyForecast: weather ? weather.hourly : null,
       currentTemp: weather ? weather.tempC : null,
       fermTempOverride: settings.kitchenTempC,
-      hardness: resolveHardness(settings.waterHardnessMgL),
+      hardness: hardnessFor({ manualMgL: settings.waterHardnessMgL, postcode: settings.postcode, place: weather?.place }).hardness,
       unitSystem: settings.units,
     });
     return historyDraft(state.form, plan);
-  }, [state.form, weather, settings.kitchenTempC, settings.waterHardnessMgL, settings.units]);
+  }, [state.form, weather, settings.kitchenTempC, settings.waterHardnessMgL, settings.postcode, settings.units]);
 
   useEffect(() => {
     if (!touched || !draft) return;

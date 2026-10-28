@@ -9,7 +9,7 @@ import { PREP_SIZE_ORDER, SALT_LABELS } from '@sourdough/calc/models/types';
 import { FERMENT_PRESETS, VEG_COMBOS } from '@sourdough/calc/data/fermentPresets';
 import { VEGETABLES } from '@sourdough/calc/data/vegetables';
 import { DEFAULT_LACTO_FORM, type LactoForm, type MixEntry } from '@sourdough/calc/lib/lactoForm';
-import type { Weather } from '@sourdough/core/weather';
+import { normalizeWeather, type Weather } from '@sourdough/core/weather';
 
 export interface AppState {
   form: LactoForm;
@@ -55,10 +55,6 @@ export function normalizeForm(raw: unknown): LactoForm {
 
 export function normalizeState(raw: unknown): AppState {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
-  const w = r.weather as Partial<Weather> | null | undefined;
-  const weather: Weather | null =
-    w && typeof w.tempC === 'number' && Number.isFinite(w.tempC) && typeof w.at === 'number' && Array.isArray(w.hourly)
-      ? { tempC: w.tempC, at: w.at, hourly: w.hourly.filter((h) => h && typeof h.datetime === 'string' && typeof h.tempC === 'number') }
-      : null;
+  const weather = normalizeWeather(r.weather);
   return { form: normalizeForm(r.form), weather, autoDetect: r.autoDetect === true };
 }

@@ -19,7 +19,7 @@ import {
   updateMixGrams,
   type LactoForm,
 } from '@sourdough/calc/lib/lactoForm';
-import { resolveHardness } from '@sourdough/calc/lib/hardnessUtils';
+import { hardnessFor } from '@sourdough/calc/lib/hardnessFor';
 import { formatTemp } from '@sourdough/calc/lib/unitConversion';
 import type { Settings } from '@sourdough/core/settings';
 import type { Weather } from '@sourdough/core/weather';
@@ -71,7 +71,7 @@ export function Calculator({ form, setForm, settings, setSettings, weather, onWe
   // How the vegetable list is open: to swap the one vegetable, or to build a mix.
   const [pick, setPick] = useState<'swap' | 'mix' | null>(null);
   const [allSalts, setAllSalts] = useState(false);
-  const hardness = resolveHardness(settings.waterHardnessMgL);
+  const hardness = hardnessFor({ manualMgL: settings.waterHardnessMgL, postcode: settings.postcode, place: weather?.place }).hardness;
 
   const plan = useMemo(
     () =>
@@ -266,7 +266,7 @@ export function Calculator({ form, setForm, settings, setSettings, weather, onWe
             <p className="hint">From your location · Open-Meteo. Bars run from 0 to 30 °C.</p>
           </>
         )}
-        <WeatherField weather={weather} onWeather={onWeather} autoDetect={autoDetect} onAutoDetect={onAutoDetect} purpose="the jar temperature" />
+        <WeatherField weather={weather} onWeather={onWeather} autoDetect={autoDetect} onAutoDetect={onAutoDetect} purpose="the jar temperature" place />
       </fieldset>
 
       <p className="hint center" style={{ margin: 0 }}>

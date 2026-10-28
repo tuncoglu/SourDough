@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { DEFAULT_SETTINGS, loadSettings, normalizeSettings, saveSettings } from '../src/settings';
+import { DEFAULT_SETTINGS, loadSettings, normalizePostcode, normalizeSettings, saveSettings } from '../src/settings';
 import { loadJson, saveJson } from '../src/storage';
 import { serviceWorkerSource } from '../src/precache';
 
 describe('normalizeSettings', () => {
   it('keeps valid values', () => {
-    expect(normalizeSettings({ theme: 'dark', units: 'imperial', kitchenTempC: 21.5, waterHardnessMgL: 280 })).toEqual({ theme: 'dark', units: 'imperial', kitchenTempC: 21.5, waterHardnessMgL: 280 });
+    expect(normalizeSettings({ theme: 'dark', units: 'imperial', kitchenTempC: 21.5, waterHardnessMgL: 280 })).toEqual({ theme: 'dark', units: 'imperial', kitchenTempC: 21.5, waterHardnessMgL: 280, postcode: '' });
   });
   it('defaults anything unknown, wrong or out of range', () => {
     expect(normalizeSettings(null)).toEqual(DEFAULT_SETTINGS);
@@ -14,6 +14,15 @@ describe('normalizeSettings', () => {
     expect(normalizeSettings({ kitchenTempC: NaN }).kitchenTempC).toBe(0);
     expect(normalizeSettings({ waterHardnessMgL: -5 }).waterHardnessMgL).toBe(0);
     expect(normalizeSettings({ waterHardnessMgL: 99999 }).waterHardnessMgL).toBe(0);
+  });
+});
+
+describe('postcode', () => {
+  it('is kept tidy: upper case, no symbols, one space, short', () => {
+    expect(normalizePostcode('  sw1a   1aa')).toBe('SW1A 1AA');
+    expect(normalizePostcode('kt12<script>')).toBe('KT12SCRI');
+    expect(normalizeSettings({ postcode: 42 }).postcode).toBe('');
+    expect(normalizeSettings({ postcode: 'g1 1aa' }).postcode).toBe('G1 1AA');
   });
 });
 
@@ -44,8 +53,8 @@ describe('storage that never throws', () => {
   it('round-trips through a working store', () => {
     const data = new Map<string, string>();
     g.localStorage = { getItem: (k: string) => data.get(k) ?? null, setItem: (k: string, v: string) => void data.set(k, v) };
-    saveSettings('k', { theme: 'light', units: 'imperial', kitchenTempC: 20, waterHardnessMgL: 0 });
-    expect(loadSettings('k')).toEqual({ theme: 'light', units: 'imperial', kitchenTempC: 20, waterHardnessMgL: 0 });
+    saveSettings('k', { theme: 'light', units: 'imperial', kitchenTempC: 20, waterHardnessMgL: 0, postcode: 'KT12 1AB' });
+    expect(loadSettings('k')).toEqual({ theme: 'light', units: 'imperial', kitchenTempC: 20, waterHardnessMgL: 0, postcode: 'KT12 1AB' });
   });
 });
 
