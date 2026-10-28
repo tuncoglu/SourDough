@@ -1,0 +1,7 @@
+{
+  "name": "@sourdough/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "What every Sourdough Calculators web app shares that is not a calculation and not a component: settings, storage, the optional weather lookup, and the offline build step."
+}

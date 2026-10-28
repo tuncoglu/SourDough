@@ -1,0 +1,28 @@
+name: Web apps
+
+# Checks the standalone web calculators (apps/*) and the packages they share.
+# It does not deploy anything: each app is its own Cloudflare Pages project.
+on:
+  push:
+    branches: [main]
+    paths: ['apps/**', 'packages/core/**', 'packages/ui/**', 'packages/calc/**', '.github/workflows/web-apps.yml']
+  pull_request:
+    paths: ['apps/**', 'packages/core/**', 'packages/ui/**', 'packages/calc/**', '.github/workflows/web-apps.yml']
+
+jobs:
+  yogurt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/yogurt/package-lock.json
+      - run: npm ci
+        working-directory: apps/yogurt
+      # Type-checks the app and the core and ui packages it imports.
+      - run: npm run build
+        working-directory: apps/yogurt
+      - run: npm test
+        working-directory: apps/yogurt

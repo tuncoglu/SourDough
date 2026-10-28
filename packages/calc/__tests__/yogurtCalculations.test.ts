@@ -204,6 +204,17 @@ describe('runYogurtCalculations', () => {
     expect(r.starterRatioDisplay).toContain('per');
   });
 
+  it('labels a previous-batch starter per litre, not as the total', () => {
+    // 60 g for 2 L is 30 g per litre; the label used to say "60g per L".
+    const r = runYogurtCalculations(
+      { ...baseInputs, milkLitres: 2, starterSource: 'previous-batch', previousBatchGrams: 60 },
+      bulgarian,
+      milk,
+    );
+    expect(r.starterRatioDisplay).toContain('30g per L');
+    expect(r.previousBatchGrams).toBe(60);
+  });
+
   it('larger milk volume increases yield', () => {
     const small = runYogurtCalculations({ ...baseInputs, milkLitres: 1 }, bulgarian, milk);
     const large = runYogurtCalculations({ ...baseInputs, milkLitres: 3 }, bulgarian, milk);

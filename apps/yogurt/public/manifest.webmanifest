@@ -1,0 +1,16 @@
+{
+  "name": "Yogurt Calculator",
+  "short_name": "Yogurt",
+  "description": "Yogurt calculator: incubation time, starter, yield and timeline for thermophilic and mesophilic cultures. Guidance, not guarantee.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#2b1d12",
+  "theme_color": "#2b1d12",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

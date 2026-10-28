@@ -310,7 +310,7 @@ export function buildYogurtTimeline(
 export function runYogurtCalculations(
   inputs: YogurtInputs,
   culture: YogurtCulturePreset,
-  milk: MilkEntry,
+  _milk: MilkEntry,
 ): YogurtResults {
   const milkGrams = Math.round(inputs.milkLitres * 1000 * MILK_DENSITY_G_PER_ML);
 
@@ -326,7 +326,7 @@ export function runYogurtCalculations(
   const isPreviousBatch = inputs.starterSource === 'previous-batch';
 
   const starterDisplay = isPreviousBatch
-    ? `${inputs.previousBatchGrams ?? 30}g per L (≈2 tbsp)`
+    ? `${Math.round((inputs.previousBatchGrams ?? 30 * inputs.milkLitres) / inputs.milkLitres)}g per L (≈2 tbsp)`
     : culture.starterRatio >= 1
       ? `${culture.starterRatio} sachet${culture.starterRatio > 1 ? 's' : ''} per L`
       : `1 sachet per ${Math.round(1 / culture.starterRatio)}L`;
@@ -355,7 +355,7 @@ export function yogurtAdvice(
   milkFatLevel: MilkFatLevel,
   preHeatEnabled: boolean,
   thickness: string,
-  incubationHours: number,
+  _incubationHours: number,
   unitSystem: UnitSystem = 'metric',
 ): string[] {
   const tips: string[] = [];
