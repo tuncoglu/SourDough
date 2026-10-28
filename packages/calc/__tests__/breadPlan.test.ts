@@ -1,5 +1,6 @@
 import { addFlour, DEFAULT_BREAD_FORM, earliestChoice, planBread, removeFlour, setFlourGrams, whenLabel, type BreadEnv, type BreadForm } from '../src/lib/breadPlan';
 import { FALLBACK_HARDNESS } from '../src/lib/hardnessUtils';
+import { clockTime } from '../src/lib/starterFormat';
 import { addFeeding, deleteFeeding, fridgeStateIn, markPeakedIn, starterStateFrom } from '../src/lib/starterLog';
 import type { StarterFeeding } from '../src/models/types';
 
@@ -150,9 +151,13 @@ describe('the schedule', () => {
   });
 
   it('labels a moment with its day only when it is not today', () => {
-    expect(whenLabel(new Date(2026, 9, 28, 23, 0), NOW)).toBe('23:00');
-    expect(whenLabel(new Date(2026, 9, 29, 7, 15), NOW)).toContain('07:15');
-    expect(whenLabel(new Date(2026, 9, 29, 7, 15), NOW)).toContain(',');
+    // Times follow the viewer's locale ("23:00" or "11:00 PM"), so compare with the same formatter.
+    const tonight = new Date(2026, 9, 28, 23, 0);
+    const tomorrow = new Date(2026, 9, 29, 7, 15);
+    expect(whenLabel(tonight, NOW)).toBe(clockTime(tonight));
+    expect(whenLabel(tomorrow, NOW)).toContain(clockTime(tomorrow));
+    expect(whenLabel(tomorrow, NOW)).toContain(',');
+    expect(whenLabel(tomorrow, NOW).length).toBeGreaterThan(clockTime(tomorrow).length);
   });
 });
 
