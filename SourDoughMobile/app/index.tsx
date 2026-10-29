@@ -61,7 +61,7 @@ export default function LandingScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.masthead, { borderBottomColor: colors.border }]}>
-          <Text style={[styles.brand, { color: colors.espresso }]}>JUST DOUGH IT <Text style={{ color: colors.terracotta }}>✳</Text></Text>
+          <Text style={[styles.brand, { color: colors.espresso }]}>DOUGH & FERMENT <Text style={{ color: colors.terracotta }}>✳</Text></Text>
           <Text style={[styles.mastheadAside, { color: colors.muted }]}>GOOD THINGS TAKE TIME. YOU DON'T HAVE TO.</Text>
         </View>
 

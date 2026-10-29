@@ -311,7 +311,7 @@ export default function BreadScreen() {
       >
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.push('/')} activeOpacity={0.7} accessibilityRole="link" accessibilityLabel="Dough & Ferment Calculators home">
-            <Text style={[styles.brand, { color: colors.terracotta }]}>JUST DOUGH IT  /  BREAD</Text>
+            <Text style={[styles.brand, { color: colors.terracotta }]}>DOUGH & FERMENT  /  BREAD</Text>
           </TouchableOpacity>
           <Text style={[styles.heading, { color: colors.espresso }]} accessibilityRole="header">Lazy sourdough.</Text>
           <Text style={[styles.subtitle, { color: colors.muted }]}>

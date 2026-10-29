@@ -59,7 +59,7 @@ export default function FermentsScreen() {
       {/* Header — tap to return home */}
       <View style={styles.header}>
           <TouchableOpacity onPress={() => router.push('/')} activeOpacity={0.7}>
-            <Text style={[styles.brand, { color: colors.terracotta }]}>JUST DOUGH IT  /  FERMENTS</Text>
+            <Text style={[styles.brand, { color: colors.terracotta }]}>DOUGH & FERMENT  /  FERMENTS</Text>
           </TouchableOpacity>
           <Text style={[styles.heading, { color: colors.espresso }]}>A little jar of magic.</Text>
           <Text style={[styles.subtitle, { color: colors.muted }]}>

@@ -47,7 +47,7 @@ export default function StarterScreen() {
       />
       <ScrollView ref={scrollRef} style={styles.scroll} contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
-          <Text style={[styles.brand, { color: colors.terracotta }]}>JUST DOUGH IT  /  STARTER</Text>
+          <Text style={[styles.brand, { color: colors.terracotta }]}>DOUGH & FERMENT  /  STARTER</Text>
           <Text style={[styles.heading, { color: colors.espresso }]} accessibilityRole="header">Your starter.</Text>
           <Text style={[styles.subtitle, { color: colors.muted }]}>
             When you fed it, how lively it is, and when it peaks. The bread page uses this to plan.
