@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Just Dough It",
+    "name": "Dough & Ferment",
     "slug": "sourdough-optimizer",
     "version": "3.0.0",
     "orientation": "portrait",
@@ -13,6 +13,7 @@
     },
     "android": {
       "package": "com.sourdough.optimizer",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#FFF5ED",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -44,7 +45,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow Just Dough It to use your location to detect local temperature and water hardness for accurate baking guidance. Your coordinates are sent to Open-Meteo (weather) and OpenStreetMap (geocoding)."
+          "locationWhenInUsePermission": "Allow Dough & Ferment to use your location to detect local temperature and water hardness for accurate baking guidance. Your coordinates are sent to Open-Meteo (weather) and OpenStreetMap (geocoding)."
         }
       ],
       "./plugins/withAndroidSigningConfig"
