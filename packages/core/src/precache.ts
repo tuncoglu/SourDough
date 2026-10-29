@@ -3,8 +3,10 @@
  * the whole app is cached on first visit and works offline. One service
  * worker for every app; only the cache name differs.
  *
- * Navigations are served from the cached index.html. A new build gets a new
- * cache id, the new worker takes over at once, and the old cache is deleted.
+ * Navigations are served from the cached page at ./ (Pages redirects
+ * /index.html to /, and a redirected response cannot answer a navigation).
+ * A new build gets a new cache id, the new worker takes over at once, and
+ * the old cache is deleted.
  */
 import { readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -14,11 +16,26 @@ export function serviceWorkerSource(cacheName: string, urls: string[], cacheId: 
 const CACHE = ${JSON.stringify(`${cacheName}-${cacheId}`)};
 const PRECACHE = ${JSON.stringify(urls)};
 
+// A response that followed a redirect (Pages sends /index.html to /) is refused by the browser
+// when it answers a navigation, so store a plain copy instead.
+async function plain(res) {
+  if (!res.redirected) return res;
+  return new Response(await res.blob(), { status: res.status, statusText: res.statusText, headers: res.headers });
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(CACHE)
-      .then((c) => c.addAll(PRECACHE))
+      .then((c) =>
+        Promise.all(
+          PRECACHE.map(async (url) => {
+            const res = await fetch(url, { cache: 'reload' });
+            if (!res.ok) throw new Error(url + ' ' + res.status);
+            await c.put(url, await plain(res));
+          }),
+        ),
+      )
       .then(() => self.skipWaiting()),
   );
 });
@@ -37,7 +54,7 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
 
   if (req.mode === 'navigate') {
-    event.respondWith(caches.match('./index.html').then((hit) => hit || fetch(req)));
+    event.respondWith(caches.match('./').then((hit) => hit || fetch(req)));
     return;
   }
 
@@ -78,7 +95,7 @@ export function precachePlugin(cacheName: string) {
       walk(outDir);
       // sw.js is the worker itself; _headers and _redirects are host config, not served assets.
       const skip = new Set(['sw.js', '_headers', '_redirects']);
-      const urls = ['./', ...files.filter((f) => !skip.has(f)).map((f) => `./${f}`)];
+      const urls = ['./', ...files.filter((f) => f !== 'index.html' && !skip.has(f)).map((f) => `./${f}`)];
       writeFileSync(join(outDir, 'sw.js'), serviceWorkerSource(cacheName, urls, String(Date.now())));
     },
   };

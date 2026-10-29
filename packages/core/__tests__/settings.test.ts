@@ -60,10 +60,17 @@ describe('storage that never throws', () => {
 
 describe('service worker source', () => {
   it('names the cache per app and build, and lists every file', () => {
-    const src = serviceWorkerSource('yogurt', ['./', './index.html', './assets/a.js'], '42');
+    const src = serviceWorkerSource('yogurt', ['./', './assets/a.js'], '42');
     expect(src).toContain('"yogurt-42"');
     expect(src).toContain('"./assets/a.js"');
     // It must at least parse as a script.
     expect(() => new Function(src)).not.toThrow();
+  });
+
+  it('serves navigations from ./ and never caches a redirected response', () => {
+    const src = serviceWorkerSource('bread', ['./'], '1');
+    expect(src).toContain("caches.match('./')");
+    expect(src).not.toContain("caches.match('./index.html')");
+    expect(src).toContain('res.redirected');
   });
 });
