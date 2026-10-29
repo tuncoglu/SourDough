@@ -1,6 +1,6 @@
 # Lacto-ferment Calculator
 
-Will live at https://lactoferment.sourdoughcalculator.uk. Salt, timing and a day-by-day timeline for sauerkraut, kimchi, pickles, pepper mash, kvass and more, with 25+ vegetables, mixes, curated combinations and a Google Calendar reminder. **Guidance, not guarantee.**
+Lives at https://lactoferment.sourdoughcalculator.uk. Salt, timing and a day-by-day timeline for sauerkraut, kimchi, pickles, pepper mash, kvass and more, with 25+ vegetables, mixes, curated combinations and a Google Calendar reminder. **Guidance, not guarantee.**
 
 Same family as the yogurt and pasta apps: Vite + React PWA, static files with relative paths, a service worker written at build time, no backend, no accounts, no analytics. State, settings and history live in `localStorage`. The only network calls are the optional weather lookup (Open-Meteo) and, with it, the town lookup for water hardness (Nominatim), made only when you tap "Use my location for the forecast" (or turn on auto-detect). The calendar buttons are plain links to Google Calendar; nothing is sent until you tap one.
 
@@ -37,4 +37,4 @@ npm run icons
 
 ## Deploying
 
-A Cloudflare Pages project with `apps/lacto` as the root, build command `npm ci && npm run build`, output `dist`. Not deployed yet.
+A Cloudflare Pages project with `apps/lacto` as the root, build command `npm ci && npm run build`, output `dist`. Deployed automatically to the `lactoferment` project by `.github/workflows/web-apps.yml` on a push to `main`.

@@ -1,10 +1,10 @@
-# 🥖 Just Dough It — Mobile App
+# 🥖 Dough & Ferment Calculators — Mobile App
 
 The mobile companion to [SourDough](https://github.com/tuncoglu/SourDough) —
 a location-aware sourdough baking calculator for iOS, Android, and web.
 
 <p align="center">
-  <img src="./assets/images/icon.png" width="120" alt="Just Dough It icon" />
+  <img src="./assets/images/icon.png" width="120" alt="Dough & Ferment Calculators icon" />
 </p>
 
 ---
@@ -12,7 +12,7 @@ a location-aware sourdough baking calculator for iOS, Android, and web.
 ## Why This App?
 
 Most sourdough recipes tell you "ferment for 4 hours." But in a cold kitchen,
-that could be 7 hours. In a warm one, it could be 3. Just Dough It uses
+that could be 7 hours. In a warm one, it could be 3. Dough & Ferment Calculators uses
 your **real location** to detect ambient temperature and water hardness, then
 adjusts fermentation timelines and hydration targets accordingly.
 
@@ -138,12 +138,12 @@ SourDoughMobile/
 
 | Package | Purpose |
 |---|---|
-| `expo` ~56 | Expo SDK |
-| `expo-router` ~56 | File-based routing |
-| `expo-location` ~56 | GPS location access |
+| `expo` ~57 | Expo SDK |
+| `expo-router` ~57 | File-based routing |
+| `expo-location` ~57 | GPS location access |
 | `@react-native-async-storage/async-storage` | Local data persistence |
 | `react-native-reanimated` | Smooth animations |
-| `react` 19 / `react-native` 0.85 | UI framework |
+| `react` 19 / `react-native` 0.86 | UI framework |
 
 ---
 

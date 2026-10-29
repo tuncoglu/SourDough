@@ -148,7 +148,7 @@ export default function HistoryScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.cream }]} edges={['top']}>
       <Seo
-        title="History — Just Dough It"
+        title="History — Dough & Ferment Calculators"
         description="Your saved sourdough recipes and every ferment you have calculated, stored locally on your device — private by design."
         path="/history"
       />

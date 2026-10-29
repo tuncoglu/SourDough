@@ -1,6 +1,6 @@
 # 🥖 SourDough — Location-Aware Sourdough Optimizer
 
-> **The app is called Just Dough It; the open-source project is SourDough.**
+> **The app is called Dough & Ferment Calculators; the open-source project is SourDough.**
 
 **Bake better bread by listening to your kitchen, not a textbook.**
 
@@ -27,9 +27,14 @@ SourDough adapts everything to where you really are:
 
 ## Features
 
-Built with Expo SDK 56, React Native 0.85, and TypeScript. Runs on web, iOS,
-and Android from a single codebase. A landing page greets you with three cards —
-pick bread, yogurt, or lacto-fermentation — then dive into the full calculator.
+The calculators come in two forms that share one set of baking rules
+(`packages/calc`):
+
+- **Android/iOS app** (`SourDoughMobile/`) — built with Expo SDK 57, React
+  Native 0.86 and TypeScript. A landing page greets you with three cards — pick
+  bread, yogurt, or lacto-fermentation — then dive into the full calculator.
+- **Web calculators** (`apps/`) — one small static site per calculator, plus a
+  hub page that links them. See [Web](#-web).
 
 ### 📱 Recipe Engine
 - **Auto-location** — one-tap GPS → weather + water hardness for your exact spot
@@ -49,14 +54,23 @@ pick bread, yogurt, or lacto-fermentation — then dive into the full calculator
 
 ### 📦 Data & Privacy
 - **Private by design** — no accounts, all data stored locally via AsyncStorage (weather and water-hardness detection need network; manual mode works offline)
-- **Local recipe data** — no account or cloud recipe storage; optional cookieless website analytics are described in the privacy policy
+- **Local recipe data** — no account or cloud recipe storage, and no analytics
 - **Location is transient** — with permission, coordinates are sent to fetch weather and geocode your city; they are not saved with recipes
-- **Opt-in assistant** — "Ask the baker" on the bread page answers questions with the app's own calculators via a Cloudflare Function and DeepSeek (based in China); nothing is sent until you press Ask and consent, no content is stored, and it stays hidden unless `EXPO_PUBLIC_ASSISTANT_ENABLED=1`
+- **No assistant for now** — "Ask the baker" (an optional AI question box) is switched off: it is hidden in the app, and nothing is sent anywhere for it. The code stays in the repo (`functions/`, `SourDoughMobile/src/components/AskCard.tsx`); the privacy policy will be updated before it comes back
 
 ### 🌐 Web
-- **Installable PWA** — add to home screen; works offline once loaded
-- **Share-friendly** — every page has Open Graph/Twitter card metadata and a generated share image
-- **Optional cookieless analytics** — set the `EXPO_PUBLIC_CF_BEACON_TOKEN` repo variable in GitHub Actions to enable Cloudflare Web Analytics (privacy-respecting, no cookie banner needed)
+
+| Site | Source |
+|---|---|
+| [sourdoughcalculator.uk](https://sourdoughcalculator.uk) — hub, About and Privacy pages | `apps/hub` |
+| [bread.sourdoughcalculator.uk](https://bread.sourdoughcalculator.uk) | `apps/bread` |
+| [yogurt.sourdoughcalculator.uk](https://yogurt.sourdoughcalculator.uk) | `apps/yogurt` |
+| [lactoferment.sourdoughcalculator.uk](https://lactoferment.sourdoughcalculator.uk) | `apps/lacto` |
+| [pasta.sourdoughcalculator.uk](https://pasta.sourdoughcalculator.uk) | its own repository |
+
+- **Installable PWAs** — the calculators add to the home screen and work offline once loaded (the hub is a plain static page)
+- **No accounts, no analytics, no cookies** — everything you save stays in your browser; location is only used when you tap the button for it
+- **Shared code** — each app is a Vite + React build on `packages/calc` (rules), `packages/core` (settings, storage, weather, offline build) and `packages/ui` (look)
 
 ### 🥛 Yogurt Calculator
 - **10 starter cultures** — thermophilic and mesophilic, each with its own incubation model
@@ -95,12 +109,22 @@ npx expo start --android
 npx expo start --web
 ```
 
-**Requirements:** Node.js 22+, Expo SDK 56. Use the [Expo Go](https://expo.dev/go)
+**Requirements:** Node.js 22+, Expo SDK 57. Use the [Expo Go](https://expo.dev/go)
 app for quick testing on a physical device, or build a development client with
 EAS Build.
 
-The web version is deployed on every push to `main` via GitHub Actions →
-Cloudflare Pages.
+The web calculators in `apps/` each have their own README (`npm install`,
+`npm run dev`, `npm test`, `npm run build`).
+
+### Deployment
+
+A push to `main` that touches `apps/` or the shared packages runs
+`.github/workflows/web-apps.yml`: it type-checks, tests and builds the hub,
+bread, yogurt and lacto apps, and once all four pass it deploys each to its
+Cloudflare Pages project (`hub`, `bread`, `yogurt`, `lactoferment`). The Expo
+web build is no longer deployed; the Android app is released through Google
+Play (see `SourDoughMobile/PLAY_RELEASE.md`). `ci.yml` type-checks and tests
+the mobile app, the calculation package and the Pages Function.
 
 ---
 
@@ -134,11 +158,16 @@ Cloudflare Pages.
 
 | Directory | What it is |
 |---|---|
-| `SourDoughMobile/` | React Native (Expo) app — iOS, Android, and web |
+| `SourDoughMobile/` | React Native (Expo) app — Android and iOS |
+| `apps/` | The web calculators: `hub`, `bread`, `yogurt`, `lacto` |
+| `packages/calc` | The baking rules and data (pure TypeScript), shared by the app and the web apps |
+| `packages/core` | Settings, storage, weather and the offline build, for the web apps |
+| `packages/ui` | The shared look of the web apps |
+| `functions/` | The Cloudflare Pages Function for "Ask the baker" (currently switched off) |
 
 > **Note:** The original Python CLI/GUI (`optimizer.py`) has been retired.
-> The mobile/web app is the canonical SourDough experience. The baking science
-> lives in `packages/calc/src/lib/calculations.ts`.
+> The baking science lives in `packages/calc/src/lib/` (start with
+> `calculations.ts`).
 
 ---
 
@@ -150,7 +179,7 @@ feature idea:
 1. **Fork** the repository
 2. **Create a branch** — `git checkout -b fix/something` or `git checkout -b feature/your-idea`
 3. **Make your changes** — follow the existing TypeScript/React Native patterns
-4. **Test** — run `npx expo start` and verify on web or device
+4. **Test** — run `npm test` in the app you changed (`SourDoughMobile/` or `apps/<name>/`) and check it on web or device
 5. **Commit** — use clear commit messages describing what changed and why
 6. **Push** and open a **Pull Request**
 
@@ -183,9 +212,10 @@ the copyright notice and don't hold us liable.
 SourDough takes your privacy seriously:
 
 - ❌ **No accounts required** — no sign-up, no login
-- ✅ **Privacy-minded analytics** — optional Cloudflare Web Analytics measures site use without cookies; no account or recipe data is sent
+- ✅ **No analytics** — neither the apps nor the websites measure your use
 - ❌ **No cloud storage** — your recipes stay on your device
 - ✅ **Location is transient** — if you allow location access, coordinates are used to fetch weather and identify your area; they are not saved with recipes
+- ✅ **No AI service** — the optional "Ask the baker" assistant is switched off
 
 See [SourDoughMobile/PRIVACY.md](SourDoughMobile/PRIVACY.md) for details.
 

@@ -51,7 +51,7 @@ export default function LandingScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.cream }]} edges={['top', 'bottom']}>
       <Seo
-        title="Just Dough It — Easy Sourdough, Yogurt & Ferments"
+        title="Dough & Ferment Calculators — Easy Sourdough, Yogurt & Ferments"
         description="Make low-effort sourdough with a forecast for when to check the rise. Yogurt and lacto-fermentation calculators too. Private, open source, no account required."
         path="/"
       />

@@ -83,7 +83,7 @@ export function InstallAppCard() {
     >
       <View style={styles.titleRow}>
         <Icon name="cellphone" size={20} color={colors.espresso} />
-        <Text style={[styles.title, { color: colors.espresso }]}>Install Just Dough It</Text>
+        <Text style={[styles.title, { color: colors.espresso }]}>Install Dough & Ferment Calculators</Text>
       </View>
       <Text style={[styles.body, { color: colors.muted }]}>
         Add the app to your home screen for quick access and offline use.
@@ -91,7 +91,7 @@ export function InstallAppCard() {
       <TouchableOpacity
         onPress={handleInstall}
         accessibilityRole="button"
-        accessibilityLabel="Install Just Dough It app"
+        accessibilityLabel="Install Dough & Ferment Calculators app"
         style={[styles.button, { backgroundColor: colors.terracotta }]}
       >
         <Text style={[styles.buttonText, { color: colors.white }]}>Install app</Text>

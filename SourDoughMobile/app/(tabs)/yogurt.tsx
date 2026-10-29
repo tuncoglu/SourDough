@@ -305,7 +305,7 @@ export default function YogurtScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.cream }]} edges={['top']}>
       <Seo
-        title="Yogurt Maker Calculator — Just Dough It"
+        title="Yogurt Maker Calculator — Dough & Ferment Calculators"
         description="Incubation time, starter culture, yield and nutrition for 10 yogurt cultures, adjusted to your kitchen temperature. Free, private, open source."
         path="/yogurt"
       />

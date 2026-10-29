@@ -300,7 +300,7 @@ export default function BreadScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.cream }]} edges={['top']}>
       <Seo
-        title="Lazy Sourdough — Just Dough It"
+        title="Lazy Sourdough — Dough & Ferment Calculators"
         description="A one-bowl sourdough formula with no autolyse, no kneading and no folding schedule, plus a temperature-aware estimate for when to check the rise. Free, private, open source."
         path="/bread"
       />
@@ -310,7 +310,7 @@ export default function BreadScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.push('/')} activeOpacity={0.7} accessibilityRole="link" accessibilityLabel="Just Dough It home">
+          <TouchableOpacity onPress={() => router.push('/')} activeOpacity={0.7} accessibilityRole="link" accessibilityLabel="Dough & Ferment Calculators home">
             <Text style={[styles.brand, { color: colors.terracotta }]}>JUST DOUGH IT  /  BREAD</Text>
           </TouchableOpacity>
           <Text style={[styles.heading, { color: colors.espresso }]} accessibilityRole="header">Lazy sourdough.</Text>

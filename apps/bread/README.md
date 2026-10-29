@@ -1,6 +1,6 @@
 # Bread Calculator
 
-Will live at https://bread.sourdoughcalculator.uk. Lazy sourdough: one bowl, no kneading. A temperature-aware rise estimate, your starter tracked properly, and a plan worked back from when you want to slice. **Guidance, not guarantee.**
+Lives at https://bread.sourdoughcalculator.uk. Lazy sourdough: one bowl, no kneading. A temperature-aware rise estimate, your starter tracked properly, and a plan worked back from when you want to slice. **Guidance, not guarantee.**
 
 Same family as the yogurt, lacto-ferment and pasta apps: Vite + React PWA, static files with relative paths, a service worker written at build time, no backend, no accounts, no analytics. State, the feeding log and saved loaves live in `localStorage`. The only network calls are the optional location lookup (Open-Meteo for the forecast and tap-water estimate, OpenStreetMap's Nominatim for your town), made only when you tap the button or turn on auto-detect.
 
@@ -38,4 +38,4 @@ npm run icons
 
 ## Deploying
 
-A Cloudflare Pages project with `apps/bread` as the root, build command `npm ci && npm run build`, output `dist`. Not deployed yet.
+A Cloudflare Pages project with `apps/bread` as the root, build command `npm ci && npm run build`, output `dist`. Deployed automatically to the `bread` project by `.github/workflows/web-apps.yml` on a push to `main`.

@@ -162,7 +162,7 @@ async function requestLocationPermission(): Promise<boolean> {
         {
           title: 'Location access',
           message:
-            'Just Dough It uses your location to detect local temperature and water hardness for accurate baking guidance.',
+            'Dough & Ferment Calculators uses your location to detect local temperature and water hardness for accurate baking guidance.',
           buttonNeutral: 'Ask Me Later',
           buttonNegative: 'Cancel',
           buttonPositive: 'OK',

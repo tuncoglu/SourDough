@@ -91,7 +91,7 @@ function buildSharedLines(
 ): string[] {
   const wu = weightUnit(unitSystem);
   const lines: string[] = [
-    '🥖 Just Dough It Recipe — SourDough',
+    '🥖 Dough & Ferment Calculators Recipe — SourDough',
     '',
     `📍 ${locationSummary}`,
     '',
@@ -153,7 +153,7 @@ function buildSharedLines(
   }
 
   lines.push('');
-  lines.push('Made with Just Dough It 🥖');
+  lines.push('Made with Dough & Ferment Calculators 🥖');
   lines.push('https://github.com/tuncoglu/SourDough');
 
   return lines;

@@ -1,6 +1,6 @@
 # Sourdough Calculators hub
 
-Will live at https://sourdoughcalculator.uk. One static page that links out to the four calculators (bread, yogurt, lacto-ferment, pasta & noodles), plus About and Privacy pages. No React, no scripts of its own, no service worker, no cookies, and nothing loaded from anywhere else: a launcher should be the lightest thing in the family.
+Lives at https://sourdoughcalculator.uk. One static page that links out to the four calculators (bread, yogurt, lacto-ferment, pasta & noodles), plus About and Privacy pages. No React, no scripts of its own, no service worker, no cookies, and nothing loaded from anywhere else: a launcher should be the lightest thing in the family.
 
 The look is the shared stylesheet (`../../packages/ui/src/styles.css`) plus `src/hub.css` for the tiles. Vite bundles the three pages and that stylesheet into `dist/`.
 
@@ -17,4 +17,4 @@ npm run build      # type-check + static files in dist/
 
 ## Deploying
 
-A Cloudflare Pages project with `apps/hub` as the root, build command `npm ci && npm run build`, output `dist`. Not deployed yet. Note that sourdoughcalculator.uk currently serves the old combined app (the Expo web build, from the `sourdough` Pages project); switching the apex to this hub means the old `/bread`, `/ferments` and similar paths need to redirect to the new subdomains first.
+A Cloudflare Pages project with `apps/hub` as the root, build command `npm ci && npm run build`, output `dist`. Deployed automatically by `.github/workflows/web-apps.yml` on a push to `main`, once every web app's checks pass. The old combined app's paths (`/bread`, `/ferments` and similar) redirect to the calculators through `public/_redirects`.

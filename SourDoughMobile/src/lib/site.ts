@@ -6,6 +6,6 @@
  * repository variable) if the app is served from a custom domain.
  */
 export const SITE_URL = process.env.EXPO_PUBLIC_SITE_URL || 'https://sourdoughcalculator.uk';
-export const SITE_NAME = 'Just Dough It';
+export const SITE_NAME = 'Dough & Ferment Calculators';
 export const SITE_DESCRIPTION =
   'Easy sourdough, yogurt and lacto-fermentation tools with timing estimates tailored to your kitchen. No account required.';

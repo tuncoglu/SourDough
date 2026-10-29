@@ -36,7 +36,7 @@ export function Sidebar() {
       {/* Brand */}
       <View style={[styles.brand, { borderBottomColor: colors.border }]}>
         <Text style={[styles.brandMark, { color: colors.terracotta }]}>✳</Text>
-        <Text style={[styles.brandName, { color: colors.espresso }]}>Just Dough It</Text>
+        <Text style={[styles.brandName, { color: colors.espresso }]}>Dough & Ferment</Text>
         <Text style={[styles.brandSub, { color: colors.muted }]}>Good things take time.</Text>
       </View>
 

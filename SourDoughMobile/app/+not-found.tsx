@@ -9,8 +9,8 @@ export default function NotFoundScreen() {
     <>
       <Stack.Screen options={{ title: 'Not found' }} />
       <Seo
-        title="Page not found — Just Dough It"
-        description="This page doesn't exist. Head back to the Just Dough It calculators."
+        title="Page not found — Dough & Ferment Calculators"
+        description="This page doesn't exist. Head back to the Dough & Ferment Calculators calculators."
         path="/+not-found"
       />
       <View style={[styles.container, { backgroundColor: colors.cream }]}>

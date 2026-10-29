@@ -1,5 +1,5 @@
 /**
- * Core type definitions for Just Dough It
+ * Core type definitions for Dough & Ferment Calculators
  */
 
 // ── Flour ──────────────────────────────────────────────────────────────

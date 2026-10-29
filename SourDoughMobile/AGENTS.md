@@ -1,4 +1,4 @@
-# Just Dough It — Architecture
+# Dough & Ferment Calculators — Architecture
 
 ## Routes (app/)
 - **Landing** (index.tsx, "/") — Three-card picker: bread, yogurt, or lacto-fermentation. Footer links to saved recipes, about, and settings.

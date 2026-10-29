@@ -14,7 +14,7 @@ export function ErrorFallback({ error, resetError }: Props) {
       <Text style={styles.emoji}>😔</Text>
       <Text style={[styles.title, { color: colors.espresso }]}>Something went wrong</Text>
       <Text style={[styles.message, { color: colors.muted }]}>
-        Just Dough It encountered an unexpected error. Your recipes and settings are safe.
+        Dough & Ferment Calculators encountered an unexpected error. Your recipes and settings are safe.
       </Text>
 
       {__DEV__ && (

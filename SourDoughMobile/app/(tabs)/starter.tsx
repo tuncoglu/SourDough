@@ -41,7 +41,7 @@ export default function StarterScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.cream }]} edges={['top']}>
       <Seo
-        title="Sourdough Starter — Just Dough It"
+        title="Sourdough Starter — Dough & Ferment Calculators"
         description="Keep track of when you fed your starter, how lively it is, and when it peaks, so the bread plan can use it. Free, private, open source."
         path="/starter"
       />

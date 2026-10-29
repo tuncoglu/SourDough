@@ -268,7 +268,7 @@ function buildFermentDetails(
   );
   lines.push('Keep everything submerged. Skim kahm yeast (harmless); discard if fuzzy mould appears.');
   lines.push('');
-  lines.push(`From Just Dough It — ${input.siteUrl ?? DEFAULT_SITE_URL}/ferments`);
+  lines.push(`From Dough & Ferment Calculators — ${input.siteUrl ?? DEFAULT_SITE_URL}/ferments`);
 
   return lines.join('\n');
 }

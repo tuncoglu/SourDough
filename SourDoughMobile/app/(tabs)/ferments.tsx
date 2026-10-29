@@ -428,7 +428,7 @@ export default function FermentsScreen() {
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.cream }]} edges={['top']}>
       <Seo
-        title="Lacto-Fermentation Calculator — Just Dough It"
+        title="Lacto-Fermentation Calculator — Dough & Ferment Calculators"
         description="Salt, brine and a day-by-day pH timeline for sauerkraut, kimchi, pickles and hot sauce — adjusted to your ambient temperature. Free, private, open source."
         path="/ferments"
       />

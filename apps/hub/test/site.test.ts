@@ -46,7 +46,7 @@ describe('the privacy page', () => {
   });
   it('also carries the Android app\'s full policy, rendered from PRIVACY.md', () => {
     const md = readFileSync(new URL('../../../SourDoughMobile/PRIVACY.md', import.meta.url), 'utf8');
-    expect(privacy).toContain('Privacy Policy for Just Dough It');
+    expect(privacy).toContain('Privacy Policy for Dough &amp; Ferment Calculators');
     for (const heading of md.match(/^## .+$/gm) ?? []) {
       const text = heading.replace(/^## /, '').replace(/[*_`]/g, '');
       expect(privacy).toContain(text.replace(/&/g, '&amp;').replace(/'/g, '&#39;'));

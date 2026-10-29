@@ -240,8 +240,8 @@ export default function RecipeDetailScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.cream }]} edges={['top']}>
       <Seo
-        title="Recipe — Just Dough It"
-        description="A saved sourdough recipe from Just Dough It, with weights, temperatures and fermentation timeline."
+        title="Recipe — Dough & Ferment Calculators"
+        description="A saved sourdough recipe from Dough & Ferment Calculators, with weights, temperatures and fermentation timeline."
         path={id ? `/recipe/${id}` : '/history'}
       />
       <ScrollView

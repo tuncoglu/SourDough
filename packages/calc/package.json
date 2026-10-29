@@ -2,7 +2,7 @@
   "name": "@sourdough/calc",
   "version": "0.0.0",
   "private": true,
-  "description": "The calculation engines, data and models behind Just Dough It and the standalone calculators. Pure TypeScript: no React, no storage, no network.",
+  "description": "The calculation engines, data and models behind Dough & Ferment Calculators and the standalone calculators. Pure TypeScript: no React, no storage, no network.",
   "scripts": {
     "typecheck": "tsc -p ."
   }

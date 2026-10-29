@@ -21,8 +21,8 @@ export default function AboutScreen() {
   return (
     <SafeAreaView style={[aboutStyles.safe, { backgroundColor: colors.cream }]} edges={['top']}>
       <Seo
-        title="About — Just Dough It"
-        description="About Just Dough It: the private, open-source sourdough, yogurt and lacto-fermentation calculators that adapt to your kitchen."
+        title="About — Dough & Ferment Calculators"
+        description="About Dough & Ferment Calculators: the private, open-source sourdough, yogurt and lacto-fermentation calculators that adapt to your kitchen."
         path="/about"
       />
       <KeyboardScreen>
@@ -34,7 +34,7 @@ export default function AboutScreen() {
           {/* Header */}
           <View style={aboutStyles.header}>
             <Text style={[aboutStyles.kicker, { color: colors.terracotta }]}>A LITTLE MORE ABOUT US</Text>
-            <Text style={[aboutStyles.appName, { color: colors.espresso }]}>Just Dough It.</Text>
+            <Text style={[aboutStyles.appName, { color: colors.espresso }]}>Dough & Ferment Calculators.</Text>
             <Text style={[aboutStyles.version, { color: colors.muted }]}>v3.0</Text>
             <Text style={[aboutStyles.tagline, { color: colors.muted }]}>
               Good bread and good ferments, with room for the rest of your life.
@@ -80,7 +80,7 @@ export default function AboutScreen() {
           <View style={[cardStyle, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[sectionTitleStyle, { color: colors.muted }]}>HOW IT WORKS</Text>
             <Text style={[aboutStyles.body, { color: colors.espresso }]}>
-              Just Dough It uses temperature, ingredients and your settings to estimate fermentation timing. If you enable location, local weather can inform the forecast. Estimates are a guide; look at the dough or ferment before moving to the next step.
+              Dough & Ferment Calculators uses temperature, ingredients and your settings to estimate fermentation timing. If you enable location, local weather can inform the forecast. Estimates are a guide; look at the dough or ferment before moving to the next step.
             </Text>
             <Text style={[aboutStyles.body, { color: colors.espresso, marginTop: Spacing.sm }]}>
               The calculation engine is pure TypeScript — no server, no API calls for the math. Everything happens on your device.

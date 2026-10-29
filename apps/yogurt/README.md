@@ -1,6 +1,6 @@
 # Yogurt Calculator
 
-Will live at https://yogurt.sourdoughcalculator.uk. Incubation time, starter, yield and a timeline for ten yogurt cultures (thermophilic and mesophilic) and eight milks. **Guidance, not guarantee.**
+Lives at https://yogurt.sourdoughcalculator.uk. Incubation time, starter, yield and a timeline for ten yogurt cultures (thermophilic and mesophilic) and eight milks. **Guidance, not guarantee.**
 
 Offline-first, mobile-first PWA in the same family as the pasta app: Vite + React, static files with relative paths, a service worker written at build time, no backend, no accounts, no analytics. State and settings live in `localStorage` on this device. The only network call is the optional weather lookup, made only when you tap "Use my location for the forecast" (or turn on auto-detect), and only for mesophilic cultures, which ferment at room temperature.
 
@@ -37,4 +37,4 @@ npm run icons      # regenerate public/icons (no dependencies)
 
 ## Deploying
 
-A Cloudflare Pages project with `apps/yogurt` as the root, build command `npm ci && npm run build`, output `dist`. `public/_headers` sets the cache rules. Not deployed yet.
+A Cloudflare Pages project with `apps/yogurt` as the root, build command `npm ci && npm run build`, output `dist`. `public/_headers` sets the cache rules. Deployed automatically to the `yogurt` project by `.github/workflows/web-apps.yml` on a push to `main`.

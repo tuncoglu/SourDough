@@ -300,8 +300,8 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.cream }]} edges={['top']}>
       <Seo
-        title="Settings — Just Dough It"
-        description="Defaults, units, theme and water hardness for the Just Dough It calculators."
+        title="Settings — Dough & Ferment Calculators"
+        description="Defaults, units, theme and water hardness for the Dough & Ferment Calculators calculators."
         path="/settings"
       />
       <ScrollView

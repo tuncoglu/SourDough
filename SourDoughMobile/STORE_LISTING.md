@@ -1,57 +1,68 @@
-# Google Play Store Listing — Just Dough It
+# Google Play Store Listing — Dough & Ferment Calculators
+
+Console app: **Dough & Ferment Calculators** (`com.sourdough.optimizer`), created 2026-10-29.
+The launcher label on the phone is the shorter **Dough & Ferment**.
+
+## Title (30 chars max)
+> Dough & Ferment Calculators
 
 ## Short description (80 chars max)
-> Sourdough, yogurt & lacto-ferment calculator with live temperature adjustment
+> Sourdough, yogurt and vegetable-ferment calculators that adapt to your kitchen
 
 ## Full description (4000 chars max)
 
-Just Dough It takes the guesswork out of sourdough baking. Whether you're maintaining a starter, building a levain, or scaling a recipe, the app does the math — and adapts it to your actual environment.
+Dough & Ferment Calculators works out the timing and amounts for three home ferments: sourdough bread, yogurt and lacto-fermented vegetables. It adapts the answer to your kitchen, because the same recipe takes hours longer in a cold room than in a warm one.
 
-### Why your kitchen, not a textbook
-Most recipes assume a fixed temperature and water profile. Just Dough It uses your real location to detect ambient temperature and water hardness, then adjusts fermentation timelines and hydration targets accordingly. Cool kitchen? It lengthens the bulk. Soft water? Expect a slack, extensible dough — great for high-hydration bakes.
+### Sourdough bread
+- One simple loaf method: a formula in baker's percentages and six steps (mix, rise, shape, proof, bake, cool), with weights worked out for you as you type.
+- A clock time for every step. Say when the bread should be ready to slice and the app works back to when to mix it, or start now and see when each step falls.
+- Your starter is part of the plan. Use it straight from the fridge, or have the app add a feeding step so it is at its peak when you mix.
+- Save the loaves you make and bring them back later.
 
-### What it does
-- **Starter tracker** — Log feedings (flour, water, ratio). See your starter's history. Feeding reminders coming soon.
-- **Recipe engine** — Build recipes by flour mix, hydration, and inoculation percentage. Every ingredient scales live as you tweak numbers.
-- **Auto-location** — One-tap detection pulls your local temperature (via Open-Meteo) and water hardness (by region), then factors both into your fermentation schedule.
-- **Manual mode** — Prefer privacy? Enter your own temperature and postcode — no location permission needed.
-- **Fermentation timeline** — See a step-by-step schedule: autolyse, stretch-and-folds, bulk fermentation, shaping, proofing, and bake — all adjusted to your conditions.
-- **Flour database** — Built-in profiles for 60+ Shipton Mill flours plus generics: bread flour, whole wheat, rye, spelt, einkorn, and more — with protein percentages and category data.
-- **Yogurt calculator** — 10 starter cultures (thermophilic & mesophilic), milk picker, incubation timeline with min/max range, yield & nutrition, and previous-batch starter.
-- **Lacto-fermentation calculator** — 7+ ferment styles, 25+ vegetables, salt calculator with volume conversion, a day-by-day LAB succession timeline, and timing adjusted to your actual conditions (forecast temperature, salt level, water chemistry, vegetable mix and cut size) with the reasoning shown. Flags vegetables whose sugar cannot reach full sourness, and adds one-tap "add to Google Calendar" reminders for the ready day, a taste check, or the whole ferment.
+### Starter log
+- Log each feeding with the flour (or several flours), water and ratio.
+- See where your starter is now, when it should peak, and for how long it stays good to use, at your kitchen's temperature.
+- Mark when it actually peaked. After a few marked peaks the app uses your own starter's rhythm instead of its default.
+
+### Yogurt
+- Pick a thermophilic or mesophilic culture and your milk, and get an incubation time.
+- Estimates yield and nutrition, and keeps a note of your previous batch for the next starter.
+
+### Lacto-fermented vegetables
+- Salt calculator for dry-salting, brine and mash methods.
+- Dozens of vegetables and ready-made styles, or build your own mix.
+- A day-by-day timeline, with the timing adjusted for your temperature, salt level, water, vegetables and how finely they are cut. The reasoning is shown, not hidden.
+- Tells you when a vegetable doesn't have enough natural sugar to turn fully sour.
+- Optional reminders: send the ready day or a taste check to Google Calendar with one tap.
+
+### Made for your kitchen
+- With your permission, the app uses your location to look up the local temperature and water hardness. Prefer not to share it? Type in your own kitchen temperature and a UK postcode.
+- Metric or imperial, light or dark.
 
 ### Private by design
-No accounts. No analytics. No tracking. Your recipes and starter logs stay on your device. When you enable location, only your coordinates are sent (to Open-Meteo for weather and OpenStreetMap for geocoding) — nothing else. See the privacy policy linked below for full details.
+No account, no ads, no analytics, no tracking. Your recipes, starter log and history stay on your phone. When you use location, only your coordinates are sent, to Open-Meteo for the weather and to OpenStreetMap for the place name. Nothing else leaves the app unless you tap a calendar link.
 
-### Perfect for
-- Home bakers moving beyond "winging it"
-- Sourdough beginners who want predictable results
-- Experienced bakers adapting recipes to new climates or flours
-
-Download and make your next loaf your best one.
+The same calculators also run in any browser at sourdoughcalculator.uk.
 
 ---
 
-## Feature graphic (1024 × 500 px)
-Placeholder — create one showing:
-- App icon + "Just Dough It" title
-- Tagline: "Science-driven sourdough, adjusted to your kitchen"
-- Warm, bakery-inspired background (#FFF5ED)
+## Contact (public)
+- Email: info@sourdoughcalculator.uk
+- Website: https://sourdoughcalculator.uk
+- Privacy policy: https://sourdoughcalculator.uk/privacy
 
-## Screenshots (phone, min 2 — up to 8)
-Suggested captures:
-1. Starter feeding log screen
-2. Recipe builder with live ingredient scaling
-3. Fermentation timeline view
-4. Location/weather bar showing detected temp
-5. Flour picker with protein percentages
-6. History screen showing past bakes
+## Graphics
+- App icon 512 × 512: `assets/images/icon.png` resized
+- Feature graphic 1024 × 500: `../play-assets/feature-graphic.png` (title and tagline must say Dough & Ferment Calculators)
+- Phone screenshots (min 2, up to 8): `../play-assets/screenshots/`, taken from the app itself, not a home screen
+
+Screenshot ideas, in order: bread plan with the clock times, starter status, yogurt, lacto timeline, settings (units and kitchen temperature).
 
 ## Category
-Food & Drink > Baking
+Food & Drink
 
 ## Tags
-sourdough, bread, baking, starter, recipe calculator, fermentation
+sourdough, bread, baking, yogurt, fermentation, calculator
 
 ## Target audience
-18+, all countries where the Play Store operates
+18+, all countries where Google Play operates

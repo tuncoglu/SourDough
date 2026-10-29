@@ -1,4 +1,4 @@
-/* Just Dough It service worker.
+/* Dough & Ferment Calculators service worker.
  *
  * This is intentionally small: it makes the static export installable on
  * Android Chrome (a fetch handler is part of the installability criteria)

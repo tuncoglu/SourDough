@@ -202,7 +202,7 @@ describe('buildFermentEvent', () => {
     expect(details).toContain('Ready to refrigerate around day 10');
     expect(details).toContain('keeps');
     expect(details).toContain('souring after that');
-    expect(details).toContain('From Just Dough It');
+    expect(details).toContain('From Dough & Ferment Calculators');
   });
 
   it('lists the water weight for brine ferments only', () => {

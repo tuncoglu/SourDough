@@ -1,8 +1,8 @@
-# Privacy Policy for Just Dough It
+# Privacy Policy for Dough & Ferment Calculators
 
-**Last updated:** October 28, 2026
+**Last updated:** October 29, 2026
 
-Just Dough It ("the App") is a baking tool with calculators for sourdough
+Dough & Ferment Calculators ("the App") is a baking tool with calculators for sourdough
 bread, yogurt, and lacto-fermentation. This policy explains what data the
 App handles and how it is used.
 

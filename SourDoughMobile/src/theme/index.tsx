@@ -1,5 +1,5 @@
 /**
- * Just Dough It — warm bakery color palette
+ * Dough & Ferment Calculators — warm bakery color palette
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';

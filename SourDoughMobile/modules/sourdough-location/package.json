@@ -1,7 +1,7 @@
 {
   "name": "sourdough-location",
   "version": "1.0.0",
-  "description": "Degoogled Android location module for Just Dough It",
+  "description": "Degoogled Android location module for Dough & Ferment Calculators",
   "main": "index.js",
   "types": "index.d.ts",
   "license": "MIT",
