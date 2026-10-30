@@ -1,5 +1,5 @@
 import { Tabs, usePathname } from 'expo-router';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Platform, StyleSheet } from 'react-native';
 
 import { useBreakpoint } from '@/src/hooks/useBreakpoint';
 import { Sidebar } from '@/src/components/Sidebar';
@@ -60,6 +60,9 @@ export default function TabLayout() {
                 ...tabBarStyle,
                 // Hide the bottom tab bar on desktop (sidebar replaces it)
                 display: isDesktop ? 'none' : 'flex',
+                // The icon circle plus its label is taller than the default bar; on a phone the system inset
+                // absorbs the difference, on the web there is no inset and the label would be clipped.
+                ...(Platform.OS === 'web' ? { height: 64 } : null),
               },
               headerShown: false,
             }}
@@ -97,6 +100,7 @@ export default function TabLayout() {
               options={{
                 title: 'More',
                 // History, Settings and About open from More; the bar keeps More lit while they are showing.
+                // (The tint options apply to the whole bar, so More lights itself up here rather than through them.)
                 tabBarIcon: ({ focused, color }) => (
                   <TabIcon name={TAB_ICONS.more} focused={focused || moreActive} color={(moreActive ? colors.terracotta : color) as string} />
                 ),
