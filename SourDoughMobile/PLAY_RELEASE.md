@@ -13,13 +13,13 @@ package; a draft release goes up with `play-upload.sh`.
 | Item | State |
 |---|---|
 | Console app created | done |
-| Release AAB on the internal track | draft, build 3 (versionCode 3, 3.0.0), see "Builds" |
+| Release AAB on the internal track | published to internal testing 2026-10-30 (build 3, versionCode 3, 3.0.0; tester list "HR Buzz testers"), see "Builds" |
 | Store listing | saved in Console, "Ready to send for review" (title, short and full description, icon, feature graphic, 7 screenshots); source `STORE_LISTING.md` |
 | Privacy policy | https://sourdoughcalculator.uk/privacy (renders `PRIVACY.md`); needs a push to show the new name |
 | Setup forms in Console | all done (content rating by the user; AI-generated-assets declaration: icon and feature graphic labelled, because the icon is AI-made) |
 | Screenshots | 7 uploaded (`../play-assets/screenshots/`), rendered from the app's own web build at phone size (412x824 at 2.62x, 1079x2158) because the emulator crashes on this machine and the phone was not connected; native status bar and nav bar are not in them. Promotion eligibility wants 1080 px or more per side, these are 1079 wide |
 | Feature graphic | done (`../play-assets/feature-graphic.png`, 1024x500) |
-| Sent for review | no |
+| Sent for review | yes, 2026-10-30: 8 changes (listing, content rating, audience, privacy policy, ads, data safety, health, category); Play's quick checks run first, review usually takes up to about 7 days |
 
 ## Builds
 
@@ -76,7 +76,7 @@ can be filled through the Console with browser tools.
 
 ## Open items
 
-- Testers for the internal track, then promote or send for review.
+- Wait for review; then promote to closed or production when ready. Add a deobfuscation file only if R8/proguard is enabled (Play warns about its absence).
 - Optional: native screenshots from the phone, at 1080 px or more wide.
 - Expo hooks and the Android builds still use `com.sourdough.optimizer` unchanged; the app
   name is not the package name, so nothing needs migrating.
