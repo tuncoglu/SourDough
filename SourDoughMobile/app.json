@@ -2,7 +2,7 @@
   "expo": {
     "name": "Dough & Ferment",
     "slug": "sourdough-optimizer",
-    "version": "3.0.0",
+    "version": "3.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "sourdough",
@@ -13,7 +13,7 @@
     },
     "android": {
       "package": "com.sourdough.optimizer",
-      "versionCode": 3,
+      "versionCode": 4,
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.READ_EXTERNAL_STORAGE",
