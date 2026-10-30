@@ -204,30 +204,68 @@ export function KV({ rows }: { rows: Array<[string, ReactNode]> }) {
   );
 }
 
+export type AppId = 'bread' | 'yogurt' | 'lacto' | 'pasta';
+
 export interface OtherApp {
+  id: AppId;
   name: string;
   host: string;
 }
 
-/** Links to the sibling calculators. Each keeps its own settings on this device. */
-export function OtherCalculators({ apps }: { apps: OtherApp[] }) {
-  return (
-    <nav className="card other" aria-label="Other calculators">
-      <p className="lg">More from Sourdough Calculators</p>
-      {apps.map((a) => (
-        <a key={a.host} className="olink" href={`https://${a.host}`}>
-          {a.name}
-          <span>{a.host}</span>
-        </a>
-      ))}
-      <p className="hint">Each calculator keeps its own settings on this device.</p>
-    </nav>
-  );
-}
-
-export const SIBLING_APPS: Array<OtherApp & { id: 'bread' | 'yogurt' | 'lacto' | 'pasta' }> = [
+export const SIBLING_APPS: OtherApp[] = [
   { id: 'bread', name: 'Bread', host: 'bread.sourdoughcalculator.uk' },
   { id: 'yogurt', name: 'Yogurt', host: 'yogurt.sourdoughcalculator.uk' },
   { id: 'lacto', name: 'Lacto-ferment', host: 'lactoferment.sourdoughcalculator.uk' },
   { id: 'pasta', name: 'Pasta & noodles', host: 'pasta.sourdoughcalculator.uk' },
 ];
+
+const SITE = 'https://sourdoughcalculator.uk';
+const SOURCE = 'https://github.com/tuncoglu/SourDough';
+
+/** Every calculator, with the current one marked and the rest linking out. Each keeps its own settings. */
+export function OtherCalculators({ current }: { current: AppId }) {
+  return (
+    <nav className="card other" aria-label="Sourdough Calculators">
+      <p className="lg">Sourdough Calculators</p>
+      {SIBLING_APPS.map((a) =>
+        a.id === current ? (
+          <div key={a.id} className="olink here" aria-current="page">
+            {a.name}
+            <span>This one</span>
+          </div>
+        ) : (
+          <a key={a.id} className="olink" href={`https://${a.host}`}>
+            {a.name}
+            <span>{a.host}</span>
+          </a>
+        ),
+      )}
+      <p className="hint">Each calculator is its own app and keeps its own settings.</p>
+    </nav>
+  );
+}
+
+/** The last tab of every web app: Settings, the other calculators, and the About, Privacy and Source links. */
+export function MorePage({ current, onSettings }: { current: AppId; onSettings: () => void }) {
+  return (
+    <div className="stack">
+      <section className="card other" aria-label="Settings">
+        <button type="button" className="olink row" onClick={onSettings}>
+          <span>
+            Settings
+            <small>Units, kitchen temperature, location. Kept on this device, for this calculator only.</small>
+          </span>
+          <b aria-hidden="true">›</b>
+        </button>
+      </section>
+      <OtherCalculators current={current} />
+      <nav className="links" aria-label="About">
+        <a href={`${SITE}/about`}>About</a>
+        <a href={`${SITE}/privacy`}>Privacy</a>
+        <a href={SOURCE} rel="noreferrer">
+          Source on GitHub
+        </a>
+      </nav>
+    </div>
+  );
+}

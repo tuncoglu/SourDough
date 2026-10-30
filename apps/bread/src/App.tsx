@@ -14,7 +14,7 @@ import {
 } from '@sourdough/calc/lib/starterLog';
 import { DEFAULT_SETTINGS, applyTheme, loadSettings, saveSettings, type Settings } from '@sourdough/core/settings';
 import type { Weather } from '@sourdough/core/weather';
-import { Header, TabBar, type TabDef } from '@sourdough/ui/components';
+import { Header, MorePage, TabBar, type TabDef } from '@sourdough/ui/components';
 import { Calculator } from './Calculator';
 import type { Ctx, RoomSource } from './ctx';
 import { HistoryPage } from './HistoryPage';
@@ -26,15 +26,16 @@ import { DEFAULT_STATE, formFromDefaults, type AppState, type BreadDefaults, typ
 import { SETTINGS_KEY, freshWeather, loadFeedings, loadLoaves, loadState, resetAll, saveFeedings, saveLoaves, saveState } from './store';
 import { loafText, shareText } from './share';
 
-type Tab = 'calc' | 'starter' | 'history' | 'settings';
+type Tab = 'calc' | 'starter' | 'history' | 'more' | 'settings';
 
 const SUBTITLES: Record<Tab, string> = {
   calc: 'Lazy sourdough: one bowl, no kneading',
   starter: 'Your starter: state, feeding and fridge',
   history: 'The loaves you saved, kept on this device.',
+  more: 'Settings and the other calculators.',
   settings: 'Set your defaults once; adjust any loaf as you go.',
 };
-const TITLES: Record<Tab, string> = { calc: 'Bread', starter: 'Starter', history: 'History', settings: 'Settings' };
+const TITLES: Record<Tab, string> = { calc: 'Bread', starter: 'Starter', history: 'History', more: 'More', settings: 'Settings' };
 
 const ASSUMED_ROOM_C = 22;
 
@@ -197,7 +198,7 @@ export default function App() {
     { id: 'calc', label: 'Calculator' },
     { id: 'starter', label: 'Starter' },
     { id: 'history', label: loaves.length > 0 ? `History (${loaves.length})` : 'History' },
-    { id: 'settings', label: 'Settings' },
+    { id: 'more', label: 'More' },
   ];
 
   return (
@@ -232,6 +233,7 @@ export default function App() {
             onDelete={(id) => setLoaves((l) => l.filter((x) => x.id !== id))}
           />
         )}
+        {tab === 'more' && <MorePage current="bread" onSettings={() => setTab('settings')} />}
         {tab === 'settings' && (
           <SettingsPage
             settings={settings}
@@ -252,7 +254,7 @@ export default function App() {
           />
         )}
       </main>
-      <TabBar tabs={tabs} active={tab} onChange={setTab} />
+      <TabBar tabs={tabs} active={tab === 'settings' ? 'more' : tab} onChange={setTab} />
     </div>
   );
 }

@@ -1,5 +1,5 @@
-import { Tabs } from 'expo-router';
-import { View, StyleSheet } from 'react-native';
+import { Tabs, usePathname } from 'expo-router';
+import { View, Text, StyleSheet } from 'react-native';
 
 import { useBreakpoint } from '@/src/hooks/useBreakpoint';
 import { Sidebar } from '@/src/components/Sidebar';
@@ -31,12 +31,15 @@ const TAB_ICONS = {
   starter: 'flask-outline',
   yogurt: 'cup-outline',
   ferments: 'barrel-outline',
-  history: 'history',
-  settings: 'cog-outline',
-  about: 'information-outline',
+  more: 'dots-horizontal',
 } as const;
 
+// Reached from the More tab, not from the bar.
+const HIDDEN_SCREENS = ['history', 'settings', 'about'] as const;
+
 export default function TabLayout() {
+  const pathname = usePathname();
+  const moreActive = pathname === '/more' || HIDDEN_SCREENS.some((n) => pathname === `/${n}`);
   const { isDesktop } = useBreakpoint();
   const { colors } = useAppTheme();
   const tabBarStyle = useTabBarStyle();
@@ -64,7 +67,7 @@ export default function TabLayout() {
             <Tabs.Screen
               name="bread"
               options={{
-                title: 'Sourdough',
+                title: 'Bread',
                 tabBarIcon: ({ focused, color }) => <TabIcon name={TAB_ICONS.calculator} focused={focused} color={color as string} />,
               }}
             />
@@ -85,31 +88,28 @@ export default function TabLayout() {
             <Tabs.Screen
               name="ferments"
               options={{
-                title: 'Lacto-ferment',
+                title: 'Ferment',
                 tabBarIcon: ({ focused, color }) => <TabIcon name={TAB_ICONS.ferments} focused={focused} color={color as string} />,
               }}
             />
             <Tabs.Screen
-              name="history"
+              name="more"
               options={{
-                title: 'History',
-                tabBarIcon: ({ focused, color }) => <TabIcon name={TAB_ICONS.history} focused={focused} color={color as string} />,
+                title: 'More',
+                // History, Settings and About open from More; the bar keeps More lit while they are showing.
+                tabBarIcon: ({ focused, color }) => (
+                  <TabIcon name={TAB_ICONS.more} focused={focused || moreActive} color={(moreActive ? colors.terracotta : color) as string} />
+                ),
+                tabBarLabel: ({ focused, color }) => (
+                  <Text style={[styles.tabLabel, { color: moreActive ? colors.terracotta : color }, (focused || moreActive) && styles.tabLabelActive]}>
+                    More
+                  </Text>
+                ),
               }}
             />
-            <Tabs.Screen
-              name="settings"
-              options={{
-                title: 'Settings',
-                tabBarIcon: ({ focused, color }) => <TabIcon name={TAB_ICONS.settings} focused={focused} color={color as string} />,
-              }}
-            />
-            <Tabs.Screen
-              name="about"
-              options={{
-                title: 'About',
-                tabBarIcon: ({ focused, color }) => <TabIcon name={TAB_ICONS.about} focused={focused} color={color as string} />,
-              }}
-            />
+            {HIDDEN_SCREENS.map((name) => (
+              <Tabs.Screen key={name} name={name} options={{ href: null }} />
+            ))}
           </Tabs>
         </View>
       </View>
@@ -128,6 +128,8 @@ const styles = StyleSheet.create({
     flex: 1,
     overflow: 'visible' as any,
   },
+  tabLabel: { fontSize: 10, fontWeight: '500' },
+  tabLabelActive: { fontWeight: '800' },
   tabIconWrap: {
     width: 32,
     height: 32,

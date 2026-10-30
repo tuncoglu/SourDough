@@ -24,7 +24,9 @@ npm run icons
 | Calculator | Flour (up to three), your starter (fed first or from the fridge), dough percentages, kitchen, vessel, **When** (mix now, or ready to slice by a time), then the recipe, the steps with a clock time each, a rise check, and what the estimate assumes |
 | Starter | Its state from the feeding log, your next bake, how fast it runs in your kitchen, your own learned peak, what its state does to the rise, a feed form (up to three flours) and the log |
 | History | Loaves you saved, to open again |
-| Settings | Default values, kitchen temperature, water hardness, theme, units, reset |
+| More | A Settings row, the four Sourdough Calculators (this one marked, the rest links; pasta included), and the About, Privacy and Source links |
+
+Settings (default values, kitchen temperature, water hardness, theme, units, reset) opens from More, and the bar keeps More lit while it shows. The same last tab is in the yogurt and lacto-ferment apps (`MorePage` in `@sourdough/ui`).
 
 ## Behaviour worth knowing
 

@@ -47,10 +47,9 @@ interface Props {
   kitchenTemp?: { explain: string; forecastNote?: string };
   /** Whether the settings could be written to this browser. */
   saved: boolean;
-  links: ReactNode;
 }
 
-export function SettingsScreen({ settings, onChange, onReset, children, afterKitchen, kitchenTemp, saved, links }: Props) {
+export function SettingsScreen({ settings, onChange, onReset, children, afterKitchen, kitchenTemp, saved }: Props) {
   return (
     <div className="stack">
       {children}
@@ -115,9 +114,6 @@ export function SettingsScreen({ settings, onChange, onReset, children, afterKit
         Reset to factory defaults
       </button>
 
-      <nav className="links" aria-label="More">
-        {links}
-      </nav>
     </div>
   );
 }

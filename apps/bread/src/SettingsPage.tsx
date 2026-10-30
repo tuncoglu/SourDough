@@ -45,11 +45,6 @@ export function SettingsPage({ settings, onChange, defaults, onDefaults, onReset
           why="Hard water tightens gluten and can slightly slow fermentation."
         />
       }
-      links={
-        <a href="https://github.com/tuncoglu/SourDough" rel="noreferrer">
-          Source on GitHub
-        </a>
-      }
     >
       <fieldset className="card">
         <legend>Default values</legend>

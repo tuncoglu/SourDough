@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Linking } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Spacing, FontSize, BorderRadius, MaxWidth, useAppTheme } from '../theme';
 import { Icon, type IconName } from './Icon';
@@ -63,6 +63,17 @@ export function Sidebar() {
             </TouchableOpacity>
           );
         })}
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => Linking.openURL('https://pasta.sourdoughcalculator.uk')}
+          activeOpacity={0.6}
+          accessibilityRole="link"
+          accessibilityLabel="Pasta and noodles, opens in your browser"
+        >
+          <Icon name="pasta" size={22} color={colors.muted} />
+          <Text style={[styles.navLabel, { color: colors.muted }]}>Pasta &amp; noodles</Text>
+          <Icon name="open-in-new" size={16} color={colors.muted} />
+        </TouchableOpacity>
       </ScrollView>
 
       {/* Footer */}

@@ -24,7 +24,7 @@ npm run icons      # regenerate public/icons (no dependencies)
 | `src/form.ts` | The form and its rules: culture defaults, starter amounts that follow the milk volume until typed, stored-state validation |
 | `src/Calculator.tsx`, `src/Results.tsx` | The calculator screen and the result cards |
 | `src/display.ts` | Turns the engine's text (emoji, em dashes) into the design's plain sentences |
-| `src/SettingsPage.tsx` | Settings: kitchen temperature, theme, units, reset |
+| `src/SettingsPage.tsx` | Settings: kitchen temperature, theme, units, reset. Opens from the More tab (`MorePage` in `@sourdough/ui`), which also lists the other calculators; the bar is Calculator and More |
 | `src/store.ts` | Storage keys and the "is this weather still fresh" rule |
 | `scripts/make-icons.mjs` | The jar icon, drawn without dependencies |
 

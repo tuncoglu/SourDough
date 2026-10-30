@@ -1,18 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
 import { applyTheme, loadSettings, saveSettings, DEFAULT_SETTINGS, type Settings } from '@sourdough/core/settings';
 import type { Weather } from '@sourdough/core/weather';
-import { Header, TabBar, type TabDef } from '@sourdough/ui/components';
+import { Header, MorePage, TabBar, type TabDef } from '@sourdough/ui/components';
 import { Calculator } from './Calculator';
 import { DEFAULT_STATE, type AppState, type Form } from './form';
 import { YogurtLogo } from './Logo';
 import { SettingsPage } from './SettingsPage';
 import { SETTINGS_KEY, freshWeather, loadState, resetAll, saveState } from './store';
 
-type Tab = 'calc' | 'settings';
+type Tab = 'calc' | 'more' | 'settings';
 const TABS: TabDef<Tab>[] = [
   { id: 'calc', label: 'Calculator' },
-  { id: 'settings', label: 'Settings' },
+  { id: 'more', label: 'More' },
 ];
+
+const SUBTITLES: Record<Tab, string> = {
+  calc: 'Choose your culture and milk. We’ll help with the wait.',
+  more: 'Settings and the other calculators.',
+  settings: 'Set your defaults once; adjust any batch as you go.',
+};
 
 export default function App() {
   const [state, setState] = useState<AppState>(loadState);
@@ -32,14 +38,16 @@ export default function App() {
   return (
     <div className="app">
       <Header
-        title={tab === 'settings' ? 'Settings' : 'Yogurt'}
-        subtitle={tab === 'settings' ? 'Set your defaults once; adjust any batch as you go.' : 'Choose your culture and milk. We’ll help with the wait.'}
+        title={tab === 'settings' ? 'Settings' : tab === 'more' ? 'More' : 'Yogurt'}
+        subtitle={SUBTITLES[tab]}
         logo={<span className="logo"><YogurtLogo /></span>}
       />
       <main>
-        {tab === 'calc' ? (
+        {tab === 'calc' && (
           <Calculator form={state.form} setForm={setForm} settings={settings} weather={weather} onWeather={setWeather} />
-        ) : (
+        )}
+        {tab === 'more' && <MorePage current="yogurt" onSettings={() => setTab('settings')} />}
+        {tab === 'settings' && (
           <SettingsPage
             settings={settings}
             onChange={setSettings}
@@ -54,7 +62,7 @@ export default function App() {
           />
         )}
       </main>
-      <TabBar tabs={TABS} active={tab} onChange={setTab} />
+      <TabBar tabs={TABS} active={tab === 'settings' ? 'more' : tab} onChange={setTab} />
     </div>
   );
 }

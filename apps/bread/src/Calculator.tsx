@@ -1,4 +1,3 @@
-import { OtherCalculators, SIBLING_APPS } from '@sourdough/ui/components';
 import { BakeCard, DoughCard, FlourCard, KitchenCard, StarterCard, WhenCard } from './Cards';
 import type { Ctx } from './ctx';
 import { Assumptions, RecipeCard, RiseCheck, StepsCard, type RecipeActions } from './Recipe';
@@ -30,8 +29,6 @@ export function Calculator({ c, a }: { c: Ctx; a: RecipeActions }) {
           Enter the weight of your flour, and the water, starter and salt percentages.
         </p>
       )}
-
-      <OtherCalculators apps={SIBLING_APPS.filter((x) => x.id !== 'bread')} />
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { renderToString } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { YOGURT_CULTURES } from '@sourdough/calc/data/yogurtCultures';
 import { DEFAULT_SETTINGS } from '@sourdough/core/settings';
+import { MorePage } from '@sourdough/ui/components';
 import { Calculator } from './Calculator';
 import { SettingsPage } from './SettingsPage';
 import { DEFAULT_FORM, selectCulture } from './form';
@@ -63,5 +64,17 @@ describe('settings', () => {
   it('renders theme, units, kitchen temperature and reset', () => {
     const out = renderToString(<SettingsPage settings={DEFAULT_SETTINGS} onChange={() => {}} onReset={() => {}} weather={null} saved />);
     for (const s of ['Kitchen temperature', 'Theme', 'Units', 'Reset to factory defaults']) expect(out).toContain(s);
+  });
+});
+
+describe('more', () => {
+  it('lists Settings and every calculator, marks this one and links the rest, pasta included', () => {
+    const out = renderToString(<MorePage current="yogurt" onSettings={() => {}} />);
+    expect(out).toContain('Settings');
+    expect(out).toContain('This one');
+    for (const host of ['bread.sourdoughcalculator.uk', 'lactoferment.sourdoughcalculator.uk', 'pasta.sourdoughcalculator.uk'])
+      expect(out).toContain(`href="https://${host}"`);
+    expect(out).not.toContain('href="https://yogurt.sourdoughcalculator.uk"');
+    for (const s of ['About', 'Privacy', 'Source on GitHub']) expect(out).toContain(s);
   });
 });

@@ -4,7 +4,7 @@ import { historyDraft, planFromForm, restoreFrom, type LactoForm } from '@sourdo
 import { hardnessFor } from '@sourdough/calc/lib/hardnessFor';
 import { DEFAULT_SETTINGS, applyTheme, loadSettings, saveSettings, type Settings } from '@sourdough/core/settings';
 import type { Weather } from '@sourdough/core/weather';
-import { Header, TabBar, type TabDef } from '@sourdough/ui/components';
+import { Header, MorePage, TabBar, type TabDef } from '@sourdough/ui/components';
 import { Calculator } from './Calculator';
 import { DEFAULT_STATE, type AppState } from './form';
 import { HistoryPage } from './HistoryPage';
@@ -13,11 +13,12 @@ import { HISTORY_SETTLE_MS, record, type LastRecord } from './recorder';
 import { SettingsPage } from './SettingsPage';
 import { SETTINGS_KEY, freshWeather, loadHistory, loadState, resetAll, saveHistory, saveState } from './store';
 
-type Tab = 'calc' | 'history' | 'settings';
+type Tab = 'calc' | 'history' | 'more' | 'settings';
 
 const SUBTITLES: Record<Tab, string> = {
   calc: 'Choose what goes in. We’ll help with salt and timing.',
   history: 'Every ferment you worked out, kept on this device.',
+  more: 'Settings and the other calculators.',
   settings: 'Set your defaults once; adjust any jar as you go.',
 };
 
@@ -74,7 +75,7 @@ export default function App() {
   return (
     <div className="app">
       <Header
-        title={tab === 'settings' ? 'Settings' : tab === 'history' ? 'History' : 'Lacto-ferment'}
+        title={tab === 'settings' ? 'Settings' : tab === 'more' ? 'More' : tab === 'history' ? 'History' : 'Lacto-ferment'}
         subtitle={SUBTITLES[tab]}
         logo={<span className="logo"><LactoLogo /></span>}
       />
@@ -103,6 +104,7 @@ export default function App() {
             onDelete={(id) => setHistory((h) => h.filter((e) => e.id !== id))}
           />
         )}
+        {tab === 'more' && <MorePage current="lacto" onSettings={() => setTab('settings')} />}
         {tab === 'settings' && (
           <SettingsPage
             settings={settings}
@@ -125,9 +127,9 @@ export default function App() {
         tabs={[
           { id: 'calc', label: 'Calculator' },
           { id: 'history', label: history.length > 0 ? `History (${history.length})` : 'History' },
-          { id: 'settings', label: 'Settings' },
+          { id: 'more', label: 'More' },
         ] satisfies TabDef<Tab>[]}
-        active={tab}
+        active={tab === 'settings' ? 'more' : tab}
         onChange={setTab}
       />
     </div>

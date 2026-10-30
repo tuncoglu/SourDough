@@ -265,6 +265,13 @@ details.plain > summary { font-weight: 700; font-size: 1.05rem; min-height: 44px
   border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none; font-weight: 700;
 }
 .olink span { color: var(--muted); font-weight: 400; font-size: 0.85rem; margin-left: auto; }
+.olink.here { background: var(--accent); margin: 0 -14px; padding: 6px 14px; }
+.olink.here span { color: var(--brand); font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.other .olink:last-of-type { border-bottom: 0; }
+button.olink { width: 100%; background: none; border: 0; font: inherit; font-weight: 700; text-align: left; cursor: pointer; flex-wrap: nowrap; }
+button.olink > span { color: var(--ink); font-size: inherit; font-weight: 700; margin-left: 0; }
+button.olink small { display: block; color: var(--muted); font-weight: 400; font-size: 0.85rem; }
+button.olink b { color: var(--muted); font-size: 1.6rem; font-weight: 400; }
 .links { display: flex; flex-wrap: wrap; gap: 4px 18px; justify-content: center; }
 .links a { color: var(--focus); display: inline-flex; align-items: center; min-height: 44px; }
 

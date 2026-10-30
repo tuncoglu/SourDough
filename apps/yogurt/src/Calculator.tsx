@@ -7,7 +7,7 @@ import { computeFermentTemp } from '@sourdough/calc/lib/lactoCalculations';
 import { formatTemp } from '@sourdough/calc/lib/unitConversion';
 import type { Settings } from '@sourdough/core/settings';
 import type { Weather } from '@sourdough/core/weather';
-import { Check, ChipGroup, KV, Note, NumField, OtherCalculators, SIBLING_APPS } from '@sourdough/ui/components';
+import { Check, ChipGroup, KV, Note, NumField } from '@sourdough/ui/components';
 import { WeatherField } from '@sourdough/ui/WeatherField';
 import {
   recommendedSachets,
@@ -202,8 +202,6 @@ export function Calculator({ form, setForm, settings, weather, onWeather }: Prop
           {plan.error}
         </p>
       )}
-
-      <OtherCalculators apps={SIBLING_APPS.filter((a) => a.id !== 'yogurt')} />
     </div>
   );
 }

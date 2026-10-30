@@ -31,13 +31,6 @@ export function SettingsPage({ settings, onChange, onReset, weather, saved }: Pr
           ? `Today the forecast gives ${formatTemp(forecast.effectiveTemp, settings.units, 1)} outdoors.`
           : 'No forecast yet. Use your location on the calculator screen to get one.',
       }}
-      links={
-        <>
-          <a href="https://github.com/tuncoglu/SourDough" rel="noreferrer">
-            Source on GitHub
-          </a>
-        </>
-      }
     />
   );
 }

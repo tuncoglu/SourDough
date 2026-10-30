@@ -25,7 +25,7 @@ npm run icons
 | `src/Results.tsx` | Salt, timeline with the arithmetic, calendar links, taste check, tips, water, science |
 | `src/HistoryPage.tsx`, `src/recorder.ts` | The history: recorded by itself once the inputs settle; edits to the same jar shortly after replace the last entry |
 | `src/form.ts`, `src/store.ts` | Stored-state validation, storage keys, the "is this weather still fresh" rule |
-| `src/SettingsPage.tsx` | Kitchen temperature, water hardness, theme, units, reset |
+| `src/SettingsPage.tsx` | Kitchen temperature, water hardness, theme, units, reset. Opens from the More tab (`MorePage` in `@sourdough/ui`), which also lists the other calculators; the bar is Calculator, History and More |
 
 ## Behaviour worth knowing
 

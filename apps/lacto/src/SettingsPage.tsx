@@ -40,11 +40,6 @@ export function SettingsPage({ settings, onChange, onReset, weather, saved }: Pr
           why="It nudges the timing by a few percent at most, and only for brine ferments."
         />
       }
-      links={
-        <a href="https://github.com/tuncoglu/SourDough" rel="noreferrer">
-          Source on GitHub
-        </a>
-      }
     />
   );
 }

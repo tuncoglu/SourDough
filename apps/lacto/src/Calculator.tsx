@@ -23,7 +23,7 @@ import { hardnessFor } from '@sourdough/calc/lib/hardnessFor';
 import { formatTemp } from '@sourdough/calc/lib/unitConversion';
 import type { Settings } from '@sourdough/core/settings';
 import type { Weather } from '@sourdough/core/weather';
-import { Check, ChipGroup, NumField, OtherCalculators, SIBLING_APPS } from '@sourdough/ui/components';
+import { Check, ChipGroup, NumField } from '@sourdough/ui/components';
 import { KitchenTempField } from '@sourdough/ui/KitchenTempField';
 import { WeatherField } from '@sourdough/ui/WeatherField';
 import { CalendarCard, SaltCard, ScienceCard, TasteCheck, TimelineCard, TipsCard, WaterCard } from './Results';
@@ -301,8 +301,6 @@ export function Calculator({ form, setForm, settings, setSettings, weather, onWe
           {plan.error}
         </p>
       )}
-
-      <OtherCalculators apps={SIBLING_APPS.filter((a) => a.id !== 'lacto')} />
     </div>
   );
 }
