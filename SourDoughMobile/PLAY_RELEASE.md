@@ -14,9 +14,9 @@ package; a draft release goes up with `play-upload.sh`.
 |---|---|
 | Console app created | done |
 | Release AAB on the internal track | draft, build 3 (versionCode 3, 3.0.0), see "Builds" |
-| Store listing text | in Console as a draft (title, short and full description, icon, feature graphic, screenshots); source `STORE_LISTING.md` |
+| Store listing | saved in Console, "Ready to send for review" (title, short and full description, icon, feature graphic, 7 screenshots); source `STORE_LISTING.md` |
 | Privacy policy | https://sourdoughcalculator.uk/privacy (renders `PRIVACY.md`); needs a push to show the new name |
-| Setup forms in Console | done except Content rating (needs the IARC terms tick) and the AI-generated-assets declaration on the store listing review step; both are attestations for the user |
+| Setup forms in Console | all done (content rating by the user; AI-generated-assets declaration: icon and feature graphic labelled, because the icon is AI-made) |
 | Screenshots | 7 uploaded (`../play-assets/screenshots/`), rendered from the app's own web build at phone size (412x824 at 2.62x, 1079x2158) because the emulator crashes on this machine and the phone was not connected; native status bar and nav bar are not in them. Promotion eligibility wants 1080 px or more per side, these are 1079 wide |
 | Feature graphic | done (`../play-assets/feature-graphic.png`, 1024x500) |
 | Sent for review | no |
@@ -76,10 +76,7 @@ can be filled through the Console with browser tools.
 
 ## Open items
 
-- Content rating: tick the IARC terms, answer the questionnaire (no violence, sexuality, language, gambling, user-generated content or sharing), save.
-- Store listing review step: AI-generated-assets declaration, then Save.
 - Testers for the internal track, then promote or send for review.
-- Push the docs and privacy rename so the hosted policy at /privacy shows the new name (a push also redeploys the web apps).
 - Optional: native screenshots from the phone, at 1080 px or more wide.
 - Expo hooks and the Android builds still use `com.sourdough.optimizer` unchanged; the app
   name is not the package name, so nothing needs migrating.
