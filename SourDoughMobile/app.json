@@ -2,7 +2,7 @@
   "expo": {
     "name": "Dough & Ferment",
     "slug": "sourdough-optimizer",
-    "version": "3.0.1",
+    "version": "3.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "sourdough",
@@ -13,7 +13,7 @@
     },
     "android": {
       "package": "com.sourdough.optimizer",
-      "versionCode": 4,
+      "versionCode": 5,
       "blockedPermissions": [
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.READ_EXTERNAL_STORAGE",
@@ -53,7 +53,8 @@
           "locationWhenInUsePermission": "Allow Dough & Ferment to use your location to detect local temperature and water hardness for accurate baking guidance. Your coordinates are sent to Open-Meteo (weather) and OpenStreetMap (geocoding)."
         }
       ],
-      "./plugins/withAndroidSigningConfig"
+      "./plugins/withAndroidSigningConfig",
+      "./plugins/withAndroidMinify"
     ],
     "experiments": {
       "typedRoutes": false
