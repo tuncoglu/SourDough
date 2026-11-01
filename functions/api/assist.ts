@@ -377,7 +377,6 @@ class ToolRunner {
         starterTempC: overrides.starterTempC,
         flours: this.ctx.flours?.map((r) => ({ flour: findFlour(r.label), grams: r.grams })),
       },
-      null,
       FALLBACK_HARDNESS,
       this.ctx.unitSystem,
     );

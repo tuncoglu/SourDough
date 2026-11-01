@@ -5,9 +5,6 @@
 import {
   RecipeInputs,
   IngredientResults,
-  DynamicFermentation,
-  FermentationProfilePoint,
-  HourlyPoint,
   CalculationResults,
   WaterHardness,
   FlourBlendEntry,
@@ -39,27 +36,12 @@ const BASE_FERMENTATION_HOURS = 4.0;
 /** Minimum feasible fermentation time (hours) regardless of conditions. */
 const MIN_FERMENTATION_HOURS = 2.0;
 
-/** Thermal time constant (hours) — how fast dough temperature drifts
- *  toward ambient. Calibrated for a typical 1–2 kg dough mass; smaller
- *  or larger masses have different thermal time constants. */
-export const TAU = 1.5;
-
 /** Q10 coefficient — fermentation rate multiplier per 10°C.
  *  Reference: bread science literature (Collar, 2003; Gisslen 9th ed.). */
 export const Q10 = 2.5;
 
 /** Reference temperature for the Q10 model (°C). */
 export const T_BASE = 26.0;
-
-/** Baseline fermentation target (hours) — the "4-hour benchmark" at 26°C. */
-export const TARGET_HOURS = 4.0;
-
-/** Integration time step for dynamic fermentation model (hours). 15 min. */
-export const DT = 0.25;
-
-/** Maximum integration steps before giving up (100h at DT=0.25 = 400 steps).
- *  Beyond this the estimate is meaningless — fermentation would take >4 days. */
-const MAX_STEPS = 400;
 
 /** Proof time ≈ 60% of bulk fermentation duration.
  *  Heuristic — the shaped loaf typically proofs faster than bulk because
@@ -309,8 +291,7 @@ export function estimateFermentation(
   const oilRate = computeOilRate(oilPct);
   const baseHours = BASE_FERMENTATION_HOURS / (inocRate * hydRate * flourFactor * vitalityFactor * oilRate);
 
-  // Q10 temperature adjustment — consistent with dynamic model,
-  // with a high-temperature cap so warm dough doesn't accelerate forever.
+  // Q10 temperature adjustment, with a high-temperature cap so warm dough doesn't accelerate forever.
   const rateMultiplier = tempRateMultiplier(fdt);
   let hours = baseHours / rateMultiplier;
   hours = Math.max(hours, MIN_FERMENTATION_HOURS / Math.max(inocRate, 0.5));
@@ -341,150 +322,18 @@ export function estimateFermentation(
   return { hours: hoursRounded, note };
 }
 
-// ── Dynamic Fermentation Model ─────────────────────────────────────────
-/**
- * Model dough fermentation with changing ambient temperature.
- *
- * The dough starts at FDT and drifts toward ambient with a thermal time
- * constant τ ≈ 1.5 h. Fermentation rate follows Q10 ≈ 2.5 (rate doubles
- * every 10°C). We integrate in 15-min steps until completion.
- */
-export function estimateDynamicFermentation(
-  fdt: number,
-  hourlyForecast: HourlyPoint[],
-  inoculationPct: number = 20.0,
-  hydrationPct: number = 70.0,
-  flour: string | FlourBlendEntry[] = 'Generic: Bread Flour',
-  starterHoursSinceFed?: number,
-  oilPct?: number,
-): DynamicFermentation | null {
-
-  // Inoculation + hydration + flour multipliers.
-  // Same blended inoculation model as the static estimate (linear below
-  // 10% inoculation, sqrt at 20%+) so both models agree on lean doughs.
-  const inocRate = computeInocRate(inoculationPct);
-  // Hydration factor: wetter dough = faster (rate ∝ (hyd% / 70)^0.6)
-  // Reference: Hammelman "Bread", Gisslen 9th ed.
-  const hydRate = Math.pow(hydrationPct / 70.0, 0.6);
-  const flourFactor = resolveFermentFactor(flour);
-  const baseRate = inocRate * hydRate * flourFactor;
-
-  const vitalityFactor = computeVitalityFactor(starterHoursSinceFed);
-  const oilRate = computeOilRate(oilPct);
-  const adjustedBaseRate = baseRate * vitalityFactor * oilRate;
-
-  if (hourlyForecast.length < 2) return null;
-
-  // Find starting index: skip hours before the current time
-  const now = new Date();
-  now.setMinutes(0, 0, 0); // round down to the hour
-  let startIdx = 0;
-  for (let i = 0; i < hourlyForecast.length; i++) {
-    if (new Date(hourlyForecast[i].datetime) >= now) {
-      startIdx = i;
-      break;
-    }
-  }
-
-  // Slice from current hour, then extend by repeating the last 24h to
-  // preserve day/night temperature cycles.
-  const forecast = hourlyForecast.slice(startIdx);
-  if (forecast.length > 0) {
-    const cycleLen = Math.min(forecast.length, 24);
-    const cycle = forecast.slice(forecast.length - cycleLen);
-    const initialLen = forecast.length;
-    let lastTime = new Date(forecast[forecast.length - 1].datetime);
-    while (forecast.length < MAX_STEPS) {
-      lastTime = new Date(lastTime.getTime() + 3600000);
-      forecast.push({
-        datetime: lastTime.toISOString(),
-        tempC: cycle[((forecast.length - initialLen) % cycleLen) % cycle.length].tempC,
-      });
-    }
-  }
-
-  let doughTemp = fdt;
-  let progress = 0.0;
-  let steps = 0;
-  let converged = false;
-  const profile: FermentationProfilePoint[] = [];
-  let peakRate = 0.0;
-  let ambientSum = 0.0;
-  let ambientCount = 0;
-  let lastLoggedHour = -1;
-
-  for (const point of forecast) {
-    const amb = point.tempC;
-    const t = new Date(point.datetime);
-
-    // Thermal drift: dough approaches ambient
-    doughTemp += (amb - doughTemp) * (1 - Math.exp(-DT / TAU));
-
-    // Fermentation rate: baseline × temp × inoc × hydration × vitality.
-    // Temperature uses the capped Q10 curve so hot dough doesn't
-    // accelerate without bound above ~38°C.
-    const rate = adjustedBaseRate * tempRateMultiplier(doughTemp);
-    peakRate = Math.max(peakRate, rate);
-
-    progress += rate * DT;
-    ambientSum += amb;
-    ambientCount += 1;
-    steps++;
-
-    // Log roughly hourly
-    if (t.getHours() !== lastLoggedHour || progress >= TARGET_HOURS) {
-      const pct = Math.min((progress / TARGET_HOURS) * 100, 100);
-      profile.push({
-        hour: t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }),
-        ambient: round1(amb),
-        dough: round1(doughTemp),
-        rate: round2(rate),
-        progress: Math.round(pct),
-      });
-      lastLoggedHour = t.getHours();
-    }
-
-    if (progress >= TARGET_HOURS) {
-      converged = true;
-      break;
-    }
-    if (steps >= MAX_STEPS) break;
-  }
-
-  const bulkHours = steps * DT;
-  // Same floor as the static estimate so both models agree at hot temps
-  const floorHours = MIN_FERMENTATION_HOURS / Math.max(inocRate, 0.5);
-  const bulkRounded = Math.max(Math.round(bulkHours * 2) / 2, Math.round(floorHours * 2) / 2);
-  const avgAmbient = round1(ambientSum / Math.max(ambientCount, 1));
-
-  // Cap the displayed profile but always keep the terminal point so the
-  // timeline ends at completion even on long ferments
-  const cappedProfile = profile.length > 25
-    ? [...profile.slice(0, 24), profile[profile.length - 1]]
-    : profile;
-
-  return {
-    totalHours: bulkRounded, // caller adds proof if needed
-    bulkHours: bulkRounded,
-    profile: cappedProfile,
-    peakRate: round1(peakRate),
-    avgAmbient,
-    converged,
-  };
-}
-
 // ── Fermentation Advice ────────────────────────────────────────────────
 export function fermentAdvice(
   fdt: number,
   inoculationPct: number = 20.0,
   hydrationPct: number = 70.0,
-  dynamicHours?: number,
+  estimatedHours?: number,
   flour: string | FlourBlendEntry[] = 'Generic: Bread Flour',
   oilPct?: number,
   unitSystem: UnitSystem = 'metric',
 ): string[] {
   const advice: string[] = [];
-  const effectiveHours = dynamicHours;
+  const effectiveHours = estimatedHours;
 
   // Speed assessment
   if (effectiveHours !== undefined) {
@@ -571,7 +420,7 @@ export function fermentAdvice(
     advice.push('   💡 With so little starter, consider upping to 20% if you want a faster turnaround.');
   }
   if (fdt < 21 && inoculationPct < 30) {
-    advice.push('   💡 Your dough starts cool but will warm with the room. The dynamic estimate above accounts for this.');
+    advice.push('   💡 Your dough starts cool. This estimate holds it at that temperature for the whole rise, so in a warmer room it may finish a little sooner as the dough warms toward room temperature.');
   }
   if (fdt > 38) {
     advice.push('   🔥 Above ~40°C yeast cells start to die — the estimate assumes slowing, but a dough this hot will struggle. Cool the water next time.');
@@ -610,102 +459,9 @@ export function waterHardnessAdvice(hardness: WaterHardness): string[] {
   return tips;
 }
 
-// ── Cold Proof Extension ──────────────────────────────────────────────
-
-/**
- * Extend a dynamic fermentation profile with a cold-proof (retard) phase.
- *
- * After bulk fermentation completes, the shaped dough is placed in the
- * fridge. The dough temperature drifts from FDT toward fridge temp with
- * the same thermal time constant τ, and fermentation continues at a very
- * slow rate (Q10 model extended downward).
- *
- * At 4°C, rate ≈ 0.13× baseline (pure Q10 model).
- *
- * The model runs for the full user-requested coldHours. Profile progress is
- * shown on a single 0–100% scale covering bulk + cold proof together, so
- * the timeline reads as one continuous schedule.
- *
- * NOTE: This model uses a uniform Q10 coefficient (≈2.5) across all
- * temperatures. In reality, yeast (S. cerevisiae) and lactic acid bacteria
- * respond differently to cold: below 10°C, yeast metabolism slows more
- * sharply than LAB, shifting the balance toward bacterial (especially acetic
- * acid) activity. The uniform Q10 model does not capture this differential
- * temperature response — the estimated rate is a composite average that
- * may understate the shift toward acetic character in cold proofing.
- */
-export function estimateColdProof(
-  baseProfile: DynamicFermentation,
-  fdt: number,
-  coldHours: number,
-  coldTemp: number = 4,
-  adjustedBaseRate: number = 1.0,
-): DynamicFermentation {
-  let doughTemp = fdt;
-  let progress = 0; // cold-phase progress in rate×DT units
-  let steps = 0;
-  let peakRate = baseProfile.peakRate;
-  let ambientSum = 0;
-  let ambientCount = 0;
-
-  const totalSteps = Math.ceil(coldHours / DT);
-  const bulkSteps = Math.round(baseProfile.bulkHours / DT);
-  const scheduleSteps = bulkSteps + totalSteps;
-  let lastLoggedHour = -1;
-
-  // Rescale the bulk profile onto a single 0–100% schedule axis so the
-  // cold-phase rows continue from where the bulk rows ended (no 100% → 0%
-  // jump at the transition).
-  const profile = baseProfile.profile.map((p) => ({
-    ...p,
-    progress: Math.round(Math.min((p.progress / 100) * (bulkSteps / scheduleSteps) * 100, 100)),
-  }));
-
-  for (let i = 0; i < totalSteps; i++) {
-    // Thermal drift toward fridge temp
-    doughTemp += (coldTemp - doughTemp) * (1 - Math.exp(-DT / TAU));
-
-    // Fermentation rate at fridge temp (same capped Q10 curve as the warm model)
-    const rate = adjustedBaseRate * tempRateMultiplier(doughTemp);
-    peakRate = Math.max(peakRate, rate);
-
-    progress += rate * DT;
-    ambientSum += coldTemp;
-    ambientCount++;
-    steps++;
-
-    const hour = Math.floor(steps * DT);
-    if (hour !== lastLoggedHour || i === totalSteps - 1) {
-      const pct = Math.min(((bulkSteps + steps) / scheduleSteps) * 100, 100);
-      profile.push({
-        hour: `❄️ +${hour}h`,
-        ambient: coldTemp,
-        dough: round1(doughTemp),
-        rate: round2(rate),
-        progress: Math.round(pct),
-      });
-      lastLoggedHour = hour;
-    }
-  }
-
-  const coldHoursActual = steps * DT;
-  const totalHours = baseProfile.bulkHours + coldHoursActual;
-  const avgAmbient = round1((baseProfile.avgAmbient * bulkSteps + ambientSum) / Math.max(bulkSteps + ambientCount, 1));
-
-   return {
-     totalHours: Math.round(totalHours * 2) / 2,
-     bulkHours: baseProfile.bulkHours,
-     profile: profile.slice(-32), // keep the tail: cold-phase rows + late bulk
-     peakRate: round1(peakRate),
-     avgAmbient,
-     converged: baseProfile.converged,
-   };
-}
-
 // ── Full Calculation Pipeline ──────────────────────────────────────────
 export function runAllCalculations(
   inputs: RecipeInputs,
-  hourlyForecast: HourlyPoint[] | null,
   hardness: WaterHardness,
   warnings: string[] = [],
   unitSystem: UnitSystem = 'metric',
@@ -766,55 +522,11 @@ export function runAllCalculations(
     unitSystem,
   );
 
-  let dynamicFerment: DynamicFermentation | null = null;
-  if (hourlyForecast) {
-    dynamicFerment = estimateDynamicFermentation(
-      fdt,
-      hourlyForecast,
-      ingredients.starterPct,
-      inputs.hydration,
-      totalBlend,
-      inputs.starterHoursSinceFed,
-      inputs.oilPct,
-    );
-
-    // Extend with cold proof if requested
-    if (dynamicFerment && (inputs.coldProofHours ?? 0) > 0) {
-      // Compute base rate factors for cold-proof scaling (same as dynamic model)
-      const cpInocRate = computeInocRate(ingredients.starterPct);
-      const cpHydRate = Math.pow(inputs.hydration / 70.0, 0.6);
-      const cpFlourFactor = resolveFermentFactor(totalBlend);
-      const cpVitality = computeVitalityFactor(inputs.starterHoursSinceFed);
-      const cpOilRate = computeOilRate(inputs.oilPct);
-      const cpAdjustedBaseRate = cpInocRate * cpHydRate * cpFlourFactor * cpVitality * cpOilRate;
-
-      dynamicFerment = estimateColdProof(
-        dynamicFerment,
-        fdt,
-        inputs.coldProofHours!,
-        inputs.coldProofTemp ?? 4,
-        cpAdjustedBaseRate,
-      );
-    } else if (dynamicFerment) {
-      // No cold proof — add warm proof time (~60% of bulk)
-      const proofHours = dynamicFerment.bulkHours * PROOF_FRACTION;
-      dynamicFerment = {
-        ...dynamicFerment,
-        totalHours: Math.round((dynamicFerment.bulkHours + proofHours) * 2) / 2,
-      };
-    }
-
-    // Warn if the forecast window wasn't long enough for the model to converge
-    if (dynamicFerment && !dynamicFerment.converged) {
-      warnings.push('⚠️ Fermentation estimate did not converge within the forecast window. The actual time may be longer than shown.');
-    }
-  }
-
   const fa = fermentAdvice(
     fdt,
     ingredients.starterPct,
     inputs.hydration,
-    dynamicFerment?.bulkHours,
+    undefined, // no hours given: the speed lines need an estimate, and none was ever passed on this path
     totalBlend,
     inputs.oilPct,
     unitSystem,
@@ -829,7 +541,9 @@ export function runAllCalculations(
     ingredients,
     staticFermentHours: staticFerment.hours,
     staticFermentNote: staticFerment.note,
-    dynamicFerment,
+    // Always null: there is no dynamic model any more. Recipes saved by older versions may still
+    // carry one, which the saved-recipe screens read (see DynamicFermentation in models/types).
+    dynamicFerment: null,
     fermentAdvice: fa,
     waterHardnessAdvice: ha,
     warnings,
@@ -867,8 +581,4 @@ export function computeProcessHours(
 // ── Helpers ────────────────────────────────────────────────────────────
 function round1(n: number): number {
   return Math.round(n * 10) / 10;
-}
-
-function round2(n: number): number {
-  return Math.round(n * 100) / 100;
 }

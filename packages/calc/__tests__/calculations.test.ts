@@ -5,7 +5,6 @@ import {
   calculateFDT,
   calculateIngredients,
   estimateFermentation,
-  estimateDynamicFermentation,
   runAllCalculations,
 } from '../src/lib/calculations';
 import { WaterHardness, HourlyPoint, RecipeInputs } from '../src/models/types';
@@ -149,64 +148,6 @@ describe('estimateFermentation', () => {
   });
 });
 
-// ── Dynamic Fermentation ────────────────────────────────────────────────
-
-describe('estimateDynamicFermentation', () => {
-  const makeForecast = (hours: number, baseTemp: number, drift?: number): HourlyPoint[] => {
-    const now = new Date();
-    now.setMinutes(0, 0, 0);
-    const points: HourlyPoint[] = [];
-    for (let i = 0; i < hours; i++) {
-      const t = new Date(now.getTime() + i * 3600000);
-      const temp = baseTemp + (drift ? drift * Math.sin((i / hours) * Math.PI) : 0);
-      points.push({ datetime: t.toISOString(), tempC: Math.round(temp * 10) / 10 });
-    }
-    return points;
-  };
-
-  it('returns null for empty forecast', () => {
-    const result = estimateDynamicFermentation(26, []);
-    expect(result).toBeNull();
-  });
-
-  it('produces a profile with progress points', () => {
-    const forecast = makeForecast(24, 26);
-    const result = estimateDynamicFermentation(26, forecast);
-    expect(result).not.toBeNull();
-    expect(result!.totalHours).toBeGreaterThan(0);
-    expect(result!.profile.length).toBeGreaterThan(0);
-  });
-
-  it('cold ambient extends fermentation', () => {
-    const warm = estimateDynamicFermentation(26, makeForecast(48, 28));
-    const cold = estimateDynamicFermentation(26, makeForecast(48, 18));
-    expect(cold!.totalHours).toBeGreaterThan(warm!.totalHours);
-  });
-
-  it('rye ferment factor speeds things up', () => {
-    // Use a cooler ambient so the flour difference is measurable
-    const white = estimateDynamicFermentation(22, makeForecast(48, 22), 20, 70, 'Generic: Bread Flour');
-    const rye = estimateDynamicFermentation(22, makeForecast(48, 22), 20, 70, 'Generic: Rye Flour');
-    expect(rye!.totalHours).toBeLessThan(white!.totalHours);
-  });
-
-  it('zero inoculation returns a bounded estimate instead of dividing by zero', () => {
-    const result = estimateDynamicFermentation(26, makeForecast(48, 26), 0, 70, 'Generic: Bread Flour');
-    expect(result).not.toBeNull();
-    expect(result!.totalHours).toBeLessThanOrEqual(100);
-    // A 0% starter is a real input; the static model returns ~80h, the
-    // dynamic model hits its 100h window cap — both "very slow", no NaN.
-    const staticR = estimateFermentation(26, 0, 70, 'Generic: Bread Flour');
-    expect(staticR.hours).toBeCloseTo(80, 0);
-  });
-
-  it('agrees with the static model on lean doughs', () => {
-    const staticR = estimateFermentation(22, 8, 66, 'Generic: Bread Flour');
-    const dynamicR = estimateDynamicFermentation(22, makeForecast(48, 22), 8, 66, 'Generic: Bread Flour');
-    expect(dynamicR!.bulkHours).toBeCloseTo(staticR.hours, 0);
-  });
-});
-
 // ── Full Pipeline ───────────────────────────────────────────────────────
 
 describe('runAllCalculations', () => {
@@ -233,7 +174,7 @@ describe('runAllCalculations', () => {
   };
 
   it('produces all result fields', () => {
-    const result = runAllCalculations(baseInputs, null, fallbackHardness);
+    const result = runAllCalculations(baseInputs, fallbackHardness);
     expect(result.fdt).toBeDefined();
     expect(result.tempZone).toBeDefined();
     expect(result.ingredients).toBeDefined();
@@ -242,17 +183,5 @@ describe('runAllCalculations', () => {
     expect(Array.isArray(result.fermentAdvice)).toBe(true);
     expect(result.waterHardnessAdvice.length).toBeGreaterThan(0);
     expect(result.hardness).toBe(fallbackHardness);
-  });
-
-  it('includes dynamic ferment when forecast is provided', () => {
-    const now = new Date();
-    now.setMinutes(0, 0, 0);
-    const forecast: HourlyPoint[] = Array.from({ length: 24 }, (_, i) => ({
-      datetime: new Date(now.getTime() + i * 3600000).toISOString(),
-      tempC: 22,
-    }));
-
-    const result = runAllCalculations(baseInputs, forecast, fallbackHardness);
-    expect(result.dynamicFerment).not.toBeNull();
   });
 });

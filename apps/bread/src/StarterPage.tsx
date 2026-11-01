@@ -101,7 +101,6 @@ export function StarterPage(p: Props) {
     return STATES.map((s) => {
       const est = estimateLazyLoaf(
         { ...base, starterTempC: s.fridge ? LAZY_STARTER_TEMP_C : roomTempC, starterHoursSinceFed: s.hours ?? undefined, flour: findFlour('Generic: Bread Flour') },
-        null,
         resolveHardness(0),
         units,
       );

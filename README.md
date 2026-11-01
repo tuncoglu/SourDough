@@ -43,7 +43,7 @@ The calculators come in two forms that share one set of baking rules
 - **Flour picker** — browse 60+ Shipton Mill flours by category, with protein %
 - **Multi-flour blends** — mix flours at custom ratios; weighted protein and fermentation
 - **FDT calculation** — computes your final dough temperature from the four inputs
-- **Dynamic fermentation** — hour-by-hour model accounting for ambient drift, inoculation, hydration, and flour type
+- **Fermentation estimate** — rise time from dough temperature, starter amount and activity, hydration, flour type and fat, on a Q10 model. It holds the dough at its mixing temperature for the whole rise; no weather forecast is used
 - **Fermentation timeline** — step-by-step schedule: autolyse → folds → bulk → shape → proof → bake
 - **Water hardness advice** — tailored tips for soft, hard, and ideal water
 
