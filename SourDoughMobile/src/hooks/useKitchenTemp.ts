@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { getSettings } from '../store/settingsCache';
 import { useLocation } from './useLocation';
+import { chooseRoomTemp } from '../lib/roomTemp';
 
 /**
  * The kitchen temperature for the starter: the one set in Settings if there
@@ -19,8 +20,9 @@ export function useKitchenTemp(): {
     getSettings().then((s) => setSetTemp(s.fermTempOverride ?? 0)).catch(() => {});
   }, []));
 
-  if (setTemp > 0) return { tempC: setTemp, source: 'settings' };
-  const outdoor = locationData?.ambientTemp;
-  if (typeof outdoor === 'number' && Number.isFinite(outdoor)) return { tempC: outdoor, source: 'forecast' };
-  return { tempC: 22, source: 'default' };
+  const choice = chooseRoomTemp(setTemp, locationData?.ambientTemp);
+  return {
+    tempC: choice.tempC,
+    source: choice.source === 'outdoor' ? 'forecast' : choice.source,
+  };
 }

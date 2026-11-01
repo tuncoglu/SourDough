@@ -36,6 +36,7 @@ import { StarterChoiceCard, type StarterMode } from '../../src/components/Starte
 import { ReadyByCard, type PlanMode } from '../../src/components/ReadyByCard';
 
 import { useCalculatorInputs } from '../../src/hooks/useCalculatorInputs';
+import { describeRoomTemp } from '../../src/lib/roomTemp';
 import { useRecipeActions } from '../../src/hooks/useRecipeActions';
 import { useStarterStatus } from '../../src/hooks/useStarterStatus';
 
@@ -148,6 +149,7 @@ export default function BreadScreen() {
   // location's tap temperature when we have one, otherwise at room temperature. No weather
   // forecast is used, so the field, the assistant's tools and this number all agree.
   const roomTempC = parseFloat(inputs.ambientTemp);
+  const roomTempInfo = describeRoomTemp(inputs.roomTempSource, unitSystem);
   const tapTempC = inputs.locationData?.waterTemp ?? null;
   const overrideC = waterOverride !== null ? parseFloat(waterOverride) : NaN;
   const waterIsAuto = !Number.isFinite(overrideC);
@@ -437,7 +439,10 @@ export default function BreadScreen() {
 
                   {step.key === 'rise' && (
                     <>
-                      <TempRow label="Room temp" value={inputs.ambientTemp} onChangeText={inputs.setAmbientTemp} isAuto={!!inputs.locationData} />
+                      <TempRow label="Room temp" value={inputs.ambientTemp} onChangeText={inputs.setAmbientTemp} badge={roomTempInfo.badge} />
+                      {roomTempInfo.note && !inputs.locLoading && (
+                        <Text style={[styles.hint, { color: colors.muted }]}>{roomTempInfo.note}</Text>
+                      )}
                       <TempRow
                         label="Water temp"
                         value={String(Math.round(waterTempC * 10) / 10)}

@@ -12,6 +12,8 @@ interface Props {
   unit?: string;
   onChangeText: (text: string) => void;
   isAuto?: boolean;
+  /** Replaces the "auto" tag, e.g. "outdoor". Shown whenever it is set. */
+  badge?: string | null;
   editing?: boolean;
 }
 
@@ -21,6 +23,7 @@ export function TempRow({
   unit,
   onChangeText,
   isAuto = false,
+  badge = null,
   editing = false,
 }: Props) {
   const { unitSystem, colors } = useAppTheme();
@@ -84,8 +87,8 @@ export function TempRow({
           accessibilityLabel={`${label} (${displayUnit})`}
         />
         <Text style={[styles.unit, { color: colors.muted }]}>{displayUnit}</Text>
-        {isAuto && !editing && (
-          <Text style={[styles.autoBadge, { color: colors.olive }]}>auto</Text>
+        {(badge || isAuto) && !editing && (
+          <Text style={[styles.autoBadge, { color: colors.olive }]}>{badge ?? 'auto'}</Text>
         )}
       </View>
     </View>
