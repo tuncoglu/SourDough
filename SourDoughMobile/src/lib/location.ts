@@ -5,8 +5,10 @@ import {
   fetchHourlyForecast,
   estimateWaterTemp,
   reverseGeocode,
+  reversePostcode,
   NominatimResult,
 } from './api';
+import { looksLikeUkPostcode } from '@sourdough/calc/data/ukWaterHardness';
 import { formatTemp } from '@sourdough/calc/lib/unitConversion';
 import { buildManualHardness } from '@sourdough/calc/lib/hardnessUtils';
 
@@ -38,14 +40,21 @@ export async function detectAll(
   const loc = await reverseGeocode(lat, lon);
   if (!loc) return null;
 
-  const [ambient, forecast, waterTemp] = await Promise.all([
+  // In the UK the hardness table is keyed on postcode, and the region Nominatim gives is just
+  // "England" for most of the country. Use a postcode the user typed (if it is one); otherwise
+  // look up the one at this position.
+  const typedPostcode = postcode && looksLikeUkPostcode(postcode) ? postcode : undefined;
+  const needPostcode = !typedPostcode && loc.countryCode === 'gb';
+
+  const [ambient, forecast, waterTemp, foundPostcode] = await Promise.all([
     getAmbientTemp(lat, lon),
     fetchHourlyForecast(lat, lon),
     estimateWaterTemp(lat, lon),
+    needPostcode ? reversePostcode(lat, lon) : Promise.resolve(null),
   ]);
 
   const hardness = lookupWaterHardness(
-    loc.countryCode, loc.region, postcode, manualHardness);
+    loc.countryCode, loc.region, typedPostcode ?? foundPostcode ?? undefined, manualHardness);
 
   const summary = buildSummary(loc, ambient, waterTemp, hardness, unitSystem);
 
@@ -69,7 +78,11 @@ export function buildSummary(
   const parts: string[] = [`📍 ${loc.city}, ${loc.country}`];
   if (ambient !== null) parts.push(`🌡 Ambient ${formatTemp(ambient, unitSystem, 0)}`);
   if (waterTemp !== null) parts.push(`💧 Tap ~${formatTemp(waterTemp, unitSystem, 0)}`);
-  parts.push(`🧪 Water ${hardness.classification} (${hardness.mgL} mg/L)`);
+  parts.push(
+    hardness.key === 'fallback'
+      ? `🧪 Water hardness unknown (assuming ${hardness.mgL} mg/L)`
+      : `🧪 Water ${hardness.classification} (${hardness.mgL} mg/L)`,
+  );
   return parts.join('  │  ');
 }
 

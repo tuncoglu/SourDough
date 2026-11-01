@@ -6,6 +6,7 @@
  */
 import type { WaterHardness } from '../models/types';
 import { lookupWaterHardness } from '../data/waterHardness';
+import { looksLikeUkPostcode } from '../data/ukWaterHardness';
 import { FALLBACK_HARDNESS, buildManualHardness } from './hardnessUtils';
 
 export type HardnessSource = 'manual' | 'postcode' | 'location' | 'assumed';
@@ -15,8 +16,8 @@ export interface HardnessChoice {
   source: HardnessSource;
 }
 
-/** A UK outward code at least ("SW1", "B1", "KT12"), so "hello" is not looked up as a postcode. */
-export const looksLikeUkPostcode = (text: string): boolean => /^[A-Z]{1,2}\d[A-Z\d]?(\s*\d[A-Z]{2})?$/i.test(text.trim());
+// Kept as an export of this module for the callers that already import it from here.
+export { looksLikeUkPostcode };
 
 export function hardnessFor(opts: {
   /** mg/L typed by the person; 0 = none. */

@@ -257,6 +257,14 @@ const UK_POSTCODE_HARDNESS: Record<string, HardnessEntry> = {
   S81: [160, "moderately hard", "Severn Trent — Worksop area"],
 };
 
+/**
+ * A UK postcode, or at least its outward code ("SW1A 1AA", "sw1a1aa", "B1", "KT12"). Words like
+ * "London" are not one: without this check the lookup below would take their first letter as a
+ * postcode area and answer for Liverpool.
+ */
+export const looksLikeUkPostcode = (text: string): boolean =>
+  /^[A-Z]{1,2}\d[A-Z\d]?(\s*\d[A-Z]{2})?$/i.test(text.trim());
+
 export function lookupUkPostcodeHardness(postcode: string): HardnessEntry {
   if (!postcode) {
     return [180, "moderately hard", "UK fallback — unknown postcode area"];
