@@ -95,17 +95,3 @@ export function summaryWithHardnessOverride(
     unitSystem,
   );
 }
-
-/**
- * Get auto-fillable temperature defaults from detected data.
- * Falls back to sensible values when detection fails.
- */
-export function getAutoTemps(ambient: number | null, waterTemp: number | null) {
-  const amb = ambient ?? 22;
-  return {
-    ambientTemp: amb,
-    flourTemp: amb,
-    waterTemp: waterTemp ?? 18,
-    starterTemp: amb,
-  };
-}

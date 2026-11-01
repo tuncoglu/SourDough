@@ -5,7 +5,8 @@ import { getSettings } from '../store/settingsCache';
 import { findFlour } from '@sourdough/calc/lib/flourSearch';
 import { buildBlendFromRows } from '@sourdough/calc/lib/blendUtils';
 import { useLocation } from './useLocation';
-import { getAutoTemps, LocationData } from '../lib/location';
+import type { LocationData } from '../lib/location';
+import { chooseRoomTemp, type RoomTempSource } from '../lib/roomTemp';
 
 export interface MixRow {
   key: string;
@@ -31,6 +32,8 @@ export interface CalculatorInputs {
   flourTemp: string;
   waterTemp: string;
   starterTemp: string;
+  /** Where the room temperature came from: the user's own entry, Settings, the outdoor reading, or the default. */
+  roomTempSource: RoomTempSource | 'typed';
 
   // Settings
   settings: UserSettings;
@@ -81,6 +84,9 @@ export function useCalculatorInputs(): CalculatorInputs {
   const [waterTemp, setWaterTemp] = useState('18');
   const [starterTemp, setStarterTemp] = useState('22');
   const [oilPct, setOilPct] = useState('0');
+  // True once the user (or a loaded recipe) has set the room temperature; from then on
+  // neither the location nor Settings overwrites it.
+  const [ambientTyped, setAmbientTyped] = useState(false);
 
   // Track whether user has manually edited any field — prevents GPS/settings
   // auto-fill from overwriting user input on slow async resolution.
@@ -163,6 +169,7 @@ export function useCalculatorInputs(): CalculatorInputs {
         return;
       }
       getSettings().then((s) => {
+        const kitchenChanged = (s.fermTempOverride ?? 0) !== (settings.fermTempOverride ?? 0);
         const defaultsChanged =
           s.defaultFlourType !== settings.defaultFlourType ||
           s.defaultFlourWeight !== settings.defaultFlourWeight ||
@@ -170,10 +177,10 @@ export function useCalculatorInputs(): CalculatorInputs {
           s.defaultSaltPct !== settings.defaultSaltPct ||
           s.defaultStarterHydration !== settings.defaultStarterHydration ||
           s.waterHardnessOverride !== settings.waterHardnessOverride;
-        if (!defaultsChanged) return;
+        if (!defaultsChanged && !kitchenChanged) return;
         setSettings(s);
         // Only re-apply values the user hasn't touched in this session
-        if (!userInteractedRef.current) {
+        if (defaultsChanged && !userInteractedRef.current) {
           setMixRows([{ key: nextMixKey(), flour: findFlour(s.defaultFlourType), grams: String(s.defaultFlourWeight) }]);
           setWaterGrams(String(s.defaultWaterGrams));
           setSaltPct(String(s.defaultSaltPct));
@@ -183,18 +190,23 @@ export function useCalculatorInputs(): CalculatorInputs {
     }, [settings, nextMixKey]),
   );
 
-  // Pre-fill temps when location detected — only once, don't overwrite user edits
-  const gpsAutoFillDoneRef = useRef(false);
+  // Room temperature: the Settings kitchen temperature, else the outdoor reading, else 22 °C
+  // (see lib/roomTemp.ts), until the user types one. Follows a changed Settings value or a
+  // late location result, so a slow lookup never overwrites what the user entered. The flour
+  // and starter follow the room.
+  const kitchen = chooseRoomTemp(settings.fermTempOverride, locationData?.ambientTemp);
   useEffect(() => {
-    if (locationData && !gpsAutoFillDoneRef.current && !userInteractedRef.current) {
-      const auto = getAutoTemps(locationData.ambientTemp, locationData.waterTemp);
-      setAmbientTemp(String(auto.ambientTemp));
-      setFlourTemp(String(auto.flourTemp));
-      setWaterTemp(String(auto.waterTemp));
-      setStarterTemp(String(auto.starterTemp));
-      gpsAutoFillDoneRef.current = true;
-    }
-  }, [locationData, markInteracted]);
+    if (ambientTyped) return;
+    setAmbientTemp(String(kitchen.tempC));
+    setFlourTemp(String(kitchen.tempC));
+    setStarterTemp(String(kitchen.tempC));
+  }, [ambientTyped, kitchen.tempC]);
+
+  // The tap temperature only when the lookup actually found one; no invented value.
+  const tapTempFound = locationData?.waterTemp;
+  useEffect(() => {
+    if (!userInteractedRef.current && typeof tapTempFound === 'number') setWaterTemp(String(tapTempFound));
+  }, [tapTempFound]);
 
   // Stable wrapped setters — memoized with empty deps because useState
   // setters have stable identity. Without this, wrapSet creates new closures
@@ -204,13 +216,18 @@ export function useCalculatorInputs(): CalculatorInputs {
     setter(v);
   }, []);
 
+  const setAmbientTempByUser = useCallback((v: string) => {
+    userInteractedRef.current = true;
+    setAmbientTyped(true);
+    setAmbientTemp(v);
+  }, []);
+
   const wrappedSetters = useMemo(() => ({
     setWaterGrams: wrapSet(setWaterGrams),
     setStarterWeight: wrapSet(setStarterWeight),
     setSaltPct: wrapSet(setSaltPct),
     setStarterHydrationStr: wrapSet(setStarterHydrationStr),
     setOilPct: wrapSet(setOilPct),
-    setAmbientTemp: wrapSet(setAmbientTemp),
     setFlourTemp: wrapSet(setFlourTemp),
     setWaterTemp: wrapSet(setWaterTemp),
     setStarterTemp: wrapSet(setStarterTemp),
@@ -230,12 +247,14 @@ export function useCalculatorInputs(): CalculatorInputs {
     flourTemp,
     waterTemp,
     starterTemp,
+    roomTempSource: ambientTyped ? 'typed' : kitchen.source,
     settings,
     locationData,
     locLoading,
     locError,
     onRefreshLocation,
     onPostcodeSubmit,
+    setAmbientTemp: setAmbientTempByUser,
     handleAddFlour,
     handleRemoveFlour,
     handleUpdateFlour,
