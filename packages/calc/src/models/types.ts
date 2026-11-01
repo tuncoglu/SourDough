@@ -134,6 +134,8 @@ export interface CalculationResults {
   ingredients: IngredientResults;
   staticFermentHours: number;
   staticFermentNote: string;
+  /** True when the dough is too hot to ferment; staticFermentHours is then Infinity. Absent on older saved recipes. */
+  staticFermentStalled?: boolean;
   /** Always null for new calculations; set only on recipes saved by older versions. */
   dynamicFerment: DynamicFermentation | null;
   fermentAdvice: string[];

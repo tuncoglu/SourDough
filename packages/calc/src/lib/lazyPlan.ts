@@ -58,23 +58,41 @@ export interface LazyLoafEstimate {
 
 const finite = (n: number | undefined): n is number => typeof n === 'number' && Number.isFinite(n);
 
+/** The rise estimate, or why there is none: a dough too hot to ferment is not the same as bad input. */
+export interface LazyLoafOutcome {
+  estimate: LazyLoafEstimate | null;
+  /** The dough temperature (°C) when it is too hot for the yeast (see STALL_TEMP_BREAD), else null. */
+  stalledAtC: number | null;
+}
+
 /**
  * Weights and the rise estimate for one lazy loaf.
- * Returns null when the input is invalid or the engine throws.
+ * Returns null when the input is invalid, the engine throws, or the dough is too hot to ferment
+ * (use `runLazyLoaf` to tell the last case apart).
  */
 export function estimateLazyLoaf(
   input: LazyLoafInput,
   hardness: WaterHardness,
   unitSystem: UnitSystem = 'metric',
 ): LazyLoafEstimate | null {
+  return runLazyLoaf(input, hardness, unitSystem).estimate;
+}
+
+/** Like `estimateLazyLoaf`, but says when the reason there is no estimate is that the dough is too hot. */
+export function runLazyLoaf(
+  input: LazyLoafInput,
+  hardness: WaterHardness,
+  unitSystem: UnitSystem = 'metric',
+): LazyLoafOutcome {
+  const none: LazyLoafOutcome = { estimate: null, stalledAtC: null };
   const { flourGrams, waterPct, starterPct, saltPct, starterHydration, roomTempC } = input;
   const flourTempC = input.flourTempC ?? roomTempC;
   const waterTempC = input.waterTempC ?? roomTempC;
   const starterTempC = input.starterTempC ?? LAZY_STARTER_TEMP_C;
-  if (!(flourGrams > 0) || !(waterPct > 0) || !(starterPct > 0) || !(starterHydration > 0)) return null;
-  if (!finite(saltPct) || saltPct < 0) return null;
-  if (input.starterHoursSinceFed !== undefined && !(finite(input.starterHoursSinceFed) && input.starterHoursSinceFed >= 0)) return null;
-  if (![flourGrams, waterPct, starterPct, starterHydration, roomTempC, flourTempC, waterTempC, starterTempC].every(finite)) return null;
+  if (!(flourGrams > 0) || !(waterPct > 0) || !(starterPct > 0) || !(starterHydration > 0)) return none;
+  if (!finite(saltPct) || saltPct < 0) return none;
+  if (input.starterHoursSinceFed !== undefined && !(finite(input.starterHoursSinceFed) && input.starterHoursSinceFed >= 0)) return none;
+  if (![flourGrams, waterPct, starterPct, starterHydration, roomTempC, flourTempC, waterTempC, starterTempC].every(finite)) return none;
 
   const flour = input.flour ?? findFlour(DEFAULT_SETTINGS.defaultFlourType);
   const blend = buildBlendFromRows(input.flours?.length ? input.flours : [{ flour, grams: flourGrams }]);
@@ -110,20 +128,24 @@ export function estimateLazyLoaf(
       unitSystem,
     );
   } catch {
-    return null;
+    return none;
   }
 
+  if (results.staticFermentStalled) return { estimate: null, stalledAtC: results.fdt };
   const bulkHours = results.staticFermentHours;
-  if (!finite(bulkHours)) return null;
+  if (!finite(bulkHours)) return none;
   const ing = results.ingredients;
   return {
-    bulkHours,
-    proofHours: lazyProofHours(bulkHours),
-    waterGrams: ing.addedWater,
-    starterGrams: ing.starterTotal,
-    saltGrams: ing.salt,
-    doughGrams: ing.bowlFlour + ing.addedWater + ing.starterTotal + ing.salt,
-    results,
+    estimate: {
+      bulkHours,
+      proofHours: lazyProofHours(bulkHours),
+      waterGrams: ing.addedWater,
+      starterGrams: ing.starterTotal,
+      saltGrams: ing.salt,
+      doughGrams: ing.bowlFlour + ing.addedWater + ing.starterTotal + ing.salt,
+      results,
+    },
+    stalledAtC: null,
   };
 }
 

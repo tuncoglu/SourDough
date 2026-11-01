@@ -91,23 +91,36 @@ export function computeInocRate(inoculationPct: number): number {
 }
 
 /**
- * Maximum temperature (°C) at which the Q10 model is reliable for bread
- * dough. Yeast fermentation peaks ~25–35°C and collapses above ~40°C as
- * cells are heat-inactivated; the raw Q10 curve keeps accelerating forever
- * and would otherwise predict a ~0.7h bulk at 45°C. Above the cap the rate
- * is linearly penalised (×1 → ×2 over the first 7°C overshoot, then
- * steeper) mirroring the lacto engine.
+ * The temperature (°C) at which the bread rate curve peaks. Up to here the Q10 model holds
+ * unchanged; above it the rate FALLS (see STALL_TEMP_BREAD), because yeast activity peaks in the
+ * high 30s and heat-inactivation takes over.
  */
 export const MAX_EFFECTIVE_TEMP_BREAD = 38.0;
 
-/** Q10 rate multiplier with the high-temperature cap + penalty applied. */
+/**
+ * The dough temperature (°C) at and above which the rise is treated as stalled: no useful
+ * fermentation, so no time is given.
+ *
+ * REASONED ESTIMATE, NOT CALIBRATED. Between MAX_EFFECTIVE_TEMP_BREAD and here the rate falls
+ * linearly from its peak to zero. The direction is well supported (yeast is heat-inactivated well
+ * before 50 °C); the exact stall point and the shape of the fall are a judgement and need
+ * bread-specific data, which the repo does not have. research/fermentation/research_Q10_arrhenius.md
+ * (section 1.4) says Q10 is not constant and goes below 1 above the optimum, but that is for lactic
+ * acid bacteria and vegetable systems; it does not model the rise below 38 °C here either.
+ * Open research items are listed in SourDoughMobile/AGENTS.md.
+ */
+export const STALL_TEMP_BREAD = 42.0;
+
+/**
+ * Rate multiplier relative to 26 °C: Q10 up to MAX_EFFECTIVE_TEMP_BREAD, then a linear fall to
+ * zero at STALL_TEMP_BREAD, and zero above it. Never increases above the peak.
+ */
 export function tempRateMultiplier(temp: number): number {
+  if (temp >= STALL_TEMP_BREAD) return 0;
   const capped = Math.min(temp, MAX_EFFECTIVE_TEMP_BREAD);
   let rate = Math.pow(Q10, (capped - T_BASE) / 10.0);
   if (temp > MAX_EFFECTIVE_TEMP_BREAD) {
-    const overshoot = temp - MAX_EFFECTIVE_TEMP_BREAD;
-    const penalty = overshoot <= 7 ? 1 + overshoot / 7 : 2 + (overshoot - 7) * 0.5;
-    rate *= penalty;
+    rate *= (STALL_TEMP_BREAD - temp) / (STALL_TEMP_BREAD - MAX_EFFECTIVE_TEMP_BREAD);
   }
   return rate;
 }
@@ -276,7 +289,7 @@ export function estimateFermentation(
   starterHoursSinceFed?: number,
   oilPct?: number,
   unitSystem: UnitSystem = 'metric',
-): { hours: number; note: string } {
+): { hours: number; note: string; stalled?: boolean } {
   // Inoculation factor: more starter = faster. Blended power model —
   // linear below 10% inoculation so lean doughs (e.g. 8% Franco Manca)
   // get realistic 16–18h estimates instead of the sqrt model's ~9.5h.
@@ -293,6 +306,16 @@ export function estimateFermentation(
 
   // Q10 temperature adjustment, with a high-temperature cap so warm dough doesn't accelerate forever.
   const rateMultiplier = tempRateMultiplier(fdt);
+
+  // Too hot for the yeast: no useful rise, so no time (not the old "2 h").
+  if (rateMultiplier === 0) {
+    return {
+      hours: Infinity,
+      note: `Dough at ${formatTemp(fdt, unitSystem, 1)} is too hot for the yeast to work: fermentation stalls above about ${formatTemp(STALL_TEMP_BREAD, unitSystem, 0)}. Use cooler water or a cooler room.`,
+      stalled: true,
+    };
+  }
+
   let hours = baseHours / rateMultiplier;
   hours = Math.max(hours, MIN_FERMENTATION_HOURS / Math.max(inocRate, 0.5));
   const hoursRounded = Math.round(hours * 2) / 2;
@@ -422,8 +445,10 @@ export function fermentAdvice(
   if (fdt < 21 && inoculationPct < 30) {
     advice.push('   💡 Your dough starts cool. This estimate holds it at that temperature for the whole rise, so in a warmer room it may finish a little sooner as the dough warms toward room temperature.');
   }
-  if (fdt > 38) {
-    advice.push('   🔥 Above ~40°C yeast cells start to die — the estimate assumes slowing, but a dough this hot will struggle. Cool the water next time.');
+  if (fdt >= STALL_TEMP_BREAD) {
+    advice.push(`   🔥 Too hot: above about ${formatTemp(STALL_TEMP_BREAD, unitSystem, 0)} the yeast stalls and starts to die, so no rise time is given. Cool the water or the room.`);
+  } else if (fdt > MAX_EFFECTIVE_TEMP_BREAD) {
+    advice.push(`   🔥 Above about ${formatTemp(MAX_EFFECTIVE_TEMP_BREAD, unitSystem, 0)} yeast activity falls off, and it stalls near ${formatTemp(STALL_TEMP_BREAD, unitSystem, 0)}. The estimate slows accordingly, but a dough this hot will struggle. Cool the water next time.`);
   }
   if ((oilPct ?? 0) >= 10) {
     advice.push('   💡 High fat content (butter, oil, eggs) coats gluten strands and slows yeast. Expect a noticeably longer ferment than the model predicts. Cold-proofing overnight is ideal for enriched doughs.');
@@ -541,6 +566,7 @@ export function runAllCalculations(
     ingredients,
     staticFermentHours: staticFerment.hours,
     staticFermentNote: staticFerment.note,
+    staticFermentStalled: staticFerment.stalled === true,
     // Always null: there is no dynamic model any more. Recipes saved by older versions may still
     // carry one, which the saved-recipe screens read (see DynamicFermentation in models/types).
     dynamicFerment: null,

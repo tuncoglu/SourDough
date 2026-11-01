@@ -1,3 +1,4 @@
+import { tooHotNote } from '@sourdough/calc/lib/breadPlan';
 import { BakeCard, DoughCard, FlourCard, KitchenCard, StarterCard, WhenCard } from './Cards';
 import type { Ctx } from './ctx';
 import { Assumptions, RecipeCard, RiseCheck, StepsCard, type RecipeActions } from './Recipe';
@@ -24,6 +25,10 @@ export function Calculator({ c, a }: { c: Ctx; a: RecipeActions }) {
           <RiseCheck />
           <Assumptions />
         </>
+      ) : c.plan.chosen?.stalledAtC != null ? (
+        <p className="error" role="status">
+          {tooHotNote(c.plan.chosen.stalledAtC, c.settings.units)}
+        </p>
       ) : (
         <p className="error" role="status">
           Enter the weight of your flour, and the water, starter and salt percentages.

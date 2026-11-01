@@ -54,6 +54,22 @@ describe('calculator', () => {
     clean(out);
   });
 
+  it('a dough too hot to rise says so, instead of asking for the weights again', () => {
+    const { c, a } = make({}, { kitchenTempC: 60 });
+    const out = renderToString(<Calculator c={c} a={a} />);
+    expect(out).toContain('too hot');
+    expect(out).not.toContain('Enter the weight of your flour');
+    expect(out).not.toContain('Your recipe');
+    clean(out);
+  });
+
+  it('empty flour still asks for the weights, not a cooler room', () => {
+    const { c, a } = make({ flours: [{ key: 'f0', label: 'Generic: Bread Flour', grams: '0' }] }, { kitchenTempC: 20 });
+    const out = renderToString(<Calculator c={c} a={a} />);
+    expect(out).toContain('Enter the weight of your flour');
+    expect(out).not.toContain('too hot');
+  });
+
   it('feed first adds the Feed step and the feed button', () => {
     const { c, a } = make({ starterMode: 'fed', modeChosen: true });
     const out = renderToString(<Calculator c={c} a={a} />);
