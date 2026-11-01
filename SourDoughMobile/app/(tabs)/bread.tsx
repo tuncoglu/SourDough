@@ -14,7 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Spacing, FontSize, BorderRadius, useAppTheme, cardStyle, sectionTitleStyle } from '../../src/theme';
 import { summaryWithHardnessOverride } from '../../src/lib/location';
 import { resolveHardness } from '@sourdough/calc/lib/hardnessUtils';
-import { earliestChoice, planBread, type BreadForm } from '@sourdough/calc/lib/breadPlan';
+import { earliestChoice, planBread, tooHotNote, type BreadForm } from '@sourdough/calc/lib/breadPlan';
 import { formatTemp, formatWeight } from '@sourdough/calc/lib/unitConversion';
 import { isValidDecimalInput } from '@sourdough/calc/lib/inputValidation';
 import { findFlour } from '@sourdough/calc/lib/flourSearch';
@@ -455,6 +455,11 @@ export default function BreadScreen() {
                             {tapTempC != null ? 'Use tap temperature' : 'Use room temperature'}
                           </Text>
                         </TouchableOpacity>
+                      )}
+                      {plan.chosen?.stalledAtC != null && (
+                        <Text style={[styles.hint, { color: colors.error }]} accessibilityRole="alert">
+                          {tooHotNote(plan.chosen.stalledAtC, unitSystem)}
+                        </Text>
                       )}
                       {checkAt && (
                         <View style={[styles.clock, { backgroundColor: colors.successBg, borderColor: colors.border }]}>

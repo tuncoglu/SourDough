@@ -8,10 +8,11 @@
  * app runs the same rules. No React, storage or network.
  */
 import type { FlourEntry, StarterFeeding, UnitSystem, WaterHardness } from '../models/types';
+import { formatTemp } from './unitConversion';
 import { findFlour } from './flourSearch';
 import { buildBlendFromRows } from './blendUtils';
 import { buildFeedStep, buildLazySteps, LAZY_DEFAULTS, type LazyStep, type LazyVessel } from './lazyMethod';
-import { estimateLazyLoaf, FRIDGE_HOURS, LAZY_PLAN_MINUTES, LAZY_STARTER_TEMP_C, type LazyLoafEstimate, type LazyPlan, type ProofMode } from './lazyPlan';
+import { runLazyLoaf, FRIDGE_HOURS, LAZY_PLAN_MINUTES, LAZY_STARTER_TEMP_C, type LazyLoafEstimate, type LazyPlan, type ProofMode } from './lazyPlan';
 import {
   atClockTime,
   dayFromNow,
@@ -151,6 +152,8 @@ export interface CaseEstimate {
   starterTempC: number;
   starterHoursSinceFed: number | undefined;
   estimate: LazyLoafEstimate | null;
+  /** The dough temperature (°C) when there is no estimate because the dough is too hot to ferment, else null. */
+  stalledAtC: number | null;
 }
 
 export interface Schedule {
@@ -191,6 +194,11 @@ export interface BreadPlan {
   checkAt: Date | null;
 }
 
+/** What to tell the person when their dough is too hot to rise at all. Shared by the phone and web screens. */
+export function tooHotNote(doughTempC: number, unitSystem: UnitSystem): string {
+  return `At ${formatTemp(doughTempC, unitSystem, 0)} the dough is too hot for the yeast to work, so there is no rise time to give. Cool the water or the room, or use a cooler spot, and the estimate returns.`;
+}
+
 const HOUR = 3_600_000;
 const num = (s: string): number => parseFloat(s);
 
@@ -221,28 +229,25 @@ export function planBread(form: BreadForm, env: BreadEnv): BreadPlan {
       : starter.status ? starterTempFor(starter.status, roomTempC, LAZY_STARTER_TEMP_C) : LAZY_STARTER_TEMP_C;
     // Feed first means mixing at the peak, which is what the plan tells the person to do.
     const hours = isFed ? DEFAULT_PEAK_EFFECTIVE_HOURS : starter.status?.effectiveHours;
-    return {
-      starterTempC: tempC,
-      starterHoursSinceFed: hours,
-      estimate: estimateLazyLoaf(
-        {
-          flourGrams,
-          waterPct: num(form.waterPct),
-          starterPct: num(form.starterPct),
-          saltPct: num(form.saltPct),
-          starterHydration: num(form.starterHydration),
-          roomTempC,
-          waterTempC,
-          starterTempC: tempC,
-          starterHoursSinceFed: hours,
-          starterFlourBlend: starter.flourBlend,
-          flour: flourRow.flour,
-          flours: flourRows,
-        },
-        hardness,
-        unitSystem,
-      ),
-    };
+    const run = runLazyLoaf(
+      {
+        flourGrams,
+        waterPct: num(form.waterPct),
+        starterPct: num(form.starterPct),
+        saltPct: num(form.saltPct),
+        starterHydration: num(form.starterHydration),
+        roomTempC,
+        waterTempC,
+        starterTempC: tempC,
+        starterHoursSinceFed: hours,
+        starterFlourBlend: starter.flourBlend,
+        flour: flourRow.flour,
+        flours: flourRows,
+      },
+      hardness,
+      unitSystem,
+    );
+    return { starterTempC: tempC, starterHoursSinceFed: hours, estimate: run.estimate, stalledAtC: run.stalledAtC };
   };
   const fridgeCase = estimateFor('fridge');
   const fedCase = estimateFor('fed');
