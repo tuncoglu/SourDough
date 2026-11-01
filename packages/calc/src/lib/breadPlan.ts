@@ -239,7 +239,6 @@ export function planBread(form: BreadForm, env: BreadEnv): BreadPlan {
           flour: flourRow.flour,
           flours: flourRows,
         },
-        null,
         hardness,
         unitSystem,
       ),

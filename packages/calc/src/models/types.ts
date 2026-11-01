@@ -109,13 +109,18 @@ export interface FermentationProfilePoint {
   progress: number;   // 0–100%
 }
 
+/**
+ * An hour-by-hour fermentation estimate. Nothing produces one any more (the dynamic model was
+ * removed: it was never used on the bread page and advanced 15 minutes per hourly point). The type
+ * stays because recipes saved by older versions carry one, and the saved-recipe screens show it.
+ */
 export interface DynamicFermentation {
   totalHours: number;  // bulk + proof (total elapsed fermentation time)
   bulkHours: number;   // bulk fermentation only
   profile: FermentationProfilePoint[];
   peakRate: number;
   avgAmbient: number;
-  /** True if the model reached TARGET_HOURS within the forecast window. */
+  /** True if the old model reached its target within the forecast window. */
   converged: boolean;
 }
 
@@ -129,6 +134,7 @@ export interface CalculationResults {
   ingredients: IngredientResults;
   staticFermentHours: number;
   staticFermentNote: string;
+  /** Always null for new calculations; set only on recipes saved by older versions. */
   dynamicFerment: DynamicFermentation | null;
   fermentAdvice: string[];
   waterHardnessAdvice: string[];

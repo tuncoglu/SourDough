@@ -27,7 +27,7 @@ const LOAF: LazyLoafInput = {
   roomTempC: 20,
 };
 const hours = (loaf: Partial<LazyLoafInput>) =>
-  estimateLazyLoaf({ ...LOAF, ...loaf }, null, FALLBACK_HARDNESS)!.bulkHours;
+  estimateLazyLoaf({ ...LOAF, ...loaf }, FALLBACK_HARDNESS)!.bulkHours;
 
 describe('starter activity in the rise estimate', () => {
   it('changes nothing when the starter state is not given', () => {
@@ -56,8 +56,8 @@ describe('starter activity in the rise estimate', () => {
   });
 
   it('refuses a starter age that is negative or not a number', () => {
-    expect(estimateLazyLoaf({ ...LOAF, starterHoursSinceFed: -1 }, null, FALLBACK_HARDNESS)).toBeNull();
-    expect(estimateLazyLoaf({ ...LOAF, starterHoursSinceFed: NaN }, null, FALLBACK_HARDNESS)).toBeNull();
+    expect(estimateLazyLoaf({ ...LOAF, starterHoursSinceFed: -1 }, FALLBACK_HARDNESS)).toBeNull();
+    expect(estimateLazyLoaf({ ...LOAF, starterHoursSinceFed: NaN }, FALLBACK_HARDNESS)).toBeNull();
   });
 });
 
@@ -99,7 +99,7 @@ describe('starter fed with more than one flour', () => {
   it('feeds through to the estimate: a rye starter is not the same as the default', () => {
     const rye = estimateLazyLoaf(
       { ...LOAF, starterFlourBlend: [{ label: RYE, share: 100 }] },
-      null,
+      
       FALLBACK_HARDNESS,
     )!;
     // Rye ferments faster than white, and 50 g of the dough's flour is in the starter.

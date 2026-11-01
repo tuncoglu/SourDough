@@ -19,7 +19,7 @@ describe('estimateLazyLoaf', () => {
   it('matches what the bread page computed before the refactor (default formula, 22 °C)', () => {
     // Snapshot taken from the inline runAllCalculations call in bread.tsx
     // (commit 3beabe8) with the same inputs and no forecast.
-    const est = estimateLazyLoaf(DEFAULT_LOAF, null, FALLBACK_HARDNESS)!;
+    const est = estimateLazyLoaf(DEFAULT_LOAF, FALLBACK_HARDNESS)!;
     expect(est).not.toBeNull();
     expect(est.bulkHours).toBe(7);
     expect(est.proofHours).toBe(lazyProofHours(7));
@@ -32,10 +32,10 @@ describe('estimateLazyLoaf', () => {
   });
 
   it('defaults to the app flour, room-temperature flour and water, and a fridge-cold starter', () => {
-    const implicit = estimateLazyLoaf(DEFAULT_LOAF, null, FALLBACK_HARDNESS)!;
+    const implicit = estimateLazyLoaf(DEFAULT_LOAF, FALLBACK_HARDNESS)!;
     const explicit = estimateLazyLoaf(
       { ...DEFAULT_LOAF, flourTempC: 22, waterTempC: 22, starterTempC: 4, flour: findFlour('No. 4 Organic White (105)') },
-      null,
+      
       FALLBACK_HARDNESS,
     )!;
     expect(explicit.bulkHours).toBe(implicit.bulkHours);
@@ -46,17 +46,17 @@ describe('estimateLazyLoaf', () => {
     const white = findFlour('Generic: Bread Flour');
     const whole = findFlour('Generic: Whole Wheat / WW');
     const blend = estimateLazyLoaf(
-      { ...DEFAULT_LOAF, flours: [{ flour: white, grams: 250 }, { flour: whole, grams: 250 }] }, null, FALLBACK_HARDNESS,
+      { ...DEFAULT_LOAF, flours: [{ flour: white, grams: 250 }, { flour: whole, grams: 250 }] }, FALLBACK_HARDNESS,
     )!;
-    const plain = estimateLazyLoaf({ ...DEFAULT_LOAF, flour: white }, null, FALLBACK_HARDNESS)!;
+    const plain = estimateLazyLoaf({ ...DEFAULT_LOAF, flour: white }, FALLBACK_HARDNESS)!;
     expect(blend.bulkHours).toBeLessThanOrEqual(plain.bulkHours); // wholemeal ferments faster
-    const coldTap = estimateLazyLoaf({ ...DEFAULT_LOAF, waterTempC: 8 }, null, FALLBACK_HARDNESS)!;
+    const coldTap = estimateLazyLoaf({ ...DEFAULT_LOAF, waterTempC: 8 }, FALLBACK_HARDNESS)!;
     expect(coldTap.results.fdt).toBeLessThan(plain.results.fdt);
   });
 
   it('rises faster in a warm kitchen and slower in a cold one', () => {
-    const cold = estimateLazyLoaf({ ...DEFAULT_LOAF, roomTempC: 16 }, null, FALLBACK_HARDNESS)!;
-    const warm = estimateLazyLoaf({ ...DEFAULT_LOAF, roomTempC: 28 }, null, FALLBACK_HARDNESS)!;
+    const cold = estimateLazyLoaf({ ...DEFAULT_LOAF, roomTempC: 16 }, FALLBACK_HARDNESS)!;
+    const warm = estimateLazyLoaf({ ...DEFAULT_LOAF, roomTempC: 28 }, FALLBACK_HARDNESS)!;
     expect(cold.bulkHours).toBeGreaterThan(7);
     expect(warm.bulkHours).toBeLessThan(7);
   });
@@ -72,12 +72,12 @@ describe('estimateLazyLoaf', () => {
       { roomTempC: NaN },
       { waterTempC: Infinity },
     ]) {
-      expect(estimateLazyLoaf({ ...DEFAULT_LOAF, ...bad }, null, FALLBACK_HARDNESS)).toBeNull();
+      expect(estimateLazyLoaf({ ...DEFAULT_LOAF, ...bad }, FALLBACK_HARDNESS)).toBeNull();
     }
   });
 
   it('allows a loaf without salt', () => {
-    expect(estimateLazyLoaf({ ...DEFAULT_LOAF, saltPct: 0 }, null, FALLBACK_HARDNESS)?.saltGrams).toBe(0);
+    expect(estimateLazyLoaf({ ...DEFAULT_LOAF, saltPct: 0 }, FALLBACK_HARDNESS)?.saltGrams).toBe(0);
   });
 });
 

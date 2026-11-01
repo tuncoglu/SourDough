@@ -14,7 +14,6 @@ import {
   DEFAULT_SETTINGS,
   type CalculationResults,
   type FlourEntry,
-  type HourlyPoint,
   type UnitSystem,
   type WaterHardness,
 } from '../models/types';
@@ -65,7 +64,6 @@ const finite = (n: number | undefined): n is number => typeof n === 'number' && 
  */
 export function estimateLazyLoaf(
   input: LazyLoafInput,
-  hourlyForecast: HourlyPoint[] | null,
   hardness: WaterHardness,
   unitSystem: UnitSystem = 'metric',
 ): LazyLoafEstimate | null {
@@ -107,7 +105,6 @@ export function estimateLazyLoaf(
         starterHoursSinceFed: input.starterHoursSinceFed,
         starterFlourBlend: input.starterFlourBlend,
       },
-      hourlyForecast,
       hardness,
       [],
       unitSystem,
@@ -116,7 +113,7 @@ export function estimateLazyLoaf(
     return null;
   }
 
-  const bulkHours = results.dynamicFerment?.bulkHours ?? results.staticFermentHours;
+  const bulkHours = results.staticFermentHours;
   if (!finite(bulkHours)) return null;
   const ing = results.ingredients;
   return {
