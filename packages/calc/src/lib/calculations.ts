@@ -590,6 +590,13 @@ export function waterHardnessAdvice(hardness: WaterHardness): string[] {
   const tips: string[] = [];
   const { mgL, classification, note } = hardness;
 
+  // No data for this place: say so, and do not pass a guess off as "ideal".
+  if (hardness.key === 'fallback') {
+    tips.push(`🧪 Water hardness unknown — assuming about ${mgL} mg/L CaCO₃.`);
+    tips.push('   → Enter your own figure in Settings (your water company publishes it) for advice that fits your water.');
+    return tips;
+  }
+
   if (mgL <= 100) {
     tips.push(`🧪 Your water is ${classification} (${mgL} mg/L CaCO₃).`);
     tips.push('   → Soft water produces extensible, slack dough — good for high-hydration breads.');

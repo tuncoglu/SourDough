@@ -1,5 +1,5 @@
 import { WaterHardness } from '../models/types';
-import { lookupUkPostcodeHardness, classifyHardness } from './ukWaterHardness';
+import { lookupUkPostcodeHardness, classifyHardness, looksLikeUkPostcode } from './ukWaterHardness';
 import { FALLBACK_HARDNESS, buildManualHardness } from '../lib/hardnessUtils';
 
 /**
@@ -93,9 +93,11 @@ const REGION_MAP: Record<string, Record<string, string>> = {
     'south east': 'gb-england-se', 'south west': 'gb-england-sw',
     'england-south': 'gb-england-se',
     'north west': 'gb-england-nw', 'england-north': 'gb-england-nw',
-    yorkshire: 'gb-england-yorkshire', midlands: 'gb-england-se',
-    // Broad fallbacks — catch "England", "Scotland", "Wales" as state names
-    england: 'gb-england-se',
+    yorkshire: 'gb-england-yorkshire',
+    // "England" and "Midlands" are deliberately not mapped to the South East: Nominatim returns
+    // just "England" for Manchester, Leeds and Birmingham, and the chalk figure (280 mg/L) is
+    // wrong for most of them. A bare "England" falls through to the UK-wide entry; a postcode
+    // (typed, or found at the location) gives the area figure.
     scotland: 'gb-scotland',
     wales: 'gb-wales',
   },
@@ -119,7 +121,8 @@ export function lookupWaterHardness(
   }
 
   // UK postcode-level lookup
-  if (countryCode.toUpperCase() === 'GB' && postcode && postcode.trim()) {
+  // Only text shaped like a postcode counts; "London" must not be read as an area code.
+  if (countryCode.toUpperCase() === 'GB' && postcode && looksLikeUkPostcode(postcode)) {
     const [mgL, , note] = lookupUkPostcodeHardness(postcode);
     return { mgL, classification: classifyHardness(mgL), note, key: `uk-postcode:${postcode.trim().toUpperCase().substring(0, 3)}x` };
   }

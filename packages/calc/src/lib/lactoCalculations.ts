@@ -978,9 +978,16 @@ export function acidBalanceVerdict(
  * Hard water tightens vegetable cell walls (calcium cross-links pectin),
  * keeping ferments crisp. Soft water produces softer results.
  */
-export function waterHardnessFermentAdvice(hardness: { mgL: number; classification: string; note: string }): string[] {
+export function waterHardnessFermentAdvice(hardness: { mgL: number; classification: string; note: string; key?: string }): string[] {
   const tips: string[] = [];
   const { mgL, classification, note } = hardness;
+
+  // No data for this place: say so rather than advising on a guess as if it were measured.
+  if (hardness.key === 'fallback') {
+    tips.push(`💧 Water hardness unknown — assuming about ${mgL} mg/L CaCO₃.`);
+    tips.push('   → Enter your own figure in Settings (your water company publishes it) for advice that fits your water.');
+    return tips;
+  }
 
   if (mgL <= 100) {
     tips.push(`💧 Your water is ${classification} (${mgL} mg/L CaCO₃).`);

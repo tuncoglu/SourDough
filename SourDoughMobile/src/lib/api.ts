@@ -185,6 +185,18 @@ export async function reverseGeocode(
   };
 }
 
+/**
+ * The postcode at a position, from a street-level reverse lookup (the zoom-10 lookup above
+ * returns a town and a region, not a postcode). Used for the UK, where the postcode is what
+ * the bundled water-hardness table is keyed on. Null when there is none or the lookup fails.
+ */
+export async function reversePostcode(lat: number, lon: number): Promise<string | null> {
+  const url = `${NOMINATIM_BASE}/reverse?lat=${lat}&lon=${lon}&format=json&zoom=18&addressdetails=1`;
+  const data = await nominatimGet(url);
+  const postcode = data?.address?.postcode;
+  return typeof postcode === 'string' && postcode.trim() ? postcode.trim() : null;
+}
+
 /** Geocode a postcode/ZIP to coordinates */
 export async function geocodePostcode(
   postcode: string,
@@ -193,7 +205,7 @@ export async function geocodePostcode(
   const query = encodeURIComponent(
     countryCode ? `${postcode}, ${countryCode}` : postcode,
   );
-  const url = `${NOMINATIM_BASE}/search?q=${query}&format=json&limit=1`;
+  const url = `${NOMINATIM_BASE}/search?q=${query}&format=json&limit=1&addressdetails=1`;
   const data = await nominatimGet(url);
   if (!data || !Array.isArray(data) || data.length === 0) return null;
 

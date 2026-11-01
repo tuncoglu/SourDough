@@ -31,7 +31,7 @@ third-party services:
 | Service | Purpose | Privacy Policy |
 |---|---|---|
 | [Open-Meteo](https://open-meteo.com/) | Current temperature at your location | [open-meteo.com/en/privacy](https://open-meteo.com/en/privacy) |
-| [OpenStreetMap / Nominatim](https://nominatim.openstreetmap.org/) | Reverse geocoding (coordinates → city/region) | [osmfoundation.org/wiki/Privacy_Policy](https://osmfoundation.org/wiki/Privacy_Policy) |
+| [OpenStreetMap / Nominatim](https://nominatim.openstreetmap.org/) | Reverse geocoding (coordinates → city/region; in the UK also the postcode at that position, which selects the water-hardness area) | [osmfoundation.org/wiki/Privacy_Policy](https://osmfoundation.org/wiki/Privacy_Policy) |
 
 These requests contain **only** your coordinates and a user-agent string
 identifying the App. No account information, device identifiers, or
