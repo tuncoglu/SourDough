@@ -7,6 +7,13 @@
 > home for the Function (for example a Pages project that has `functions/`) and an app that
 > calls it. Until then the app hides the card and the privacy policy says it is unavailable.
 > The runbook is kept for that day.
+>
+> **Update (2026-11-04):** the Function's code is no longer in the tree. The orphaned
+> Cloudflare Pages project `sourdough` that last hosted it was deleted, its DeepSeek key retired,
+> and `functions/` (assist.ts, llm.ts, the tests, the eval script) and the root `wrangler.toml`
+> were removed. To bring it back, restore them from history:
+> `git checkout ff0e897 -- functions wrangler.toml`, and re-add the `../functions` root to
+> `SourDoughMobile/jest.config.js` and the "Typecheck Pages Functions" step to `ci.yml`.
 
 For a Claude Code session on the owner's own computer, which has the DeepSeek API key.
 The feature itself is built and deployed dark (PR tuncoglu/SourDough#1, merge `1c1fc30`).

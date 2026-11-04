@@ -31,14 +31,9 @@ jobs:
         run: npx tsc --noEmit
         working-directory: SourDoughMobile
 
-      # Also runs the Pages Function tests in ../functions (see jest.config.js).
+      # Also runs the tests in ../packages/calc (see jest.config.js).
       - name: Run tests
         run: npx jest --silent
-        working-directory: SourDoughMobile
-
-      # The Functions have no npm dependencies; check them with this package's TypeScript.
-      - name: Typecheck Pages Functions
-        run: npx tsc -p ../functions
         working-directory: SourDoughMobile
 
       # The calculation package (packages/calc) has none either, and its tests ran above.
