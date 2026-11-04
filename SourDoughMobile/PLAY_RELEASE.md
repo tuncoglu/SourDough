@@ -27,18 +27,33 @@ package; a draft release goes up with `play-upload.sh`.
 
 ## Builds
 
-Signing comes from `keystore.properties` (gitignored) via `plugins/withAndroidSigningConfig.js`;
-the upload key is `~/.android-keys/sourdough-upload.jks` (SHA-256 starts `4C:66:E0:B9`).
-`android.versionCode` in `app.json` (now 5) must go up for every upload; Play rejects a reused code.
+**Releases go through GitHub Actions** (since 2026-11-04): Actions → **Play release** → Run workflow
+(`.github/workflows/play-release.yml`). No Play service-account key exists anywhere: the workflow gets
+a one-hour token from Google through Workload Identity Federation (pool `github`, provider
+`sourdough-production`, service account `play-ci`, which only accepts this repo's `production`
+environment on `main`). Every run waits for the owner's approval in the `production` environment.
+
+- `status`: read-only list of tracks and releases. Use it first to check the setup.
+- `upload-internal`: builds the bundle and uploads it to the internal track. Bump
+  `android.versionCode` in `app.json` (now 5) first; Play rejects a reused code.
+- `promote-production`: points production at a versionCode that's already uploaded, with optional
+  en-GB notes. Test the build from internal testing first.
+
+The build job installs the npm and Gradle dependencies and has no secrets: it signs with a throwaway
+key. The `play` job installs nothing; it re-signs the bundle with the upload key (environment secret,
+SHA-256 `4C:66:E0:B9…`, checked) using the JDK's jarsigner, then calls `scripts/play/*.sh`.
+
+Local builds still work for testing on a device (they can't upload any more):
 
 ```bash
 cd SourDoughMobile
 export JAVA_HOME=~/.jdks/temurin-21.0.12.1          # the default JDK 25 breaks Gradle
 npx expo prebuild --platform android --no-install
 cd android && ./gradlew bundleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a,x86_64,x86
-bash ~/.config/play-publisher/play-upload.sh ~/.play-key.json com.sourdough.optimizer \
-  app/build/outputs/bundle/release/app-release.aab internal draft "<versionCode> (<version>)"
 ```
+
+Signing for local builds comes from `keystore.properties` (gitignored) via
+`plugins/withAndroidSigningConfig.js`; the upload key is `~/.android-keys/sourdough-upload.jks`.
 
 Permissions in the release manifest: location (coarse and fine), internet, vibrate. The
 template's `SYSTEM_ALERT_WINDOW` and external-storage permissions are blocked in `app.json`

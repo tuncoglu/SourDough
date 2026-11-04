@@ -1,0 +1,215 @@
+# Google Play releases for com.sourdough.optimizer, started by hand (Actions → Play release → Run workflow).
+#
+# Two jobs, so third-party code never runs next to the release credentials:
+#   build  installs the npm/Gradle dependencies and builds the .aab. It has NO secrets and NO Play
+#          access: it signs with a throwaway key generated on the spot.
+#   play   installs nothing. In the protected `production` environment (your approval, `main` only)
+#          it re-signs the bundle with the real upload key using the JDK's own jarsigner, checks the
+#          certificate fingerprint, then gets a one-hour Play token from Google through Workload
+#          Identity Federation (no key file anywhere) and runs scripts/play/*.sh.
+#
+# Actions:
+#   status              read-only: list the Play tracks and releases (good first test of the setup)
+#   upload-internal     build, then upload to the internal testing track
+#   promote-production  point production at an already-uploaded versionCode (no build)
+#
+# Setup: Google side = pool `github`, provider `sourdough-production` (accepts only this repository's
+# id, environment `production`, ref main), service account `play-ci` (no keys) invited in Play Console
+# for this app only. GitHub side = environment `production` with required reviewer and branch `main`,
+# variables GCP_WIF_PROVIDER + PLAY_SERVICE_ACCOUNT, secrets ANDROID_UPLOAD_KEYSTORE_B64,
+# ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD.
+name: Play release
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: What to do
+        type: choice
+        options: [status, upload-internal, promote-production]
+        default: status
+      internal_status:
+        description: "upload-internal: release status on the internal track"
+        type: choice
+        options: [completed, draft]
+        default: completed
+      version_code:
+        description: "promote-production: versionCode already on Play (e.g. 6)"
+        type: string
+        required: false
+      version_name:
+        description: "promote-production: its version name (e.g. 3.0.3)"
+        type: string
+        required: false
+      release_notes:
+        description: "promote-production: en-GB release notes (empty = keep the current ones)"
+        type: string
+        required: false
+
+permissions: {}
+
+concurrency:
+  group: play-release
+  cancel-in-progress: false
+
+env:
+  PACKAGE: com.sourdough.optimizer
+  # Public certificate fingerprint of the Play upload key (~/.android-keys/sourdough-upload.jks).
+  UPLOAD_CERT_SHA256: "4C:66:E0:B9:39:C2:30:2C:5C:04:72:32:00:AC:31:A7:4F:E9:63:2F:12:E7:F5:1C:B9:47:84:E4:6E:CE:39:64"
+
+jobs:
+  build:
+    if: inputs.action == 'upload-internal'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    outputs:
+      version_code: ${{ steps.meta.outputs.version_code }}
+      version_name: ${{ steps.meta.outputs.version_name }}
+      sha256: ${{ steps.meta.outputs.sha256 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: SourDoughMobile/package-lock.json
+
+      # Gradle 9 and RN 0.86 need JDK 21 (the runner default may be newer).
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: SourDoughMobile
+
+      # withAndroidSigningConfig.js reads keystore.properties. This job signs with a key that exists
+      # only for this run; the play job replaces the signature with the real upload key.
+      - name: Throwaway signing key
+        working-directory: SourDoughMobile
+        run: |
+          pw=$(openssl rand -hex 24)
+          keytool -genkeypair -keystore "$RUNNER_TEMP/throwaway.jks" -storepass "$pw" -keypass "$pw" \
+            -alias throwaway -keyalg RSA -keysize 2048 -validity 1 -dname CN=throwaway -noprompt
+          printf 'storeFile=%s\nstorePassword=%s\nkeyAlias=throwaway\nkeyPassword=%s\n' \
+            "$RUNNER_TEMP/throwaway.jks" "$pw" "$pw" > keystore.properties
+
+      - name: Prebuild (android/ is generated, CNG)
+        run: npx expo prebuild --platform android --no-install
+        working-directory: SourDoughMobile
+
+      - name: Build release bundle
+        run: ./gradlew bundleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a,x86_64,x86
+        working-directory: SourDoughMobile/android
+
+      - name: Version and checksum
+        id: meta
+        working-directory: SourDoughMobile
+        run: |
+          cp android/app/build/outputs/bundle/release/app-release.aab "$RUNNER_TEMP/app-release.aab"
+          {
+            echo "version_code=$(node -p "require('./app.json').expo.android.versionCode")"
+            echo "version_name=$(node -p "require('./app.json').expo.version")"
+            echo "sha256=$(sha256sum "$RUNNER_TEMP/app-release.aab" | cut -d' ' -f1)"
+          } >> "$GITHUB_OUTPUT"
+          cat "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: aab-throwaway-signed
+          path: ${{ runner.temp }}/app-release.aab
+          retention-days: 1
+          if-no-files-found: error
+
+  play:
+    needs: build
+    # Runs for status/promote (build skipped) and after a successful build.
+    if: ${{ !cancelled() && (needs.build.result == 'success' || needs.build.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: SourDoughMobile/scripts/play
+
+      - if: inputs.action == 'upload-internal'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: aab-throwaway-signed
+          path: ${{ runner.temp }}/aab
+
+      - name: Re-sign with the upload key
+        if: inputs.action == 'upload-internal'
+        env:
+          EXPECTED_SHA256: ${{ needs.build.outputs.sha256 }}
+          KEYSTORE_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_B64 }}
+          STORE_PW: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PW: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          umask 077
+          aab="$RUNNER_TEMP/aab/app-release.aab"
+          echo "$EXPECTED_SHA256  $aab" | sha256sum -c -
+          JB="${JAVA_HOME_21_X64:?no preinstalled JDK 21 on this runner}/bin"
+          ks="$RUNNER_TEMP/upload.jks"
+          trap 'rm -f "$ks"' EXIT
+          printf %s "$KEYSTORE_B64" | base64 -d > "$ks"
+          # Remove the throwaway signature (only the JAR-signing files at the bundle root).
+          zip -q -d "$aab" 'META-INF/MANIFEST.MF' 'META-INF/*.SF' 'META-INF/*.RSA' 'META-INF/*.EC' 'META-INF/*.DSA'
+          "$JB/jarsigner" -keystore "$ks" -storepass:env STORE_PW -keypass:env KEY_PW \
+            -sigalg SHA256withRSA -digestalg SHA-256 "$aab" "$KEY_ALIAS" > /dev/null
+          "$JB/jarsigner" -verify "$aab" > "$RUNNER_TEMP/verify.txt"
+          grep -q 'jar verified.' "$RUNNER_TEMP/verify.txt"
+          got=$("$JB/keytool" -printcert -jarfile "$aab" | sed -n 's/^[[:space:]]*SHA256: //p')
+          [ "$got" = "$UPLOAD_CERT_SHA256" ] || { echo "signed with the wrong certificate: $got"; exit 1; }
+          echo "signed with the upload key ($UPLOAD_CERT_SHA256)"
+
+      - name: Get a Play token (Workload Identity Federation)
+        id: google
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.PLAY_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/androidpublisher
+          create_credentials_file: false
+
+      - name: Run ${{ inputs.action }}
+        working-directory: SourDoughMobile/scripts/play
+        env:
+          PLAY_ACCESS_TOKEN: ${{ steps.google.outputs.access_token }}
+          ACTION: ${{ inputs.action }}
+          INTERNAL_STATUS: ${{ inputs.internal_status }}
+          BUILD_CODE: ${{ needs.build.outputs.version_code }}
+          BUILD_NAME: ${{ needs.build.outputs.version_name }}
+          VERSION_CODE: ${{ inputs.version_code }}
+          VERSION_NAME: ${{ inputs.version_name }}
+          RELEASE_NOTES: ${{ inputs.release_notes }}
+        run: |
+          set -euo pipefail
+          case "$ACTION" in
+            status)
+              bash ./play-status.sh "$PACKAGE" ;;
+            upload-internal)
+              bash ./play-upload.sh "$PACKAGE" "$RUNNER_TEMP/aab/app-release.aab" internal \
+                "$INTERNAL_STATUS" "$BUILD_CODE ($BUILD_NAME)" ;;
+            promote-production)
+              [[ "$VERSION_CODE" =~ ^[0-9]+$ ]] || { echo "version_code must be a number"; exit 1; }
+              [[ "$VERSION_NAME" =~ ^[0-9A-Za-z.+-]+$ ]] || { echo "version_name looks wrong"; exit 1; }
+              bash ./play-production.sh "$PACKAGE" "$VERSION_CODE" "$VERSION_NAME" "$RELEASE_NOTES" ;;
+            *) echo "unknown action $ACTION"; exit 1 ;;
+          esac
