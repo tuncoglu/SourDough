@@ -1,0 +1,7 @@
+.policy h1 { font-size: 1.9rem; margin-bottom: 4px; }
+.policy .meta { text-align: left; min-height: 0; margin: 4px 0 20px; }
+.policy h2 { margin-top: 28px; }
+.policy a { color: var(--gold); }
+.policy ul { padding-left: 20px; }
+.policy li { margin-bottom: 8px; }
+.policy hr { border: 0; border-top: 1px solid var(--line); margin: 32px 0 8px; }
