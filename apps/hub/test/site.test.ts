@@ -38,6 +38,23 @@ describe('the hub', () => {
   });
 });
 
+describe('the store links', () => {
+  const index = page('index.html');
+
+  it('link each Android app to its own Google Play listing', () => {
+    for (const id of ['com.sourdough.optimizer', 'com.sourdough.pasta'])
+      expect(index).toContain(`href="https://play.google.com/store/apps/details?id=${id}&amp;referrer=`);
+  });
+
+  it('give each app an App Store button that opens a native popover, with no script', () => {
+    for (const id of ['ios-dough', 'ios-pasta']) {
+      expect(index).toContain(`popovertarget="${id}"`);
+      expect(index).toContain(`<div popover id="${id}"`);
+    }
+    expect(index.match(/The iPhone app is coming soon/g)).toHaveLength(2);
+  });
+});
+
 describe('the privacy page', () => {
   const privacy = page('privacy.html');
   it('names every outside service the apps can use, and says when', () => {

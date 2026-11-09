@@ -78,3 +78,14 @@ describe('more', () => {
     for (const s of ['About', 'Privacy', 'Source on GitHub']) expect(out).toContain(s);
   });
 });
+
+describe('get the app', () => {
+  it('links to the Android app on Google Play and explains the iPhone route, with this calculator\'s address', () => {
+    const out = renderToString(<MorePage current="yogurt" onSettings={() => {}} />);
+    expect(out).toContain('href="https://play.google.com/store/apps/details?id=com.sourdough.optimizer&amp;referrer=');
+    expect(out).toContain('Google Play');
+    expect(out).toContain('App Store');
+    expect(out).toContain('The iPhone app is coming soon');
+    expect(out).toContain('Open yogurt.sourdoughcalculator.uk in Safari');
+  });
+});

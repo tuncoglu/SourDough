@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from 'react';
+import { useId, useRef, type ReactNode } from 'react';
 
 /** The glyph in the page header: a cream disc with a dark mark, as in the app icon. */
 export function Logo({ children }: { children: ReactNode }) {
@@ -222,6 +222,60 @@ export const SIBLING_APPS: OtherApp[] = [
 const SITE = 'https://sourdoughcalculator.uk';
 const SOURCE = 'https://github.com/tuncoglu/SourDough';
 
+/** The Android app for bread, yogurt and lacto-ferments. `referrer` shows up in the Play Console as the traffic source. */
+export const PLAY_URL =
+  'https://play.google.com/store/apps/details?id=com.sourdough.optimizer&referrer=utm_source%3Dsourdoughcalculator.uk%26utm_medium%3Dwebsite';
+
+/**
+ * Where to get the app: a Google Play link, and an App Store button for the iPhone app that is not out
+ * yet. That one opens an explanation with the Safari "Add to Home Screen" route to use in the meantime.
+ * Nothing is counted or sent anywhere: these sites have no analytics.
+ */
+export function GetTheApp({ current }: { current: AppId }) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  const host = SIBLING_APPS.find((a) => a.id === current)?.host ?? 'sourdoughcalculator.uk';
+  return (
+    <section className="card store-links" aria-label="Get the app">
+      <p className="store-label">Get the app</p>
+      <p className="store-name-line">Dough &amp; Ferment Calculators</p>
+      <p className="hint">Bread, yogurt and lacto-ferments in one Android app. Works offline.</p>
+      <div className="store-buttons">
+        <a className="store-button" href={PLAY_URL}>
+          <span className="store-small">Get it on</span>
+          <span className="store-big">Google Play</span>
+        </a>
+        <button type="button" className="store-button" onClick={() => dialog.current?.showModal()}>
+          <span className="store-small">Download on the</span>
+          <span className="store-big">App Store</span>
+        </button>
+      </div>
+      <dialog
+        ref={dialog}
+        className="store-dialog"
+        aria-labelledby="store-dialog-title"
+        onClick={(e) => {
+          if (e.target === dialog.current) dialog.current?.close();
+        }}
+      >
+        <h2 id="store-dialog-title">The iPhone app is coming soon</h2>
+        <p>Until it is in the App Store, you can put this calculator on your Home Screen from Safari. It opens full screen like an app and works offline.</p>
+        <h3>Add it to your Home Screen</h3>
+        <ol>
+          <li>{`Open ${host} in Safari on your iPhone or iPad.`}</li>
+          <li>Tap the Share button, the square with an arrow pointing up.</li>
+          <li>Scroll down and choose “Add to Home Screen”, then tap Add.</li>
+          <li>Open it from the new icon on your Home Screen.</li>
+        </ol>
+        <form method="dialog">
+          <button className="store-close" autoFocus>
+            Got it
+          </button>
+        </form>
+      </dialog>
+    </section>
+  );
+}
+
 /** Every calculator, with the current one marked and the rest linking out. Each keeps its own settings. */
 export function OtherCalculators({ current }: { current: AppId }) {
   return (
@@ -258,6 +312,7 @@ export function MorePage({ current, onSettings }: { current: AppId; onSettings: 
           <b aria-hidden="true">›</b>
         </button>
       </section>
+      <GetTheApp current={current} />
       <OtherCalculators current={current} />
       <nav className="links" aria-label="About">
         <a href={`${SITE}/about`}>About</a>
